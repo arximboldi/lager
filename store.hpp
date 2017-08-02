@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <ewig/io_service.hpp>
 #include <functional>
 
 namespace ewig {
@@ -29,8 +29,7 @@ template <typename Action>
 using dispatcher = std::function<void(Action)>;
 
 template <typename Action>
-using effect = std::function<void(boost::asio::io_service&,
-                                 dispatcher<Action>)>;
+using effect = std::function<void(io_service&, dispatcher<Action>)>;
 
 constexpr auto do_stop = [] (auto& serv, auto&&)
 {
@@ -56,8 +55,7 @@ struct store
                                    (model_t, action_t)>;
     using view_t    = std::function<void(model_t)>;
 
-    store(boost::asio::io_service& serv,
-          model_t init, reducer_t reducer, view_t view)
+    store(io_service& serv, model_t init, reducer_t reducer, view_t view)
         : serv_(serv)
         , model_(std::move(init))
         , reducer_(std::move(reducer))
@@ -77,7 +75,7 @@ struct store
     }
 
 private:
-    boost::asio::io_service& serv_;
+    io_service& serv_;
     model_t model_;
     reducer_t reducer_;
     view_t view_;
