@@ -97,7 +97,7 @@ struct store : context<Action>
           model_t init,
           reducer_t reducer,
           view_t view,
-          finish_t finish)
+          finish_t finish = {})
         : base_t{serv,
                  std::move(finish),
                  [this] (auto ev) { dispatch(ev); }}
