@@ -105,8 +105,10 @@ struct store : context<Action>
         , reducer_{std::move(reducer)}
         , view_{std::move(view)}
     {
-        view_(model_);
-    }
+        base_t::service.get().post([=] {
+            view_(model_);
+        });
+    };
 
     void dispatch(action_t action)
     {
