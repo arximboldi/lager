@@ -123,10 +123,11 @@ template <typename Model, typename Action>
 auto make_store(
     Model init,
     std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(Model)> view,
+    std::function<void(const Model&)> view,
     std::function<void()> finish = {})
 {
-    return store<Action, Model, manual_event_loop>(
+    return store<Model, Action, manual_event_loop>(
+        {},
         std::move(init),
         std::move(reducer),
         std::move(view),

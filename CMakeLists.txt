@@ -29,4 +29,5 @@ install(DIRECTORY lager DESTINATION include)
 #  Subdirs
 #  =======
 
+add_subdirectory(example/counter/std)
 add_subdirectory(example/counter/ncurses)

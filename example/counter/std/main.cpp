@@ -1,5 +1,6 @@
 //
 // lager - library for functional interactive c++ programs
+//
 // Copyright (C) 2017 Juan Pedro Bolivar Puente
 //
 // This file is part of lager.
@@ -18,37 +19,36 @@
 // along with lager.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#pragma once
+#include "../model.hpp"
+#include <lager/store.hpp>
+#include <iostream>
 
-#include <functional>
-#include <vector>
-
-namespace lager {
-
-struct manual_event_loop
+void draw(model::counter c)
 {
-    template <typename Fn>
-    void async(Fn&& fn)
-    {
-        throw std::logic_error{"manual_event_loop does not support async()"};
-    }
+    std::cout << "current value: " << c.value << '\n';
+}
 
-    template <typename Fn>
-    void post(Fn&& fn)
-    {
-        auto is_root = queue_.empty();
-        queue_.push_back(std::forward<Fn>(fn));
-        if (is_root) {
-            for (auto i = std::size_t{}; i < queue_.size(); ++i)
-                queue_[i]();
-            queue_.clear();
+int main()
+{
+    auto store = lager::make_store<model::counter, model::action>(
+        model::counter{},
+        model::update,
+        draw);
+
+    auto event = char{};
+    while (std::cin >> event) {
+        switch (event) {
+        case '+':
+            store.dispatch(model::increment_action{});
+            break;
+        case '-':
+            store.dispatch(model::decrement_action{});
+            break;
+        case '.':
+            store.dispatch(model::reset_action{});
+            break;
+        case 'q': return 0;
+        default:  continue;
         }
     }
-
-private:
-    using post_fn_t = std::function<void()>;
-
-    std::vector<post_fn_t> queue_;
-};
-
-} // namespace lager
+}
