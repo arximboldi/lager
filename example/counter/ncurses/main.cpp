@@ -23,6 +23,7 @@
 #include "terminal.hpp"
 
 #include <lager/store.hpp>
+#include <lager/event_loop/boost_asio.hpp>
 
 void draw(model::counter c)
 {
@@ -38,11 +39,11 @@ int main()
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
 
-    auto store = lager::store<model::counter, model::action>{
-        serv,
+    auto store = lager::make_store<model::counter, model::action>(
+        lager::boost_asio_event_loop{serv},
         model::counter{},
         model::update,
-        draw};
+        draw);
 
     term.start([&] (auto ev) {
         std::visit(util::visitor {

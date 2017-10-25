@@ -20,10 +20,9 @@
 
 #pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <lager/event_loop/manual.hpp>
 
 #include <functional>
-#include <future>
 
 namespace lager {
 
@@ -31,39 +30,30 @@ template <typename Action>
 struct context
 {
     using action_t      = Action;
-    using service_t     = boost::asio::io_service;
-    using service_ref_t = std::reference_wrapper<service_t>;
+
     using finish_t      = std::function<void()>;
     using dispatch_t    = std::function<void(action_t)>;
+    using async_t       = std::function<void(std::function<void()>())>;
 
-    std::reference_wrapper<service_t> service;
-    finish_t finish;
+    finish_t   finish;
     dispatch_t dispatch;
+    async_t    async;
 
     context(const context& ctx) = default;
     context(context&& ctx) = default;
 
     template <typename Action_>
     context(const context<Action_>& ctx)
-        : service(ctx.service)
-        , finish(ctx.finish)
+        : finish(ctx.finish)
         , dispatch(ctx.dispatch)
+        , async(ctx.async)
     {}
 
-    context(service_t& serv, finish_t fn, dispatch_t ds)
-        : service(serv)
-        , finish(std::move(fn))
+    context(finish_t fn, dispatch_t ds, async_t as)
+        : finish(std::move(fn))
         , dispatch(std::move(ds))
+        , async(std::move(as))
     {}
-
-    template <typename Fn>
-    void async(Fn&& fn) const
-    {
-        std::thread([fn=std::move(fn),
-                   work=boost::asio::io_service::work(service)] {
-            fn();
-        }).detach();
-    }
 };
 
 template <typename Action>
@@ -79,40 +69,42 @@ struct result : std::pair<Model, effect<Action>>
     result(Model m) : base_t{m, noop} {};
 };
 
-template <typename Model, typename Action>
+template <typename Model, typename Action, typename EventLoop>
 struct store : context<Action>
 {
-    using base_t    = context<Action>;
-    using model_t   = Model;
-    using action_t  = Action;
-    using finish_t  = typename base_t::finish_t;
-    using reducer_t = std::function<result<model_t, action_t>
-                                   (model_t, action_t)>;
-    using view_t    = std::function<void(model_t)>;
+    using base_t       = context<Action>;
+    using model_t      = Model;
+    using action_t     = Action;
+    using finish_t     = typename base_t::finish_t;
+    using reducer_t    = std::function<result<model_t, action_t>
+                                      (model_t, action_t)>;
+    using view_t       = std::function<void(const model_t&)>;
+    using event_loop_t = EventLoop;
 
     store(const store&) = delete;
     store& operator=(const store&) = delete;
 
-    store(boost::asio::io_service& serv,
+    store(event_loop_t loop,
           model_t init,
           reducer_t reducer,
           view_t view,
-          finish_t finish = {})
-        : base_t{serv,
-                 std::move(finish),
-                 [this] (auto ev) { dispatch(ev); }}
+          finish_t finish)
+        : base_t{std::move(finish),
+                 [this] (auto ev) { dispatch(ev); },
+                 [this] (auto fn) { loop_.async(fn); }}
+        , loop_{std::move(loop)}
         , model_{std::move(init)}
         , reducer_{std::move(reducer)}
         , view_{std::move(view)}
     {
-        base_t::service.get().post([=] {
+        loop_.post([=] {
             view_(model_);
         });
     };
 
     void dispatch(action_t action)
     {
-        base_t::service.get().post([=] {
+        loop_.post([=] {
             auto [model, effect] = reducer_(model_, action);
             model_ = model;
             effect(*this);
@@ -121,9 +113,41 @@ struct store : context<Action>
     }
 
 private:
+    event_loop_t loop_;
     model_t model_;
     reducer_t reducer_;
     view_t view_;
 };
+
+template <typename Model, typename Action>
+auto make_store(
+    Model init,
+    std::function<result<Model, Action>(Model, Action)> reducer,
+    std::function<void(Model)> view,
+    std::function<void()> finish = {})
+{
+    return store<Action, Model, manual_event_loop>(
+        std::move(init),
+        std::move(reducer),
+        std::move(view),
+        std::move(finish));
+}
+
+template <typename Model, typename Action, typename EventLoop>
+auto make_store(
+    EventLoop loop,
+    Model init,
+    std::function<result<Model, Action>(Model, Action)> reducer,
+    std::function<void(const Model&)> view,
+    std::function<void()> finish = {})
+{
+    return store<Model, Action, EventLoop>{
+        loop,
+        std::move(init),
+        std::move(reducer),
+        std::move(view),
+        std::move(finish)
+    };
+}
 
 } // namespace lager
