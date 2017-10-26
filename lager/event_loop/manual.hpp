@@ -45,6 +45,8 @@ struct manual_event_loop
         }
     }
 
+    void finish() {}
+
 private:
     using post_fn_t = std::function<void()>;
 

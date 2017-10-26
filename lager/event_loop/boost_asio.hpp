@@ -31,7 +31,7 @@ struct boost_asio_event_loop
     std::reference_wrapper<boost::asio::io_service> service;
 
     template <typename Fn>
-    void async(Fn&& fn) const
+    void async(Fn&& fn)
     {
         std::thread([fn=std::move(fn),
                      work=boost::asio::io_service::work(service)] {
@@ -40,9 +40,14 @@ struct boost_asio_event_loop
     }
 
     template <typename Fn>
-    void post(Fn&& fn) const
+    void post(Fn&& fn)
     {
         service.get().post(std::forward<Fn>(fn));
+    }
+
+    void finish()
+    {
+        service.get().stop();
     }
 };
 

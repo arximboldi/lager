@@ -30,29 +30,28 @@ template <typename Action>
 struct context
 {
     using action_t      = Action;
-
     using finish_t      = std::function<void()>;
     using dispatch_t    = std::function<void(action_t)>;
     using async_t       = std::function<void(std::function<void()>())>;
 
-    finish_t   finish;
     dispatch_t dispatch;
     async_t    async;
+    finish_t   finish;
 
     context(const context& ctx) = default;
     context(context&& ctx) = default;
 
     template <typename Action_>
     context(const context<Action_>& ctx)
-        : finish(ctx.finish)
-        , dispatch(ctx.dispatch)
+        : dispatch(ctx.dispatch)
         , async(ctx.async)
+        , finish(ctx.finish)
     {}
 
-    context(finish_t fn, dispatch_t ds, async_t as)
-        : finish(std::move(fn))
-        , dispatch(std::move(ds))
+    context(dispatch_t ds, async_t as, finish_t fn)
+        : dispatch(std::move(ds))
         , async(std::move(as))
+        , finish(std::move(fn))
     {}
 };
 
@@ -75,7 +74,6 @@ struct store : context<Action>
     using base_t       = context<Action>;
     using model_t      = Model;
     using action_t     = Action;
-    using finish_t     = typename base_t::finish_t;
     using reducer_t    = std::function<result<model_t, action_t>
                                       (model_t, action_t)>;
     using view_t       = std::function<void(const model_t&)>;
@@ -87,11 +85,10 @@ struct store : context<Action>
     store(event_loop_t loop,
           model_t init,
           reducer_t reducer,
-          view_t view,
-          finish_t finish)
-        : base_t{std::move(finish),
-                 [this] (auto ev) { dispatch(ev); },
-                 [this] (auto fn) { loop_.async(fn); }}
+          view_t view)
+        : base_t{[this] (auto ev) { dispatch(ev); },
+                 [this] (auto fn) { loop_.async(fn); },
+                 [this] { loop_.finish(); }}
         , loop_{std::move(loop)}
         , model_{std::move(init)}
         , reducer_{std::move(reducer)}
@@ -123,15 +120,13 @@ template <typename Model, typename Action>
 auto make_store(
     Model init,
     std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(const Model&)> view,
-    std::function<void()> finish = {})
+    std::function<void(const Model&)> view)
 {
     return store<Model, Action, manual_event_loop>(
         {},
         std::move(init),
         std::move(reducer),
-        std::move(view),
-        std::move(finish));
+        std::move(view));
 }
 
 template <typename Model, typename Action, typename EventLoop>
@@ -139,15 +134,13 @@ auto make_store(
     EventLoop loop,
     Model init,
     std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(const Model&)> view,
-    std::function<void()> finish = {})
+    std::function<void(const Model&)> view)
 {
     return store<Model, Action, EventLoop>{
         loop,
         std::move(init),
         std::move(reducer),
-        std::move(view),
-        std::move(finish)
+        std::move(view)
     };
 }
 
