@@ -21,6 +21,7 @@
 
 #include "../model.hpp"
 #include <lager/store.hpp>
+#include <lager/event_loop/manual.hpp>
 #include <iostream>
 
 void draw(model::counter c)
@@ -31,6 +32,7 @@ void draw(model::counter c)
 int main()
 {
     auto store = lager::make_store<model::counter, model::action>(
+        lager::manual_event_loop{},
         model::counter{},
         model::update,
         draw);

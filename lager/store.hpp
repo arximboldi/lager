@@ -20,9 +20,8 @@
 
 #pragma once
 
-#include <lager/event_loop/manual.hpp>
-
 #include <functional>
+#include <type_traits>
 
 namespace lager {
 
@@ -59,6 +58,7 @@ template <typename Action>
 using effect = std::function<void(const context<Action>&)>;
 
 constexpr auto noop = [] (auto&&...) {};
+constexpr auto identity = [] (auto&& x) { return std::forward<decltype(x)>(x); };
 
 template <typename Model, typename Action>
 struct result : std::pair<Model, effect<Action>>
@@ -116,32 +116,45 @@ private:
     view_t view_;
 };
 
-template <typename Model, typename Action>
+template <typename Model,
+          typename Action,
+          typename EventLoop,
+          typename Enhancer>
 auto make_store(
+    EventLoop loop,
     Model init,
     std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(const Model&)> view)
+    std::function<void(const Model&)> view,
+    Enhancer&& enhancer)
 {
-    return store<Model, Action, manual_event_loop>(
-        {},
+    auto store_creator = enhancer([&] (auto&&... xs) {
+        return store<Model, Action, EventLoop>{
+            std::forward<decltype(xs)>(xs)...
+        };
+    });
+    return store_creator(
+        std::move(loop),
         std::move(init),
         std::move(reducer),
         std::move(view));
 }
 
-template <typename Model, typename Action, typename EventLoop>
+template <typename Model,
+          typename Action,
+          typename EventLoop,
+          typename Enhancer = std::add_lvalue_reference_t<decltype(identity)>>
 auto make_store(
     EventLoop loop,
     Model init,
     std::function<result<Model, Action>(Model, Action)> reducer,
     std::function<void(const Model&)> view)
 {
-    return store<Model, Action, EventLoop>{
-        loop,
+    return make_store(
+        std::move(loop),
         std::move(init),
         std::move(reducer),
-        std::move(view)
-    };
+        std::move(view),
+        identity);
 }
 
 } // namespace lager
