@@ -39,11 +39,11 @@ int main()
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
 
-    auto store = lager::make_store<model::counter, model::action>(
-        lager::boost_asio_event_loop{serv},
+    auto store = lager::make_store<model::action>(
         model::counter{},
         model::update,
-        draw);
+        draw,
+        lager::boost_asio_event_loop{serv});
 
     term.start([&] (auto ev) {
         std::visit(util::visitor {

@@ -68,24 +68,31 @@ struct result : std::pair<Model, effect<Action>>
     result(Model m) : base_t{m, noop} {};
 };
 
-template <typename Model, typename Action, typename EventLoop>
+template <typename Type>
+struct type_ { using type = Type; };
+
+template <typename Action,
+          typename Model,
+          typename ReducerFn,
+          typename ViewFn,
+          typename EventLoop>
 struct store : context<Action>
 {
     using base_t       = context<Action>;
-    using model_t      = Model;
     using action_t     = Action;
-    using reducer_t    = std::function<result<model_t, action_t>
-                                      (model_t, action_t)>;
-    using view_t       = std::function<void(const model_t&)>;
+    using model_t      = Model;
+    using reducer_t    = ReducerFn;
+    using view_t       = ViewFn;
     using event_loop_t = EventLoop;
+    using result_t     = result<Model, Action>;
 
     store(const store&) = delete;
     store& operator=(const store&) = delete;
 
-    store(event_loop_t loop,
-          model_t init,
+    store(model_t init,
           reducer_t reducer,
-          view_t view)
+          view_t view,
+          event_loop_t loop)
         : base_t{[this] (auto ev) { dispatch(ev); },
                  [this] (auto fn) { loop_.async(fn); },
                  [this] { loop_.finish(); }}
@@ -102,7 +109,7 @@ struct store : context<Action>
     void dispatch(action_t action)
     {
         loop_.post([=] {
-            auto [model, effect] = reducer_(model_, action);
+            auto [model, effect] = result_t{reducer_(model_, action)};
             model_ = model;
             effect(*this);
             view_(model_);
@@ -116,44 +123,47 @@ private:
     view_t view_;
 };
 
-template <typename Model,
-          typename Action,
+template <typename Action,
+          typename Model,
+          typename ReducerFn,
+          typename ViewFn,
           typename EventLoop,
           typename Enhancer>
-auto make_store(
-    EventLoop loop,
-    Model init,
-    std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(const Model&)> view,
-    Enhancer&& enhancer)
+auto make_store(Model&& init,
+                ReducerFn&& reducer,
+                ViewFn&& view,
+                EventLoop&& loop,
+                Enhancer&& enhancer)
 {
-    auto store_creator = enhancer([&] (auto&&... xs) {
-        return store<Model, Action, EventLoop>{
-            std::forward<decltype(xs)>(xs)...
+    auto store_creator = enhancer([&] (auto action, auto&& ...args) {
+        using action_t = typename decltype(action)::type;
+        return store<action_t, std::decay_t<decltype(args)>...>{
+            std::forward<decltype(args)>(args)...
         };
     });
     return store_creator(
-        std::move(loop),
-        std::move(init),
-        std::move(reducer),
-        std::move(view));
+        type_<Action>{},
+        std::forward<Model>(init),
+        std::forward<ReducerFn>(reducer),
+        std::forward<ViewFn>(view),
+        std::forward<EventLoop>(loop));
 }
 
-template <typename Model,
-          typename Action,
-          typename EventLoop,
-          typename Enhancer = std::add_lvalue_reference_t<decltype(identity)>>
-auto make_store(
-    EventLoop loop,
-    Model init,
-    std::function<result<Model, Action>(Model, Action)> reducer,
-    std::function<void(const Model&)> view)
+template <typename Action,
+          typename Model,
+          typename ReducerFn,
+          typename ViewFn,
+          typename EventLoop>
+auto make_store(Model&& init,
+                ReducerFn&& reducer,
+                ViewFn&& view,
+                EventLoop&& loop)
 {
-    return make_store(
-        std::move(loop),
-        std::move(init),
-        std::move(reducer),
-        std::move(view),
+    return make_store<Action>(
+        std::forward<Model>(init),
+        std::forward<ReducerFn>(reducer),
+        std::forward<ViewFn>(view),
+        std::forward<EventLoop>(loop),
         identity);
 }
 

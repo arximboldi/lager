@@ -31,11 +31,11 @@ void draw(model::counter c)
 
 int main()
 {
-    auto store = lager::make_store<model::counter, model::action>(
-        lager::manual_event_loop{},
+    auto store = lager::make_store<model::action>(
         model::counter{},
         model::update,
-        draw);
+        draw,
+        lager::manual_event_loop{});
 
     auto event = char{};
     while (std::cin >> event) {
