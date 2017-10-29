@@ -23,6 +23,10 @@ stdenv.mkDerivation rec {
     deps.libhttpserver
     deps.cereal
     deps.immer
+    sass
+    elmPackages.elm-reactor
+    elmPackages.elm-make
+    elmPackages.elm-package
     (python3.withPackages (pkgs: with pkgs; [
       click
       requests
