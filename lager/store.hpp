@@ -82,9 +82,6 @@ struct store : context<Action>
     using event_loop_t = EventLoop;
     using result_t     = result<Model, Action>;
 
-    store(const store&) = delete;
-    store& operator=(const store&) = delete;
-
     store(model_t init,
           reducer_t reducer,
           view_t view,

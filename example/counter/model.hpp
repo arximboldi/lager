@@ -29,6 +29,7 @@ struct counter
     int value = 0;
 };
 
+
 struct increment_action {};
 struct decrement_action {};
 struct reset_action { int new_value = 0; };
@@ -52,5 +53,10 @@ counter update(counter c, action action)
             },
         }, action);
 }
+
+template <typename A> void serialize(A& a, const counter& x) { a(x.value); }
+template <typename A> void serialize(A& a, const increment_action&) {}
+template <typename A> void serialize(A& a, const decrement_action&) {}
+template <typename A> void serialize(A& a, const reset_action& x) { a(x.new_value); }
 
 } // namespace model

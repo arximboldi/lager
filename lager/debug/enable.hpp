@@ -21,75 +21,9 @@
 #pragma once
 
 #include <lager/util.hpp>
-
-#include <immer/array.hpp>
-#include <immer/box.hpp>
-#include <immer/vector.hpp>
-
-#include <variant>
+#include <lager/debug/debugger.hpp>
 
 namespace lager {
-
-template <typename Action, typename Model>
-struct debugger
-{
-    using cursor = std::size_t;
-
-    struct goto_action { cursor pos; };
-    struct prev_action {};
-    struct next_action {};
-
-    using action = std::variant<
-        Action,
-        goto_action,
-        prev_action,
-        next_action>;
-
-    struct model
-    {
-        struct step
-        {
-            Action action;
-            Model model;
-        };
-
-        Model init;
-        cursor pos = {};
-        immer::vector<step> history = {};
-
-        model(Model i) : init{i} {}
-
-        operator const Model& () const {
-            return pos == history.size()
-                ? (history.size() ? history.back().model : init)
-                : history[pos].model;
-        }
-    };
-
-    template <typename ReducerFn>
-    static model update(ReducerFn&& reducer, model m, action act)
-    {
-        return std::visit(visitor{
-                [&] (Action act) {
-                    m.history = m.history
-                        .take(m.pos)
-                        .push_back({act, reducer(m, act)});
-                    m.pos = m.history.size();
-                    return m;
-                },
-                [&] (goto_action) { return m; },
-                [&] (prev_action) { return m; },
-                [&] (next_action) { return m; },
-            }, act);
-    }
-
-    template <typename Server, typename ViewFn>
-    static void view(Server& serv, ViewFn&& view, const model& m)
-    {
-        serv.view(m);
-        std::forward<ViewFn>(view)(m);
-    }
-};
 
 template <typename Server>
 auto enable_debug(Server& serv)
@@ -102,7 +36,8 @@ auto enable_debug(Server& serv)
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
             using debugger_t = debugger<action_t, model_t>;
-            return next(
+            auto& handle     = serv.enable(debugger_t{});
+            auto  store      = next(
                 type_<typename debugger_t::action>{},
                 typename debugger_t::model{LAGER_FWD(model)},
                 [reducer=LAGER_FWD(reducer)] (auto&& model, auto&& action) {
@@ -110,10 +45,12 @@ auto enable_debug(Server& serv)
                                              LAGER_FWD(model),
                                              LAGER_FWD(action));
                 },
-                [&serv, view=LAGER_FWD(view)] (auto&& model) {
-                    return debugger_t::view(serv, view, LAGER_FWD(model));
+                [&handle, view=LAGER_FWD(view)] (auto&& model) {
+                    return debugger_t::view(handle, view, LAGER_FWD(model));
                 },
                 LAGER_FWD(loop));
+            handle.dispatcher(store.context<typename debugger_t::action>::dispatch);
+            return store;
         };
     };
 };
