@@ -11,10 +11,18 @@ class config:
     def path(cls, path):
         return cls.SERVER + path
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option('--server', default=config.SERVER)
-def lager(server):
+@click.pass_context
+def lager(ctx, server):
     config.SERVER=server
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(status)
+
+@lager.command()
+def status():
+    r = requests.get(config.path('/'))
+    print(r.text)
 
 @lager.command()
 @click.argument('cursor')

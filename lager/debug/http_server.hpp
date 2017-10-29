@@ -65,8 +65,22 @@ public:
     private:
         friend http_debug_server;
 
+        handle(int argc, const char** argv)
+            : program_{join_args_(argc, argv)}
+        {}
+
+        std::string program_ = {};
         dispatcher_t dispatcher_ = {};
         std::shared_ptr<const model> model_ {nullptr};
+
+        static std::string join_args_(int argc, const char** argv)
+        {
+            assert(argc > 0);
+            auto is = std::ostringstream{argv[0]};
+            for (int i = 1; i < argc; ++i)
+                is << argv[i];
+            return is.str();
+        }
 
         model get_model_() const
         {
@@ -91,8 +105,9 @@ public:
                 auto s = std::ostringstream{};
                 {
                     auto a = cereal::JSONOutputArchive{s};
-                    a(cereal::make_nvp("size", m.history.size()),
-                      cereal::make_nvp("cursor", m.cursor));
+                    a(cereal::make_nvp("program", this->self.program_),
+                      cereal::make_nvp("size",    m.history.size()),
+                      cereal::make_nvp("cursor",  m.cursor));
                 }
                 return httpserver::http_response_builder(
                     s.str(), 200, "text/json");
@@ -147,12 +162,19 @@ public:
         } redo_resource_ = {*this};
     };
 
+    http_debug_server(int argc, const char** argv, std::uint16_t port)
+        : argc_{argc}
+        , argv_{argv}
+        , server_{httpserver::create_webserver(8080)}
+    {}
+
     template <typename Debugger>
     handle<Debugger>& enable(Debugger)
     {
         assert(!handle_);
         assert(!server_.is_running());
-        auto hdl_ = std::make_unique<handle<Debugger>>();
+        using handle_t = handle<Debugger>;
+        auto hdl_ = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
         auto& hdl = *hdl_;
         server_.register_resource("/",     &hdl.root_resource_);
         server_.register_resource("/step", &hdl.step_resource_);
@@ -165,6 +187,8 @@ public:
     }
 
 private:
+    int argc_;
+    const char** argv_;
     httpserver::webserver server_ = httpserver::create_webserver(8080);
     std::unique_ptr<handle_base> handle_;
 };

@@ -36,12 +36,12 @@ void draw(model::counter c)
     ::refresh();
 }
 
-int main()
+int main(int argc, const char** argv)
 {
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
 
-    auto debugger = lager::http_debug_server{};
+    auto debugger = lager::http_debug_server{argc, argv, 8080};
     auto store = lager::make_store<model::action>(
         model::counter{},
         model::update,
