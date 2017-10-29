@@ -34,33 +34,6 @@
 
 namespace lager {
 
-namespace detail
-{
-
-template <typename T>
-std::string to_json(const T& x)
-{
-    auto stream = std::ostringstream{};
-    {
-        auto archive = cereal::JSONOutputArchive{stream};
-        archive(x);
-    }
-    stream << '\n';
-    return stream.str();
-}
-
-template <typename T>
-T from_json(const std::string& str)
-{
-    auto stream = std::istringstream{};
-    auto archive = cereal::JSONInputArchive{stream};
-    auto x = T{};
-    archive(x);
-    return x;
-}
-
-} // namespace detail
-
 class http_debug_server
 {
     struct handle_base
@@ -102,32 +75,6 @@ public:
             return *m;
         }
 
-        struct status
-        {
-            std::size_t size;
-            std::size_t cursor;
-
-            template <class Archive>
-            void serialize(Archive & ar)
-            {
-                ar(CEREAL_NVP(size),
-                   CEREAL_NVP(cursor));
-            }
-        };
-
-        struct step
-        {
-            std::optional<base_action> action;
-            base_model model;
-
-            template <class Archive>
-            void serialize(Archive & ar)
-            {
-                ar(CEREAL_NVP(action),
-                   CEREAL_NVP(model));
-            }
-        };
-
         struct resource_t : httpserver::http_resource
         {
             handle& self;
@@ -141,10 +88,14 @@ public:
             response_t render_GET(const request_t& req) override
             {
                 auto m = this->self.get_model_();
+                auto s = std::ostringstream{};
+                {
+                    auto a = cereal::JSONOutputArchive{s};
+                    a(cereal::make_nvp("size", m.history.size()),
+                      cereal::make_nvp("cursor", m.cursor));
+                }
                 return httpserver::http_response_builder(
-                    detail::to_json(status{m.history.size(),
-                                          m.cursor}),
-                    200, "text/json");
+                    s.str(), 200, "text/json");
             }
         } root_resource_ = {*this};
 
@@ -152,14 +103,21 @@ public:
             response_t render_GET(const request_t& req) override
             {
                 auto m = this->self.get_model_();
+                auto s = std::ostringstream{};
                 auto cursor = std::stoul(req.get_arg("cursor"));
                 if (cursor > m.history.size()) return {};
+                {
+                    auto a = cereal::JSONOutputArchive{s};
+                    if (cursor == 0)
+                        a(cereal::make_nvp("model", m.init));
+                    else {
+                        auto& step = m.history[cursor - 1];
+                        a(cereal::make_nvp("action", step.action));
+                        a(cereal::make_nvp("model",  step.model));
+                    }
+                }
                 return httpserver::http_response_builder(
-                    detail::to_json(cursor == 0
-                                   ? step{{}, m.init}
-                                   : step{m.history[cursor - 1].action,
-                                          m.history[cursor - 1].model}),
-                    200, "text/json");
+                    s.str(), 200, "text/json");
             }
         } step_resource_ = {*this};
 
