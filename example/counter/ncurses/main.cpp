@@ -24,6 +24,8 @@
 
 #include <lager/store.hpp>
 #include <lager/event_loop/boost_asio.hpp>
+#include <lager/debug/http_server.hpp>
+#include <lager/debug/enable.hpp>
 
 void draw(model::counter c)
 {
@@ -39,11 +41,13 @@ int main()
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
 
+    auto debugger = lager::http_debug_server{};
     auto store = lager::make_store<model::action>(
         model::counter{},
         model::update,
         draw,
-        lager::boost_asio_event_loop{serv});
+        lager::boost_asio_event_loop{serv},
+        lager::enable_debug(debugger));
 
     term.start([&] (auto ev) {
         std::visit(lager::visitor {
