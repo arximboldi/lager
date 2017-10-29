@@ -20,6 +20,9 @@ stdenv.mkDerivation rec {
     cmake
     ncurses
     boost
+    deps.libhttpserver
+    deps.cereal
+    deps.immer
   ] ++ stdenv.lib.optionals compiler_pkg.isClang [libcxx libcxxabi];
   propagatedBuildInputs = stdenv.lib.optional (!native_compiler) compiler_pkg;
   nativeBuildInputs = stdenv.lib.optional native_compiler compiler_pkg;
