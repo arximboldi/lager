@@ -63,9 +63,10 @@ struct debugger
         model(Model i) : init{i} {}
 
         operator const Model& () const {
-            return cursor == history.size()
-                ? (history.size() ? history.back().model : init)
-                : history[cursor].model;
+            assert(cursor <= history.size());
+            return cursor == 0
+                ? init
+                : history[cursor - 1].model;
         }
     };
 
@@ -81,12 +82,12 @@ struct debugger
                     return m;
                 },
                 [&] (goto_action act) {
-                    if (act.cursor < m.history.size())
+                    if (act.cursor <= m.history.size())
                         m.cursor = act.cursor;
                     return m;
                 },
                 [&] (undo_action) {
-                    if (m.cursor)
+                    if (m.cursor > 0)
                         --m.cursor;
                     return m;
                 },
