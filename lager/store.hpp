@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <lager/util.hpp>
+
 #include <functional>
 #include <type_traits>
 
@@ -57,9 +59,6 @@ struct context
 template <typename Action>
 using effect = std::function<void(const context<Action>&)>;
 
-constexpr auto noop = [] (auto&&...) {};
-constexpr auto identity = [] (auto&& x) { return std::forward<decltype(x)>(x); };
-
 template <typename Model, typename Action>
 struct result : std::pair<Model, effect<Action>>
 {
@@ -67,9 +66,6 @@ struct result : std::pair<Model, effect<Action>>
     using base_t::base_t;
     result(Model m) : base_t{m, noop} {};
 };
-
-template <typename Type>
-struct type_ { using type = Type; };
 
 template <typename Action,
           typename Model,

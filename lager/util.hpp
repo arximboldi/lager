@@ -1,6 +1,5 @@
 //
 // lager - library for functional interactive c++ programs
-//
 // Copyright (C) 2017 Juan Pedro Bolivar Puente
 //
 // This file is part of lager.
@@ -19,11 +18,21 @@
 // along with lager.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-namespace util {
+#pragma once
+
+namespace lager {
 
 // copied from cppreference, in practice, use scelta::visit,
 // atria::match, mpark::match, etc.
 template <class... Ts> struct visitor : Ts... { using Ts::operator()...; };
 template <class... Ts> visitor(Ts...) -> visitor<Ts...>;
 
-} // namespace util
+constexpr auto noop = [] (auto&&...) {};
+constexpr auto identity = [] (auto&& x) { return std::forward<decltype(x)>(x); };
+
+template <typename Type>
+struct type_ { using type = Type; };
+
+#define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
+
+} // namespace lager

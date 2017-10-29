@@ -20,7 +20,7 @@
 //
 
 #include <variant>
-#include "util.hpp"
+#include <lager/util.hpp>
 
 namespace model {
 
@@ -40,7 +40,7 @@ using action = std::variant<
 
 counter update(counter c, action action)
 {
-    return std::visit(util::visitor{
+    return std::visit(lager::visitor{
             [&] (increment_action) {
                 return counter { c.value + 1 };
             },

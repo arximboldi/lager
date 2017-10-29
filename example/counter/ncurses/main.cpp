@@ -46,7 +46,7 @@ int main()
         lager::boost_asio_event_loop{serv});
 
     term.start([&] (auto ev) {
-        std::visit(util::visitor {
+        std::visit(lager::visitor {
                 [&] (ncurses::key_event ev) {
                     if (ev.key == ncurses::key_code{KEY_CODE_YES, KEY_UP})
                         store.dispatch(model::increment_action{});
