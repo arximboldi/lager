@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- mode: Python; -*-
+
+import click
+import requests
+
+class config:
+    SERVER='http://localhost:8080'
+
+    @classmethod
+    def path(cls, path):
+        return cls.SERVER + path
+
+@click.group()
+@click.option('--server', default=config.SERVER)
+def lager(server):
+    config.SERVER=server
+
+@lager.command()
+@click.argument('cursor')
+def step(cursor):
+    r = requests.get(config.path('/step'),
+                     params={'cursor': cursor})
+    print(r.text)
+
+@lager.command()
+@click.argument('cursor')
+def goto(cursor):
+    r = requests.post(config.path('/goto'),
+                      params={'cursor': cursor})
+    print(r.text)
+
+@lager.command()
+def undo():
+    r = requests.post(config.path('/undo'))
+    print(r.text)
+
+@lager.command()
+def redo():
+    r = requests.post(config.path('/redo'))
+    print(r.text)
+
+if __name__ == '__main__':
+    lager()

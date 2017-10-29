@@ -23,6 +23,10 @@ stdenv.mkDerivation rec {
     deps.libhttpserver
     deps.cereal
     deps.immer
+    (python3.withPackages (pkgs: with pkgs; [
+      click
+      requests
+    ]))
   ] ++ stdenv.lib.optionals compiler_pkg.isClang [libcxx libcxxabi];
   propagatedBuildInputs = stdenv.lib.optional (!native_compiler) compiler_pkg;
   nativeBuildInputs = stdenv.lib.optional native_compiler compiler_pkg;
