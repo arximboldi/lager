@@ -32,7 +32,24 @@
 #include <sstream>
 #include <vector>
 
+#ifndef LAGER_RESOURCES_PREFIX
+#define LAGER_RESOURCES_PREFIX "/usr/share/lager"
+#endif
+
 namespace lager {
+
+namespace detail {
+
+bool ends_with(const std::string& str, const std::string& ending)
+{
+    return str.length() >= ending.length()
+        && str.compare(str.length() - ending.length(),
+                       ending.length(),
+                       ending) == 0;
+
+}
+
+} // namespace detail
 
 class http_debug_server
 {
@@ -160,6 +177,28 @@ public:
                 return httpserver::http_response_builder("", 200);
             }
         } redo_resource_ = {*this};
+
+        struct : resource_t { using resource_t::resource_t;
+            response_t render_GET(const request_t& req) override
+            {
+                auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
+                auto resources_path = env_resources_path
+                    ? env_resources_path
+                    : LAGER_RESOURCES_PREFIX;
+                auto req_path = req.get_path();
+                auto rel_path = req_path == "/gui" || req_path == "/gui"
+                    ? "/gui/index.html"
+                    : req_path;
+                auto full_path = resources_path + rel_path;
+                auto content_type =
+                    detail::ends_with(full_path, ".html") ? "text/html" :
+                    detail::ends_with(full_path, ".js")   ? "text/javascript" :
+                    detail::ends_with(full_path, ".css")  ? "text/css"
+                    /* otherwise */                       : "text/plain";
+                return httpserver::http_response_builder(full_path, 200, content_type)
+                    .file_response();
+            }
+        } gui_resource_ = {*this};
     };
 
     http_debug_server(int argc, const char** argv, std::uint16_t port)
@@ -176,11 +215,12 @@ public:
         using handle_t = handle<Debugger>;
         auto hdl_ = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
         auto& hdl = *hdl_;
-        server_.register_resource("/",     &hdl.root_resource_);
-        server_.register_resource("/step", &hdl.step_resource_);
-        server_.register_resource("/goto", &hdl.goto_resource_);
-        server_.register_resource("/undo", &hdl.undo_resource_);
-        server_.register_resource("/redo", &hdl.redo_resource_);
+        server_.register_resource("/",        &hdl.root_resource_);
+        server_.register_resource("/step",    &hdl.step_resource_);
+        server_.register_resource("/goto",    &hdl.goto_resource_);
+        server_.register_resource("/undo",    &hdl.undo_resource_);
+        server_.register_resource("/redo",    &hdl.redo_resource_);
+        server_.register_resource("/gui/?.*", &hdl.gui_resource_);
         handle_ = std::move(hdl_);
         server_.start();
         return hdl;

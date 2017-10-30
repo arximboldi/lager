@@ -34,4 +34,8 @@ stdenv.mkDerivation rec {
   ] ++ stdenv.lib.optionals compiler_pkg.isClang [libcxx libcxxabi];
   propagatedBuildInputs = stdenv.lib.optional (!native_compiler) compiler_pkg;
   nativeBuildInputs = stdenv.lib.optional native_compiler compiler_pkg;
+  shellHook = ''
+    export LAGER_ROOT=`dirname ${toString ./shell.nix}`
+    export LAGER_RESOURCES_PATH="$LAGER_ROOT"/tools
+  '';
 }
