@@ -7,68 +7,93 @@ import Http
 import Json.Decode as Decode
 import Time exposing (Time, second)
 
-main = Html.program
-       { init = init "cats"
+type alias Flags = {
+    server : String
+    }
+
+main = Html.programWithFlags
+       { init = init
        , view = view
        , update = update
        , subscriptions = subscriptions
        }
 
--- MODEL
+--
+-- data model
+--
 
-type alias Model =
-    { topic : String
-    , gifUrl : String
+type alias Status =
+    { program: String
+    , size: Int
+    , cursor: Int
     }
 
-init : String -> (Model, Cmd Msg)
-init topic =
-    ( Model topic "waiting.gif"
-    , getRandomGif topic
-    )
+initStatus = Status "" 0 0
 
--- UPDATE
+decodeStatus : Decode.Decoder Status
+decodeStatus = Decode.map3 Status
+               (Decode.field "program" Decode.string)
+               (Decode.field "size"    Decode.int)
+               (Decode.field "cursor"  Decode.int)
 
-type Msg = MorePlease
-         | NewGif (Result Http.Error String)
+type alias Model =
+    { server: String
+    , status: Status
+    }
+
+init : Flags -> (Model, Cmd Msg)
+init flags = ( Model flags.server initStatus
+              , queryStatus flags.server
+              )
+
+--
+-- reducer
+--
+
+type Msg = RecvStatus (Result Http.Error Status)
          | Tick Time
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        MorePlease ->
-            (model, getRandomGif model.topic)
-        NewGif (Ok newUrl) ->
-            (Model model.topic newUrl, Cmd.none)
-        NewGif (Err _) ->
+        RecvStatus (Ok status) ->
+            ({model | status = status}, Cmd.none)
+        RecvStatus (Err _) ->
             (model, Cmd.none)
         Tick t ->
-            (model, Cmd.none)
+            (model, queryStatus model.server)
 
--- VIEW
+--
+-- view
+--
 
 view : Model -> Html Msg
 view model =
     div []
-        [ h2 [] [text model.topic]
-        , button [ onClick MorePlease ] [ text "More Please!" ]
-        , br [] []
-        , img [src model.gifUrl] []
-        ]
+        [ div [ class "header" ]
+              [ div [ class "left-side" ]
+                    [ text model.server ]
+              , div [ class "right-side" ]
+                    [ text model.status.program ] ]
+        , div [ class "main" ]
+              [ div [ class "history" ]
+                    [ text "x" ]
+              , div [ class "detail" ]
+                    [ text "main area"] ] ]
 
--- SUBSCRIPTIONS
+--
+-- subs
+--
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Time.every second Tick
 
--- HTTP
+--
+-- server communication
+--
 
-getRandomGif : String -> Cmd Msg
-getRandomGif topic =
-    let url = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" ++ topic
-    in Http.send NewGif (Http.get url decodeGifUrl)
-
-decodeGifUrl : Decode.Decoder String
-decodeGifUrl =
-    Decode.at ["data", "image_url"] Decode.string
+queryStatus : String -> Cmd Msg
+queryStatus server =
+    let url = server ++ "/"
+    in Http.send RecvStatus (Http.get url decodeStatus)

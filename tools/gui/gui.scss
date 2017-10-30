@@ -1,3 +1,63 @@
 body {
-    background-color: tomato;
+}
+
+.header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3em;
+
+    background-color: #0C0C0D;
+
+    .left-side {
+        position: relative;
+        float: left;
+        margin-left: 1em;
+        top: 0;
+        bottom: 0;
+        font-weight: bold;
+        line-height: 100%;
+        color: #474747;
+        font-family: Source Sans Pro, sans;
+        line-height: 3em;
+    }
+
+    .right-side {
+        position: relative;
+        float: right;
+        margin-right: 1em;
+        line-height: 100%;
+        top: 0;
+        bottom: 0;
+        font-family: Fira Code, Fira Mono, Inconsolata, monospace;
+        color: #B1B1B1;
+        line-height: 3em;
+    }
+}
+
+.main {
+    position: absolute;
+    top: 3em;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    .history {
+        position: absolute;
+        width: 3em;
+        left: 0;
+        bottom: 0;
+        top: 0;
+        background-color: #323234;
+    }
+
+    .detail {
+        position: absolute;
+        left: 3em;
+        right: 0;
+        bottom: 0;
+        top: 0;
+        background-color: #474749;
+    }
 }

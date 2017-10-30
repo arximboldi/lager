@@ -1,6 +1,7 @@
 <html>
   <head>
     <title>lagger debugger</title>
+    <base href="/gui/">
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
     <script type="text/javascript" src="gui.js"></script>
@@ -10,6 +11,6 @@
   <body></body>
 
   <script type="text/javascript">
-    Elm.Main.fullscreen();
+    Elm.Main.fullscreen({ server: window.location.origin });
   </script>
 </html>
