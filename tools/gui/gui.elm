@@ -78,7 +78,9 @@ decodeStep = Decode.map2 Step
 
 type Msg = RecvStatus (Result Http.Error Status)
          | RecvStep (Result Http.Error Detail)
+         | RecvPost (Result Http.Error ())
          | SelectStep Int
+         | GotoStep Int
          | Tick Time
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -94,8 +96,14 @@ update msg model =
         RecvStep (Err err) ->
             Debug.log ("RecvStep Err: " ++ toString err)
                 (model, Cmd.none)
+        RecvPost (Ok _) ->
+            (model, Cmd.none)
+        RecvPost (Err err) ->
+            (model, Cmd.none)
         SelectStep index ->
-            (model, queryDetail model.server index)
+            (model, queryStep model.server index)
+        GotoStep index ->
+            (model, queryGoto model.server index)
         Tick t ->
             (model, queryStatus model.server)
 
@@ -154,6 +162,7 @@ viewHistoryItem cursor selected idx =
                   , (selected == idx, "selected")
                   , (cursor == idx, "cursor")]
         , onClick (SelectStep idx)
+        , onDoubleClick (GotoStep idx)
         ]
         [div [] [text (toString idx)]]
 
@@ -195,9 +204,14 @@ queryStatus server =
     let url = server ++ "/"
     in Http.send RecvStatus (Http.get url decodeStatus)
 
-queryDetail : String -> Int -> Cmd Msg
-queryDetail server index =
+queryStep : String -> Int -> Cmd Msg
+queryStep server index =
     let url = server ++ "/step?cursor=" ++ toString index
     in Http.send RecvStep <|
         Http.get url <|
             Decode.map (LoadedStep index) decodeStep
+
+queryGoto : String -> Int -> Cmd Msg
+queryGoto server index =
+    let url = server ++ "/goto?cursor=" ++ toString index
+    in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
