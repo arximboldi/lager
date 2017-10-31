@@ -5,6 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Time exposing (Time, second)
 
 type alias Flags = {
@@ -29,8 +30,8 @@ type alias Status =
     }
 
 type alias Step =
-    { action: String
-    , model: String
+    { action: Maybe Decode.Value
+    , model: Decode.Value
     }
 
 type Detail
@@ -67,14 +68,16 @@ decodeStatus = Decode.map3 Status
 
 decodeStep : Decode.Decoder Step
 decodeStep = Decode.map2 Step
-             (Decode.field "action" Decode.string)
-             (Decode.field "model"  Decode.string)
+             (Decode.maybe <| Decode.field "action" Decode.value)
+             (Decode.field "model"  Decode.value)
 
 --
 -- reducer
 --
 
 type Msg = RecvStatus (Result Http.Error Status)
+         | RecvStep (Result Http.Error Detail)
+         | SelectStep Int
          | Tick Time
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -82,8 +85,16 @@ update msg model =
     case msg of
         RecvStatus (Ok status) ->
             ({model | status = status}, Cmd.none)
-        RecvStatus (Err _) ->
-            (model, Cmd.none)
+        RecvStatus (Err err) ->
+            Debug.log ("RecvStatus Err: " ++ toString err)
+                (model, Cmd.none)
+        RecvStep (Ok detail) ->
+            ({model | detail = detail}, Cmd.none)
+        RecvStep (Err err) ->
+            Debug.log ("RecvStep Err: " ++ toString err)
+                (model, Cmd.none)
+        SelectStep index ->
+            (model, queryDetail model.server index)
         Tick t ->
             (model, queryStatus model.server)
 
@@ -91,9 +102,19 @@ update msg model =
 -- view
 --
 
+classes : List (Bool, String) -> Attribute Msg
+classes cls = List.filter Tuple.first cls
+            |> List.map Tuple.second
+            |> String.join " "
+            |> class
+
 viewHistorySelector : Int -> Int -> Html Msg
 viewHistorySelector selected idx =
-    div [class "step"] [div [] [text (toString idx)]]
+    div [ classes [ (True, "step")
+                 , (selected == idx, "selected") ]
+        , onClick (SelectStep idx)
+        ]
+        [div [] [text (toString idx)]]
 
 viewHeader : Model -> Html Msg
 viewHeader model =
@@ -111,16 +132,28 @@ viewHeader model =
             ]
         ]
 
+viewLoading = div [class "info"] [text "Loading..."]
+viewNoStep  = div [class "info"] [text "No step selected"]
+viewStep step =
+    let encode = Encode.encode 4
+    in div [] <|
+        case step.action of
+            Just action ->
+                [ div [class "info"] [text "action"]
+                , div [class "code"] [text <| encode action]
+                , div [class "info"] [text "model"]
+                , div [class "code"] [text <| encode step.model]]
+            Nothing ->
+                [ div [class "info"] [text "initial" ]
+                , div [class "code"] [text <| encode step.model]]
+
 viewDetail : Model -> Html Msg
 viewDetail model =
-    let content =
-            case model.detail of
-                LoadedStep idx _ -> [text ("LOADED: " ++ toString idx)]
-                LoadingStep idx  -> [text ("LOADING: " ++ toString idx)]
-                NoStep           -> [text "NONE"]
-    in
-        div [ class "detail" ]
-            [ div [class "content"] content ]
+    div [ class "detail" ] <|
+        case model.detail of
+            LoadedStep idx s -> [viewStep s]
+            LoadingStep idx  -> [viewLoading]
+            NoStep           -> [viewNoStep]
 
 viewHistory : Model -> Html Msg
 viewHistory model =
@@ -155,3 +188,10 @@ queryStatus : String -> Cmd Msg
 queryStatus server =
     let url = server ++ "/"
     in Http.send RecvStatus (Http.get url decodeStatus)
+
+queryDetail : String -> Int -> Cmd Msg
+queryDetail server index =
+    let url = server ++ "/step?cursor=" ++ toString index
+    in Http.send RecvStep <|
+        Http.get url <|
+            Decode.map (LoadedStep index) decodeStep
