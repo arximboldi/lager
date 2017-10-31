@@ -89,6 +89,8 @@ type Msg = RecvStatus (Result Http.Error Status)
          | KeyRedo
          | KeyUp
          | KeyDown
+         | KeyGoUp
+         | KeyGoDown
          | Tick Time
          | ComboMsg Keys.Msg
 
@@ -102,6 +104,14 @@ selectStep model index =
                           LoadingStep _       -> LoadingStep index
                           NoStep              -> LoadingStep index
          in ({ model | detail = detail }, queryStep model.server index)
+
+selectGotoStep : Model -> Int -> (Model, Cmd Msg)
+selectGotoStep model index =
+    let (newModel, cmd) = selectStep model index
+        newCmd = if index == detailIndex newModel.detail
+                 then Cmd.batch [cmd, queryGoto model.server index]
+                 else cmd
+    in (newModel, newCmd)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -140,6 +150,10 @@ update msg model =
             selectStep model (detailIndex model.detail - 1)
         KeyDown ->
             selectStep model (detailIndex model.detail + 1)
+        KeyGoUp ->
+            selectGotoStep model (detailIndex model.detail - 1)
+        KeyGoDown ->
+            selectGotoStep model (detailIndex model.detail + 1)
         ComboMsg msg ->
             let (keys, cmd) = Keys.update msg model.keys
             in ({ model | keys = keys }, cmd)
@@ -233,6 +247,8 @@ view model =
 
 keys = [ Keys.combo2 (Keys.control, Keys.z) KeyUndo
        , Keys.combo2 (Keys.control, Keys.y) KeyRedo
+       , Keys.combo2 (Keys.shift, Keys.up) KeyGoUp
+       , Keys.combo2 (Keys.shift, Keys.down) KeyGoDown
        , Keys.combo1 Keys.up KeyUp
        , Keys.combo1 Keys.down KeyDown
        ]
