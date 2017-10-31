@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Html exposing (..)
+import Html.Keyed as Keyed
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
@@ -160,11 +161,13 @@ viewHistory : Model -> Html Msg
 viewHistory model =
     let selected = detailIndex model.detail
         selectors = List.range 0 model.status.size
-                  |> List.map (viewHistoryItem
-                                  model.status.cursor
-                                  selected)
+                  |> List.map (\idx ->
+                                  ( toString idx
+                                  , viewHistoryItem
+                                        model.status.cursor
+                                        selected idx ))
     in
-        div [ class "history" ] selectors
+        Keyed.node "div" [ class "history" ] selectors
 
 view : Model -> Html Msg
 view model =
