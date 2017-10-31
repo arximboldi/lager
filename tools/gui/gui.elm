@@ -8,6 +8,7 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time exposing (Time)
+import Keyboard.Combo as Keys
 
 type alias Flags = {
     server : String
@@ -44,10 +45,11 @@ type alias Model =
     { server: String
     , status: Status
     , detail: Detail
+    , keys: Keys.Model Msg
     }
 
 initStatus = Status "" 0 0
-initModel server = Model server initStatus NoStep
+initModel server = Model server initStatus NoStep (Keys.init keys ComboMsg)
 
 init : Flags -> (Model, Cmd Msg)
 init flags = let model = initModel flags.server
@@ -81,7 +83,12 @@ type Msg = RecvStatus (Result Http.Error Status)
          | RecvPost (Result Http.Error ())
          | SelectStep Int
          | GotoStep Int
+         | KeyUndo
+         | KeyRedo
+         | KeyUp
+         | KeyDown
          | Tick Time
+         | ComboMsg Keys.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -104,6 +111,17 @@ update msg model =
             (model, queryStep model.server index)
         GotoStep index ->
             (model, queryGoto model.server index)
+        KeyUndo ->
+            Debug.log "KeyUndo" (model, Cmd.none)
+        KeyRedo ->
+            Debug.log "KeyRedo: " (model, Cmd.none)
+        KeyUp ->
+            Debug.log "KeyUp: " (model, Cmd.none)
+        KeyDown ->
+            Debug.log "KeyDown: " (model, Cmd.none)
+        ComboMsg msg ->
+            let (keys, cmd) = Keys.update msg model.keys
+            in ({ model | keys = keys }, cmd)
         Tick t ->
             (model, queryStatus model.server)
 
@@ -180,7 +198,7 @@ viewHistory model =
 
 view : Model -> Html Msg
 view model =
-    body []
+    div [ ]
         [ viewHeader model
         , div [ class "main" ]
             [ viewDetail model
@@ -191,9 +209,18 @@ view model =
 -- subs
 --
 
+keys = [ Keys.combo2 (Keys.control, Keys.z) KeyUndo
+       , Keys.combo2 (Keys.control, Keys.y) KeyRedo
+       , Keys.combo1 Keys.up KeyUp
+       , Keys.combo1 Keys.down KeyDown
+       ]
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every (200 * Time.millisecond) Tick
+    Sub.batch
+        [ Time.every (200 * Time.millisecond) Tick
+        , Keys.subscriptions model.keys
+        ]
 
 --
 -- server communication
