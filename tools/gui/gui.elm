@@ -94,12 +94,14 @@ type Msg = RecvStatus (Result Http.Error Status)
 
 selectStep : Model -> Int -> (Model, Cmd Msg)
 selectStep model index =
-    let detail = case model.detail of
-                     LoadedStep _ step   -> ChangingStep index step
-                     ChangingStep _ step -> ChangingStep index step
-                     LoadingStep _       -> LoadingStep index
-                     NoStep              -> LoadingStep index
-    in ({ model | detail = detail }, queryStep model.server index)
+    if index < 0 || index > model.status.size
+    then (model, Cmd.none)
+    else let detail = case model.detail of
+                          LoadedStep _ step   -> ChangingStep index step
+                          ChangingStep _ step -> ChangingStep index step
+                          LoadingStep _       -> LoadingStep index
+                          NoStep              -> LoadingStep index
+         in ({ model | detail = detail }, queryStep model.server index)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -135,9 +137,9 @@ update msg model =
         KeyRedo ->
             (model, queryRedo model.server)
         KeyUp ->
-            Debug.log "KeyUp: " (model, Cmd.none)
+            selectStep model (detailIndex model.detail - 1)
         KeyDown ->
-            Debug.log "KeyDown: " (model, Cmd.none)
+            selectStep model (detailIndex model.detail + 1)
         ComboMsg msg ->
             let (keys, cmd) = Keys.update msg model.keys
             in ({ model | keys = keys }, cmd)
