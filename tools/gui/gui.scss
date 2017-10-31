@@ -55,7 +55,6 @@ body {
 }
 
 $history-width: 5em;
-$history-height: 2.5em;
 
 .main {
     position: absolute;
@@ -66,7 +65,7 @@ $history-height: 2.5em;
 
     .detail {
         position: absolute;
-        right: $history-width;
+        right: 5em;
         left: 0;
         bottom: 0;
         top: 0;
@@ -97,23 +96,23 @@ $history-height: 2.5em;
         bottom: 0;
         top: 0;
         background-color: #474749;
-        overflow-x: hidden;
         overflow-y: scroll;
 
         .step {
             @extend .interactive;
             position: relative;
             width: 100%;
-            height: $history-height;
+            height: 2.5em;
             user-select: none;
             div {
-                margin: 0.4em;
-                padding: 0.5em;
+                box-sizing: border-box;
+                margin: 0.5em;
                 position: relative;
                 left: 0;
                 right: 0;
                 top: 0;
-                right: 0;
+                bottom: 0;
+                line-height: 2em;
                 border-radius: 0.5em;
                 background-color: #0C0C0D;
                 color: #1abdff;
@@ -131,6 +130,18 @@ $history-height: 2.5em;
             &.selected {
                 div {
                     border-color: #1abdff;
+                }
+            }
+            &.cursor {
+                &::before {
+                    position: absolute;
+                    top: 0%;
+                    left: -4px;
+                    width: 8px;
+                    height: 100%;
+                    content: "";
+                    background-color: #1abdff;
+                    border-radius: 8px;
                 }
             }
         }

@@ -108,14 +108,6 @@ classes cls = List.filter Tuple.first cls
             |> String.join " "
             |> class
 
-viewHistorySelector : Int -> Int -> Html Msg
-viewHistorySelector selected idx =
-    div [ classes [ (True, "step")
-                 , (selected == idx, "selected") ]
-        , onClick (SelectStep idx)
-        ]
-        [div [] [text (toString idx)]]
-
 viewHeader : Model -> Html Msg
 viewHeader model =
     div [ class "header" ]
@@ -155,11 +147,22 @@ viewDetail model =
             LoadingStep idx  -> [viewLoading]
             NoStep           -> [viewNoStep]
 
+viewHistoryItem : Int -> Int -> Int -> Html Msg
+viewHistoryItem cursor selected idx =
+    div [ classes [ (True, "step")
+                  , (selected == idx, "selected")
+                  , (cursor == idx, "cursor")]
+        , onClick (SelectStep idx)
+        ]
+        [div [] [text (toString idx)]]
+
 viewHistory : Model -> Html Msg
 viewHistory model =
-    let index = detailIndex model.detail
+    let selected = detailIndex model.detail
         selectors = List.range 0 model.status.size
-                  |> List.map (viewHistorySelector index)
+                  |> List.map (viewHistoryItem
+                                  model.status.cursor
+                                  selected)
     in
         div [ class "history" ] selectors
 
