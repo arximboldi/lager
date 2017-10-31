@@ -1,4 +1,8 @@
+$normal-font: Source Sans Pro, sans;
+$tt-font: Fira Code, Fira Mono, Inconsolata, monospace;
+
 body {
+    font-family: $normal-font;
 }
 
 .header {
@@ -9,6 +13,16 @@ body {
     height: 3em;
 
     background-color: #0C0C0D;
+    color: #676769;
+    font-weight: bold;
+
+    .tt {
+        font-family: $tt-font;
+    }
+
+    .hl {
+        color: #B1B1B1;
+    }
 
     .left-side {
         position: relative;
@@ -16,10 +30,7 @@ body {
         margin-left: 1em;
         top: 0;
         bottom: 0;
-        font-weight: bold;
         line-height: 100%;
-        color: #474747;
-        font-family: Source Sans Pro, sans;
         line-height: 3em;
     }
 
@@ -30,11 +41,12 @@ body {
         line-height: 100%;
         top: 0;
         bottom: 0;
-        font-family: Fira Code, Fira Mono, Inconsolata, monospace;
-        color: #B1B1B1;
         line-height: 3em;
     }
 }
+
+$history-width: 5em;
+$history-height: 3em;
 
 .main {
     position: absolute;
@@ -43,21 +55,50 @@ body {
     left: 0;
     right: 0;
 
-    .history {
+    .detail {
         position: absolute;
-        width: 3em;
+        right: $history-width;
         left: 0;
         bottom: 0;
         top: 0;
+        color: #B1B1B1;
         background-color: #323234;
+        overflow: auto;
+        .content {
+            padding: 1em;
+            font-family: $tt-font;
+            font-size: 1.5em;
+        }
     }
 
-    .detail {
+    .history {
         position: absolute;
-        left: 3em;
+        width: $history-width;
         right: 0;
         bottom: 0;
         top: 0;
         background-color: #474749;
+        overflow-x: hidden;
+        overflow-y: scroll;
+
+        .step {
+            position: relative;
+            width: 100%;
+            height: $history-height;
+            div {
+                margin: 0.5em;
+                padding: 0.5em;
+                position: relative;
+                left: 0;
+                right: 0;
+                top: 0;
+                right: 0;
+                border-radius: 0.5em;
+                background-color: #a62;
+                color: #323234;
+                font-weight: bold;
+                text-align: center;
+            }
+        }
     }
 }
