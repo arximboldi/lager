@@ -38,6 +38,7 @@ type alias Step =
 
 type Detail
     = LoadedStep Int Step
+    | ChangingStep Int Step
     | LoadingStep Int
     | NoStep
 
@@ -59,9 +60,10 @@ init flags = let model = initModel flags.server
 detailIndex : Detail -> Int
 detailIndex d =
     case d of
-        LoadedStep idx _ -> idx
-        LoadingStep idx  -> idx
-        NoStep           -> -1
+        LoadedStep idx _    -> idx
+        LoadingStep idx     -> idx
+        ChangingStep idx _  -> idx
+        NoStep              -> -1
 
 decodeStatus : Decode.Decoder Status
 decodeStatus = Decode.map3 Status
@@ -90,16 +92,33 @@ type Msg = RecvStatus (Result Http.Error Status)
          | Tick Time
          | ComboMsg Keys.Msg
 
+selectStep : Model -> Int -> (Model, Cmd Msg)
+selectStep model index =
+    let detail = case model.detail of
+                     LoadedStep _ step   -> ChangingStep index step
+                     ChangingStep _ step -> ChangingStep index step
+                     LoadingStep _       -> LoadingStep index
+                     NoStep              -> LoadingStep index
+    in ({ model | detail = detail }, queryStep model.server index)
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         RecvStatus (Ok status) ->
-            ({model | status = status}, Cmd.none)
+            let index = detailIndex model.detail
+                newModel = { model | status = status }
+            in
+                if index == (-1) || (status.cursor /= model.status.cursor &&
+                                       index == model.status.cursor)
+                then selectStep newModel status.cursor
+                else (newModel, Cmd.none)
         RecvStatus (Err err) ->
             Debug.log ("RecvStatus Err: " ++ toString err)
                 (model, Cmd.none)
         RecvStep (Ok detail) ->
-            ({model | detail = detail}, Cmd.none)
+            if detailIndex detail == detailIndex model.detail
+            then ({model | detail = detail}, Cmd.none)
+            else (model, Cmd.none)
         RecvStep (Err err) ->
             Debug.log ("RecvStep Err: " ++ toString err)
                 (model, Cmd.none)
@@ -108,13 +127,13 @@ update msg model =
         RecvPost (Err err) ->
             (model, Cmd.none)
         SelectStep index ->
-            (model, queryStep model.server index)
+            selectStep model index
         GotoStep index ->
             (model, queryGoto model.server index)
         KeyUndo ->
-            Debug.log "KeyUndo" (model, Cmd.none)
+            (model, queryUndo model.server)
         KeyRedo ->
-            Debug.log "KeyRedo: " (model, Cmd.none)
+            (model, queryRedo model.server)
         KeyUp ->
             Debug.log "KeyUp: " (model, Cmd.none)
         KeyDown ->
@@ -151,8 +170,8 @@ viewHeader model =
             ]
         ]
 
-viewLoading = div [class "info"] [text "Loading..."]
 viewNoStep  = div [class "info"] [text "No step selected"]
+viewLoading = div [class "info"] [text "Loading..."]
 viewStep step =
     let encode = Encode.encode 4
     in div [] <|
@@ -170,9 +189,10 @@ viewDetail : Model -> Html Msg
 viewDetail model =
     div [ class "detail" ] <|
         case model.detail of
-            LoadedStep idx s -> [viewStep s]
-            LoadingStep idx  -> [viewLoading]
-            NoStep           -> [viewNoStep]
+            LoadedStep idx s   -> [viewStep s]
+            ChangingStep idx s -> [viewStep s]
+            LoadingStep idx    -> [viewLoading]
+            NoStep             -> [viewNoStep]
 
 viewHistoryItem : Int -> Int -> Int -> Html Msg
 viewHistoryItem cursor selected idx =
@@ -241,4 +261,14 @@ queryStep server index =
 queryGoto : String -> Int -> Cmd Msg
 queryGoto server index =
     let url = server ++ "/goto?cursor=" ++ toString index
+    in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
+
+queryUndo : String -> Cmd Msg
+queryUndo server =
+    let url = server ++ "/undo"
+    in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
+
+queryRedo : String -> Cmd Msg
+queryRedo server =
+    let url = server ++ "/redo"
     in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
