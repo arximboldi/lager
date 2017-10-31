@@ -7,7 +7,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Time exposing (Time, second)
+import Time exposing (Time)
 
 type alias Flags = {
     server : String
@@ -193,7 +193,7 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every second Tick
+    Time.every (200 * Time.millisecond) Tick
 
 --
 -- server communication
