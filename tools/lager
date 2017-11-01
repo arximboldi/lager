@@ -8,8 +8,8 @@ class config:
     SERVER='http://localhost:8080'
 
     @classmethod
-    def path(cls, path):
-        return cls.SERVER + path
+    def path(cls, *args):
+        return '/'.join([cls.SERVER] + list(args))
 
 @click.group(invoke_without_command=True)
 @click.option('--server', default=config.SERVER)
@@ -21,31 +21,29 @@ def lager(ctx, server):
 
 @lager.command()
 def status():
-    r = requests.get(config.path('/'))
+    r = requests.get(config.path('/api'))
     print(r.text)
 
 @lager.command()
 @click.argument('cursor')
 def step(cursor):
-    r = requests.get(config.path('/step'),
-                     params={'cursor': cursor})
+    r = requests.get(config.path('/api/step', cursor))
     print(r.text)
 
 @lager.command()
 @click.argument('cursor')
 def goto(cursor):
-    r = requests.post(config.path('/goto'),
-                      params={'cursor': cursor})
+    r = requests.post(config.path('/api/goto', cursor))
     print(r.text)
 
 @lager.command()
 def undo():
-    r = requests.post(config.path('/undo'))
+    r = requests.post(config.path('/api/undo'))
     print(r.text)
 
 @lager.command()
 def redo():
-    r = requests.post(config.path('/redo'))
+    r = requests.post(config.path('/api/redo'))
     print(r.text)
 
 if __name__ == '__main__':

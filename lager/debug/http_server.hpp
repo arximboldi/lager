@@ -186,9 +186,9 @@ public:
                     ? env_resources_path
                     : LAGER_RESOURCES_PREFIX;
                 auto req_path = req.get_path();
-                auto rel_path = req_path == "/gui" || req_path == "/gui"
+                auto rel_path = req_path == "/"
                     ? "/gui/index.html"
-                    : req_path;
+                    : "/gui/" + req_path;
                 auto full_path = resources_path + rel_path;
                 auto content_type =
                     detail::ends_with(full_path, ".html") ? "text/html" :
@@ -215,12 +215,12 @@ public:
         using handle_t = handle<Debugger>;
         auto hdl_ = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
         auto& hdl = *hdl_;
-        server_.register_resource("/",        &hdl.root_resource_);
-        server_.register_resource("/step",    &hdl.step_resource_);
-        server_.register_resource("/goto",    &hdl.goto_resource_);
-        server_.register_resource("/undo",    &hdl.undo_resource_);
-        server_.register_resource("/redo",    &hdl.redo_resource_);
-        server_.register_resource("/gui/?.*", &hdl.gui_resource_);
+        server_.register_resource("/api/step/{cursor}", &hdl.step_resource_);
+        server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
+        server_.register_resource("/api/undo",          &hdl.undo_resource_);
+        server_.register_resource("/api/redo",          &hdl.redo_resource_);
+        server_.register_resource("/api/?",             &hdl.root_resource_);
+        server_.register_resource("/?.*",               &hdl.gui_resource_);
         handle_ = std::move(hdl_);
         server_.start();
         return hdl;

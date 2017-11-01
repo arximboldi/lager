@@ -266,27 +266,27 @@ subscriptions model =
 
 queryStatus : String -> Cmd Msg
 queryStatus server =
-    let url = server ++ "/"
+    let url = server ++ "/api"
     in Http.send RecvStatus (Http.get url decodeStatus)
 
 queryStep : String -> Int -> Cmd Msg
 queryStep server index =
-    let url = server ++ "/step?cursor=" ++ toString index
+    let url = server ++ "/api/step/" ++ toString index
     in Http.send RecvStep <|
         Http.get url <|
             Decode.map (LoadedStep index) decodeStep
 
 queryGoto : String -> Int -> Cmd Msg
 queryGoto server index =
-    let url = server ++ "/goto?cursor=" ++ toString index
+    let url = server ++ "/api/goto/" ++ toString index
     in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
 
 queryUndo : String -> Cmd Msg
 queryUndo server =
-    let url = server ++ "/undo"
+    let url = server ++ "/api/undo"
     in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
 
 queryRedo : String -> Cmd Msg
 queryRedo server =
-    let url = server ++ "/redo"
+    let url = server ++ "/api/redo"
     in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
