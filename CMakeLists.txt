@@ -26,8 +26,9 @@ install(TARGETS lager EXPORT LagerConfig)
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
 install(DIRECTORY lager DESTINATION include)
 
+add_custom_target(check COMMENT "Build and run examples and tests")
+
 #  Subdirs
 #  =======
 
-add_subdirectory(example/counter/std)
-add_subdirectory(example/counter/ncurses)
+add_subdirectory(example)
