@@ -27,7 +27,7 @@
 #include <immer/vector.hpp>
 
 #include <lager/debug/cereal/immer_vector.hpp>
-#include <cereal/types/variant.hpp>
+#include <lager/debug/cereal/variant_with_name.hpp>
 
 #include <variant>
 

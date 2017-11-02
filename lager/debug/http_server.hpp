@@ -21,9 +21,9 @@
 #pragma once
 
 #include <lager/context.hpp>
+#include <lager/debug/cereal/variant_with_name.hpp>
 
 #include <cereal/archives/json.hpp>
-#include <cereal/types/variant.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/cereal.hpp>
 #include <httpserver.hpp>
