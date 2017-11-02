@@ -1,7 +1,7 @@
 build/*
 result
-tools/gui/*.css
-tools/gui/*.css.map
-tools/gui/*.js
-tools/gui/elm-stuff
+resources/gui/*.css
+resources/gui/*.css.map
+resources/gui/*.js
+resources/gui/elm-stuff
 .sass-cache

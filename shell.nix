@@ -36,6 +36,6 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = stdenv.lib.optional native_compiler compiler_pkg;
   shellHook = ''
     export LAGER_ROOT=`dirname ${toString ./shell.nix}`
-    export LAGER_RESOURCES_PATH="$LAGER_ROOT"/tools
+    export LAGER_RESOURCES_PATH="$LAGER_ROOT"/resources
   '';
 }
