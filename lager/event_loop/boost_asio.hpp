@@ -29,6 +29,7 @@ namespace lager {
 struct boost_asio_event_loop
 {
     std::reference_wrapper<boost::asio::io_service> service;
+    std::function<void()> finalizer = {};
 
     template <typename Fn>
     void async(Fn&& fn)
@@ -47,7 +48,8 @@ struct boost_asio_event_loop
 
     void finish()
     {
-        service.get().stop();
+        if (finalizer) finalizer();
+        else service.get().stop();
     }
 };
 
