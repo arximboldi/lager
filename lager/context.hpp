@@ -30,7 +30,7 @@ struct context
     using action_t      = Action;
     using finish_t      = std::function<void()>;
     using dispatch_t    = std::function<void(action_t)>;
-    using async_t       = std::function<void(std::function<void()>())>;
+    using async_t       = std::function<void(std::function<void()>)>;
 
     dispatch_t dispatch;
     async_t    async;
