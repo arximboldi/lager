@@ -22,9 +22,23 @@ target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
   $<INSTALL_INTERFACE:include>)
+
+add_custom_target(gui ALL
+  COMMAND make
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
+  COMMENT "Build debugger web UI")
+
+configure_file(lager/config.hpp.in
+  "${CMAKE_SOURCE_DIR}/lager/config.hpp")
+
 install(TARGETS lager EXPORT LagerConfig)
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
 install(DIRECTORY lager DESTINATION include)
+install(FILES
+  resources/gui/gui.js
+  resources/gui/gui.css
+  resources/gui/index.html
+  DESTINATION share/lager/gui)
 
 add_custom_target(check COMMENT "Build and run examples and tests")
 

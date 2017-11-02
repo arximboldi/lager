@@ -1,0 +1,2 @@
+#pragma once
+#define LAGER_PREFIX_PATH "@CMAKE_INSTALL_PREFIX@"

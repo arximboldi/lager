@@ -5,3 +5,4 @@ resources/gui/*.css.map
 resources/gui/*.js
 resources/gui/elm-stuff
 .sass-cache
+lager/config.hpp

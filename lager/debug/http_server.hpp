@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/context.hpp>
 #include <lager/debug/cereal/variant_with_name.hpp>
 
@@ -186,7 +187,7 @@ public:
                 auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
                 auto resources_path = env_resources_path
                     ? env_resources_path
-                    : LAGER_RESOURCES_PREFIX;
+                    : LAGER_PREFIX_PATH "/share/lager";
                 auto req_path = req.get_path();
                 auto rel_path = req_path == "/"
                     ? "/gui/index.html"
