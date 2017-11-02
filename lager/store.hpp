@@ -21,40 +21,12 @@
 #pragma once
 
 #include <lager/util.hpp>
+#include <lager/context.hpp>
 
-#include <functional>
 #include <type_traits>
+#include <memory>
 
 namespace lager {
-
-template <typename Action>
-struct context
-{
-    using action_t      = Action;
-    using finish_t      = std::function<void()>;
-    using dispatch_t    = std::function<void(action_t)>;
-    using async_t       = std::function<void(std::function<void()>())>;
-
-    dispatch_t dispatch;
-    async_t    async;
-    finish_t   finish;
-
-    context(const context& ctx) = default;
-    context(context&& ctx) = default;
-
-    template <typename Action_>
-    context(const context<Action_>& ctx)
-        : dispatch(ctx.dispatch)
-        , async(ctx.async)
-        , finish(ctx.finish)
-    {}
-
-    context(dispatch_t ds, async_t as, finish_t fn)
-        : dispatch(std::move(ds))
-        , async(std::move(as))
-        , finish(std::move(fn))
-    {}
-};
 
 template <typename Action>
 using effect = std::function<void(const context<Action>&)>;
@@ -72,48 +44,71 @@ template <typename Action,
           typename ReducerFn,
           typename ViewFn,
           typename EventLoop>
-struct store : context<Action>
+struct store
 {
-    using base_t       = context<Action>;
     using action_t     = Action;
     using model_t      = Model;
     using reducer_t    = ReducerFn;
     using view_t       = ViewFn;
     using event_loop_t = EventLoop;
     using result_t     = result<Model, Action>;
+    using context_t    = context<Action>;
 
     store(model_t init,
           reducer_t reducer,
           view_t view,
           event_loop_t loop)
-        : base_t{[this] (auto ev) { dispatch(ev); },
-                 [this] (auto fn) { loop_.async(fn); },
-                 [this] { loop_.finish(); }}
-        , loop_{std::move(loop)}
-        , model_{std::move(init)}
-        , reducer_{std::move(reducer)}
-        , view_{std::move(view)}
-    {
-        loop_.post([=] {
-            view_(model_);
-        });
-    };
+        : impl_{std::make_unique<impl>(
+            std::move(init),
+            std::move(reducer),
+            std::move(view),
+            std::move(loop))}
+    {}
 
     void dispatch(action_t action)
-    {
-        loop_.post([=] {
-            auto [model, effect] = result_t{reducer_(model_, action)};
-            model_ = model;
-            effect(*this);
-            view_(model_);
-        });
-    }
+    { impl_->dispatch(action); }
+
+    context_t get_context()
+    { return impl_->context; }
 
 private:
-    event_loop_t loop_;
-    model_t model_;
-    reducer_t reducer_;
-    view_t view_;
+    struct impl
+    {
+        event_loop_t loop;
+        model_t model;
+        reducer_t reducer;
+        view_t view;
+        context_t context;
+
+        impl(model_t init_,
+              reducer_t reducer_,
+              view_t view_,
+              event_loop_t loop_)
+            : loop{std::move(loop_)}
+            , model{std::move(init_)}
+            , reducer{std::move(reducer_)}
+            , view{std::move(view_)}
+            , context{[this] (auto ev) { dispatch(ev); },
+                      [this] (auto fn) { loop.async(fn); },
+                      [this] { loop.finish(); }}
+        {
+            loop.post([=] {
+                view(model);
+            });
+        };
+
+        void dispatch(action_t action)
+        {
+            loop.post([=] {
+                auto [new_model, effect] = result_t{reducer(model, action)};
+                model = new_model;
+                effect(context);
+                view(model);
+            });
+        }
+    };
+
+    std::unique_ptr<impl> impl_;
 };
 
 template <typename Action,

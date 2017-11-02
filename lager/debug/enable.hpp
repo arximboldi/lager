@@ -48,7 +48,7 @@ auto enable_debug(Server& serv)
                     return debugger_t::view(handle, view, LAGER_FWD(model));
                 },
                 LAGER_FWD(loop));
-            handle.dispatcher(store.decltype(store)::base_t::dispatch);
+            handle.set_context(store.get_context());
             return store;
         };
     };

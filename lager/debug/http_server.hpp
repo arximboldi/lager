@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <lager/context.hpp>
+
 #include <cereal/archives/json.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/optional.hpp>
@@ -66,12 +68,11 @@ public:
         using base_model  = typename Debugger::base_model;
         using action      = typename Debugger::action;
         using model       = typename Debugger::model;
+        using context_t   = context<action>;
 
-        using dispatcher_t = std::function<void(action)>;
-
-        void dispatcher(dispatcher_t ds)
+        void set_context(context_t ctx)
         {
-            dispatcher_ = std::move(ds);
+            context_ = std::move(ctx);
         }
 
         void view(const model& m)
@@ -87,7 +88,7 @@ public:
         {}
 
         std::string program_ = {};
-        dispatcher_t dispatcher_ = {};
+        context_t context_ = {};
         std::shared_ptr<const model> model_ {nullptr};
 
         static std::string join_args_(int argc, const char** argv)
@@ -157,7 +158,8 @@ public:
             response_t render_POST(const request_t& req) override
             {
                 auto cursor = std::stoul(req.get_arg("cursor"));
-                this->self.dispatcher_(typename Debugger::goto_action{cursor});
+                this->self.context_.dispatch(
+                    typename Debugger::goto_action{cursor});
                 return httpserver::http_response_builder("", 200);
             }
         } goto_resource_ = {*this};
@@ -165,7 +167,7 @@ public:
         struct : resource_t { using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
-                this->self.dispatcher_(typename Debugger::undo_action{});
+                this->self.context_.dispatch(typename Debugger::undo_action{});
                 return httpserver::http_response_builder("", 200);
             }
         } undo_resource_ = {*this};
@@ -173,7 +175,7 @@ public:
         struct : resource_t { using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
-                this->self.dispatcher_(typename Debugger::redo_action{});
+                this->self.context_.dispatch(typename Debugger::redo_action{});
                 return httpserver::http_response_builder("", 200);
             }
         } redo_resource_ = {*this};
