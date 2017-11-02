@@ -194,12 +194,12 @@ viewStep step =
         case step.action of
             Just action ->
                 [ div [class "info"] [text "action"]
-                , div [class "code"] [text <| encode action]
+                , pre [class "code"] [text <| encode action]
                 , div [class "info"] [text "model"]
-                , div [class "code"] [text <| encode step.model]]
+                , pre [class "code"] [text <| encode step.model]]
             Nothing ->
-                [ div [class "info"] [text "initial" ]
-                , div [class "code"] [text <| encode step.model]]
+                [ div [class "info"] [text "initial model" ]
+                , pre [class "code"] [text <| encode step.model]]
 
 viewDetail : Model -> Html Msg
 viewDetail model =
