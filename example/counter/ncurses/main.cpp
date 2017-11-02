@@ -27,11 +27,29 @@
 #include <lager/debug/http_server.hpp>
 #include <lager/debug/enable.hpp>
 
+using namespace std::string_literals;
+
 void draw(counter::model c)
 {
+    static const auto prelude = "current value is "s;
+    static const auto instructions =
+        "  arrow up   -- decrease counter\n"
+        "  arrow down -- increase counter\n"
+        "  space bar  -- reset counter";
+    auto message = prelude + std::to_string(c.value);
+    auto max_x = 0, max_y = 0;
+    getmaxyx(stdscr, max_y, max_x);
+    const auto border_y = 2, border_x = 4;
+    auto width = message.size();
+    auto pos_y = max_y / 2;
+    auto pos_x = (max_x - message.size()) / 2;
     ::clear();
-    ::move(2, 4);
-    ::printw("current value: %d", c.value);
+    attrset(A_NORMAL);
+    mvprintw(max_y - 4, 0, instructions);
+    attrset(A_NORMAL | A_REVERSE);
+    for (auto y = pos_y - border_y; y <= pos_y + border_y; ++y)
+        mvhline(y, pos_x - border_x, ' ', width + 2 * border_x);
+    mvaddnstr(pos_y, pos_x, message.data(), width);
     ::curs_set(false);
     ::refresh();
 }
