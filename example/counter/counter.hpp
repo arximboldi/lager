@@ -23,9 +23,9 @@
 #include <lager/util.hpp>
 #include <cereal/cereal.hpp>
 
-namespace model {
+namespace counter {
 
-struct counter
+struct model
 {
     int value = 0;
 };
@@ -39,24 +39,24 @@ using action = std::variant<
     decrement_action,
     reset_action>;
 
-counter update(counter c, action action)
+model update(model c, action action)
 {
     return std::visit(lager::visitor{
             [&] (increment_action) {
-                return counter { c.value + 1 };
+                return model{ c.value + 1 };
             },
             [&] (decrement_action) {
-                return counter { c.value - 1 };
+                return model{ c.value - 1 };
             },
             [&] (reset_action a) {
-                return counter { a.new_value };
+                return model{ a.new_value };
             },
         }, action);
 }
 
-template <typename A> void serialize(A& a, counter& x) { a(cereal::make_nvp("value", x.value)); }
+template <typename A> void serialize(A& a, model& x) { a(cereal::make_nvp("value", x.value)); }
 template <typename A> void serialize(A& a, increment_action&) {}
 template <typename A> void serialize(A& a, decrement_action&) {}
 template <typename A> void serialize(A& a, reset_action& x) { a(cereal::make_nvp("new_value", x.new_value)); }
 
-} // namespace model
+} // namespace counter

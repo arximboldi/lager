@@ -19,7 +19,7 @@
 // along with lager.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "../model.hpp"
+#include "../counter.hpp"
 #include "terminal.hpp"
 
 #include <lager/store.hpp>
@@ -27,7 +27,7 @@
 #include <lager/debug/http_server.hpp>
 #include <lager/debug/enable.hpp>
 
-void draw(model::counter c)
+void draw(counter::model c)
 {
     ::clear();
     ::move(2, 4);
@@ -47,9 +47,9 @@ int main(int argc, const char** argv)
 #ifdef META_DEBUGGER
     auto meta_debugger = lager::http_debug_server{argc, argv, 8081};
 #endif
-    auto store = lager::make_store<model::action>(
-        model::counter{},
-        model::update,
+    auto store = lager::make_store<counter::action>(
+        counter::model{},
+        counter::update,
         draw,
         lager::boost_asio_event_loop{serv},
         lager::comp(
@@ -66,11 +66,11 @@ int main(int argc, const char** argv)
         std::visit(lager::visitor {
                 [&] (ncurses::key_event ev) {
                     if (ev.key == ncurses::key_code{KEY_CODE_YES, KEY_UP})
-                        store.dispatch(model::increment_action{});
+                        store.dispatch(counter::increment_action{});
                     else if (ev.key == ncurses::key_code{KEY_CODE_YES, KEY_DOWN})
-                        store.dispatch(model::decrement_action{});
+                        store.dispatch(counter::decrement_action{});
                     else if (ev.key == ncurses::key_code{OK, ' '})
-                        store.dispatch(model::reset_action{});
+                        store.dispatch(counter::reset_action{});
                     else if (ev.key == ncurses::key_code{OK, 'q'} ||
                              ev.key == ncurses::key_code{OK, '[' - '@'}) // esc
                         term.stop();

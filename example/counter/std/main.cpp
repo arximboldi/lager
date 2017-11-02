@@ -19,21 +19,21 @@
 // along with lager.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "../model.hpp"
+#include "../counter.hpp"
 #include <lager/store.hpp>
 #include <lager/event_loop/manual.hpp>
 #include <iostream>
 
-void draw(model::counter c)
+void draw(counter::model c)
 {
     std::cout << "current value: " << c.value << '\n';
 }
 
 int main()
 {
-    auto store = lager::make_store<model::action>(
-        model::counter{},
-        model::update,
+    auto store = lager::make_store<counter::action>(
+        counter::model{},
+        counter::update,
         draw,
         lager::manual_event_loop{});
 
@@ -41,13 +41,13 @@ int main()
     while (std::cin >> event) {
         switch (event) {
         case '+':
-            store.dispatch(model::increment_action{});
+            store.dispatch(counter::increment_action{});
             break;
         case '-':
-            store.dispatch(model::decrement_action{});
+            store.dispatch(counter::decrement_action{});
             break;
         case '.':
-            store.dispatch(model::reset_action{});
+            store.dispatch(counter::reset_action{});
             break;
         case 'q': return 0;
         default:  continue;
