@@ -68,6 +68,9 @@ struct store
     void dispatch(action_t action)
     { impl_->dispatch(action); }
 
+    const model_t& current() const
+    { return impl_->model; }
+
     context_t get_context()
     { return impl_->context; }
 
@@ -81,9 +84,9 @@ private:
         context_t context;
 
         impl(model_t init_,
-              reducer_t reducer_,
-              view_t view_,
-              event_loop_t loop_)
+             reducer_t reducer_,
+             view_t view_,
+             event_loop_t loop_)
             : loop{std::move(loop_)}
             , model{std::move(init_)}
             , reducer{std::move(reducer_)}

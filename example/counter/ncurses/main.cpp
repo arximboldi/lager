@@ -29,7 +29,7 @@
 
 using namespace std::string_literals;
 
-void draw(counter::model c)
+void draw(const counter::model& c)
 {
     static const auto prelude = "current value is "s;
     static const auto instructions =
@@ -100,7 +100,9 @@ int main(int argc, const char** argv)
                              ev.key == ncurses::key_code{OK, '[' - '@'}) // esc
                         term.stop();
                 },
-                [&] (auto&&) {}
+                [&] (ncurses::resize_event) {
+                    draw((const counter::model&)store.current());
+                }
             }, ev);
     });
 
