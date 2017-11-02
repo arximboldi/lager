@@ -28,10 +28,9 @@ namespace lager {
 template <typename Server>
 auto enable_debug(Server& serv)
 {
-    return [&] (auto&& next) {
-        return [&] (auto action,
-                    auto&& model, auto&& reducer, auto&& view,
-                    auto&& loop)
+    return [&] (auto next) {
+        return [&serv, next]
+            (auto action, auto&& model, auto&& reducer, auto&& view, auto&& loop)
         {
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
@@ -49,7 +48,7 @@ auto enable_debug(Server& serv)
                     return debugger_t::view(handle, view, LAGER_FWD(model));
                 },
                 LAGER_FWD(loop));
-            handle.dispatcher(store.context<typename debugger_t::action>::dispatch);
+            handle.dispatcher(store.decltype(store)::base_t::dispatch);
             return store;
         };
     };

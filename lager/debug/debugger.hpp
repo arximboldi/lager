@@ -26,6 +26,9 @@
 #include <immer/box.hpp>
 #include <immer/vector.hpp>
 
+#include <lager/debug/cereal/immer_vector.hpp>
+#include <cereal/types/variant.hpp>
+
 #include <variant>
 
 namespace lager {
@@ -48,18 +51,19 @@ struct debugger
         undo_action,
         redo_action>;
 
+    struct step
+    {
+        Action action;
+        Model model;
+    };
     struct model
     {
-        struct step
-        {
-            Action action;
-            Model model;
-        };
 
-        Model init;
         cursor_t cursor = {};
+        Model init;
         immer::vector<step> history = {};
 
+        model() = default;
         model(Model i) : init{i} {}
 
         operator const Model& () const {
@@ -104,6 +108,21 @@ struct debugger
     {
         serv.view(m);
         std::forward<ViewFn>(view)(m);
+    }
+
+    template <typename A> friend void serialize(A& a, undo_action&) {}
+    template <typename A> friend void serialize(A& a, redo_action&) {}
+    template <typename A> friend void serialize(A& a, goto_action& x) { a(cereal::make_nvp("cursor", x.cursor)); }
+    template <typename A> friend void serialize(A& a, model& x)
+    {
+        a(cereal::make_nvp("cursor", x.cursor),
+          cereal::make_nvp("init", x.init),
+          cereal::make_nvp("history", x.history));
+    }
+    template <typename A> friend void serialize(A& a, step& x)
+    {
+        a(cereal::make_nvp("action", x.action),
+          cereal::make_nvp("model", x.model));
     }
 };
 

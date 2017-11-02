@@ -204,7 +204,7 @@ public:
     http_debug_server(int argc, const char** argv, std::uint16_t port)
         : argc_{argc}
         , argv_{argv}
-        , server_{httpserver::create_webserver(8080)}
+        , server_{httpserver::create_webserver(port)}
     {}
 
     template <typename Debugger>
@@ -230,7 +230,7 @@ private:
     int argc_;
     const char** argv_;
     httpserver::webserver server_ = httpserver::create_webserver(8080);
-    std::unique_ptr<handle_base> handle_;
+    std::unique_ptr<handle_base> handle_ = nullptr;
 };
 
 } // namespace lager

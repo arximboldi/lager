@@ -1,0 +1,60 @@
+//
+// lager - library for functional interactive c++ programs
+// Copyright (C) 2017 Juan Pedro Bolivar Puente
+//
+// This file is part of lager.
+//
+// lager is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// lager is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with lager.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+#pragma once
+
+#include <cereal/cereal.hpp>
+#include <immer/vector.hpp>
+#include <immer/vector_transient.hpp>
+#include <type_traits>
+
+// This code has mostly been adapted from <cereal/types/vector.hpp>
+// We don't deal for now with data that could be potentially serialized
+// directly in binary format.
+
+namespace cereal
+{
+
+template <class Archive, class T, class MP, std::uint32_t B, std::uint32_t BL>
+void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::vector<T, MP, B, BL>& vector)
+{
+    ar(make_size_tag(static_cast<size_type>(vector.size())));
+    for (auto&& v : vector)
+        ar(v);
+}
+
+template <class Archive, class T, class MP, std::uint32_t B, std::uint32_t BL>
+void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::vector<T, MP, B, BL>& vector)
+{
+    size_type size;
+    ar(make_size_tag(size));
+
+    auto t = vector.transient();
+    for (auto i = size_type{}; i < size; ++i) {
+        T x;
+        ar(x);
+        t.push_back(std::move(x));
+    }
+    vector = t.persisent();
+
+    assert(size == vector.size());
+}
+
+} // namespace cereal

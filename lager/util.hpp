@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <functional>
+
 namespace lager {
 
 // copied from cppreference, in practice, use scelta::visit,
@@ -34,5 +36,56 @@ template <typename Type>
 struct type_ { using type = Type; };
 
 #define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
+
+namespace detail {
+
+template <class F, class G>
+struct composed
+{
+    F f;
+    G g;
+
+    template <class ...T>
+    decltype(auto) operator() (T&& ...xs)
+    {
+        return std::invoke(f, std::invoke(g, std::forward<T>(xs)...));
+    }
+};
+
+template <typename ...Fns>
+struct get_composed;
+
+template <typename... Ts>
+using get_composed_t = typename get_composed<Ts...>::type;
+
+template <typename F>
+struct get_composed<F> {
+    using type = F;
+};
+
+template <typename F, typename... Fs>
+struct get_composed<F, Fs...> {
+    using type = composed<F, get_composed_t<Fs...> >;
+};
+
+} // namespace detail
+
+template <typename F>
+auto comp(F&& f) -> F&&
+{
+    return std::forward<F>(f);
+}
+
+template <typename Fn, typename ...Fns>
+auto comp(Fn&& f, Fns&& ...fns)
+    -> detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>
+{
+    using result_t = detail::get_composed_t<std::decay_t<Fn>,
+                                           std::decay_t<Fns>...>;
+    return result_t{
+        std::forward<Fn>(f),
+        comp(std::forward<Fns>(fns)...)
+    };
+}
 
 } // namespace lager

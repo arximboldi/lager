@@ -41,13 +41,26 @@ int main(int argc, const char** argv)
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
 
+#ifdef DEBUGGER
     auto debugger = lager::http_debug_server{argc, argv, 8080};
+#endif
+#ifdef META_DEBUGGER
+    auto meta_debugger = lager::http_debug_server{argc, argv, 8081};
+#endif
     auto store = lager::make_store<model::action>(
         model::counter{},
         model::update,
         draw,
         lager::boost_asio_event_loop{serv},
-        lager::enable_debug(debugger));
+        lager::comp(
+#ifdef DEBUGGER
+            lager::enable_debug(debugger),
+#endif
+#ifdef META_DEBUGGER
+            lager::enable_debug(meta_debugger),
+#endif
+            lager::identity
+            ));
 
     term.start([&] (auto ev) {
         std::visit(lager::visitor {

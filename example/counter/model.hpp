@@ -54,9 +54,9 @@ counter update(counter c, action action)
         }, action);
 }
 
-template <typename A> void serialize(A& a, const counter& x) { a(cereal::make_nvp("value", x.value)); }
-template <typename A> void serialize(A& a, const increment_action&) {}
-template <typename A> void serialize(A& a, const decrement_action&) {}
-template <typename A> void serialize(A& a, const reset_action& x) { a(x.new_value); }
+template <typename A> void serialize(A& a, counter& x) { a(cereal::make_nvp("value", x.value)); }
+template <typename A> void serialize(A& a, increment_action&) {}
+template <typename A> void serialize(A& a, decrement_action&) {}
+template <typename A> void serialize(A& a, reset_action& x) { a(x.new_value); }
 
 } // namespace model
