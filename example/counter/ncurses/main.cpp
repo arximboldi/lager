@@ -44,9 +44,14 @@ void draw(counter::model c)
     auto pos_y = max_y / 2;
     auto pos_x = (max_x - message.size()) / 2;
     ::clear();
+    auto color = c.value < -3 ? 3 :
+                 c.value > 3  ? 2
+                 /* else */   : 1;
+    ::attron(COLOR_PAIR(color));
+    ::bkgd(COLOR_PAIR(color));
     attrset(A_NORMAL);
     mvprintw(max_y - 4, 0, instructions);
-    attrset(A_NORMAL | A_REVERSE);
+    attrset(A_NORMAL | A_REVERSE | A_BOLD);
     for (auto y = pos_y - border_y; y <= pos_y + border_y; ++y)
         mvhline(y, pos_x - border_x, ' ', width + 2 * border_x);
     mvaddnstr(pos_y, pos_x, message.data(), width);
@@ -58,7 +63,9 @@ int main(int argc, const char** argv)
 {
     auto serv  = boost::asio::io_service{};
     auto term  = ncurses::terminal{serv};
-
+    ::init_pair(1, COLOR_WHITE, COLOR_GREEN);
+    ::init_pair(2, COLOR_WHITE, COLOR_RED);
+    ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
 #ifdef DEBUGGER
     auto debugger = lager::http_debug_server{argc, argv, 8080};
 #endif
