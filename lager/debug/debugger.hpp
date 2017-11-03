@@ -13,6 +13,7 @@
 #pragma once
 
 #include <lager/util.hpp>
+#include <lager/context.hpp>
 
 #include <immer/array.hpp>
 #include <immer/box.hpp>
@@ -50,7 +51,6 @@ struct debugger
     };
     struct model
     {
-
         cursor_t cursor = {};
         Model init;
         immer::vector<step> history = {};
@@ -67,30 +67,37 @@ struct debugger
     };
 
     template <typename ReducerFn>
-    static model update(ReducerFn&& reducer, model m, action act)
+    static std::pair<model, effect<action>>
+    update(ReducerFn&& reducer, model m, action act)
     {
+        using result_t = std::pair<model, effect<action>>;
         return std::visit(visitor{
-                [&] (Action act) {
+                [&] (Action act) -> result_t {
+                    auto result_eff = effect<action>{noop};
                     m.history = m.history
                         .take(m.cursor)
-                        .push_back({act, reducer(m, act)});
+                        .push_back({act, invoke_reducer(
+                                    reducer, m, act,
+                                    [&] (auto&& eff) {
+                                        result_eff = LAGER_FWD(eff);
+                                    })});
                     m.cursor = m.history.size();
-                    return m;
+                    return {m, result_eff};
                 },
-                [&] (goto_action act) {
+                [&] (goto_action act) -> result_t {
                     if (act.cursor <= m.history.size())
                         m.cursor = act.cursor;
-                    return m;
+                    return {m, noop};
                 },
-                [&] (undo_action) {
+                [&] (undo_action) -> result_t {
                     if (m.cursor > 0)
                         --m.cursor;
-                    return m;
+                    return {m, noop};
                 },
-                [&] (redo_action) {
+                [&] (redo_action) -> result_t {
                     if (m.cursor < m.history.size())
                         ++m.cursor;
-                    return m;
+                    return {m, noop};
                 },
             }, act);
     }
