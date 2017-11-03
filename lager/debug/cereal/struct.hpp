@@ -17,12 +17,14 @@
 #include <boost/preprocessor/facilities/expand.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/size.hpp>
 
 #include <cereal/cereal.hpp>
 
 #define LAGER_CEREAL_STRUCT_ITER__(r__, data__, i__, elem__)    \
-    BOOST_PP_COMMA_IF(i__) cereal::make_nvp(#elem__, x.elem__)
+    BOOST_PP_COMMA_IF(i__)                                      \
+    cereal::make_nvp(BOOST_PP_STRINGIZE(elem__), x.elem__)
 
 #define LAGER_CEREAL_STRUCT_AUX__(seq__)                                \
     ar(BOOST_PP_SEQ_FOR_EACH_I(LAGER_CEREAL_STRUCT_ITER__, _, seq__));
@@ -33,7 +35,7 @@
     {                                                                   \
         BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE((,##__VA_ARGS__)), 1), \
                     BOOST_PP_EXPAND,                                    \
-                        LAGER_CEREAL_STRUCT_AUX__)(__VA_ARGS__)         \
+                    LAGER_CEREAL_STRUCT_AUX__)(__VA_ARGS__)             \
     }                                                                   \
     /**/
 
