@@ -87,9 +87,10 @@ public:
         static std::string join_args_(int argc, const char** argv)
         {
             assert(argc > 0);
-            auto is = std::ostringstream{argv[0]};
+            auto is = std::ostringstream{};
+            is << argv[0];
             for (int i = 1; i < argc; ++i)
-                is << argv[i];
+                is << " " << argv[i];
             return is.str();
         }
 
