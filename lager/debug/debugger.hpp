@@ -21,6 +21,7 @@
 
 #include <lager/debug/cereal/immer_vector.hpp>
 #include <lager/debug/cereal/variant_with_name.hpp>
+#include <lager/debug/cereal/struct.hpp>
 
 #include <variant>
 
@@ -109,20 +110,11 @@ struct debugger
         std::forward<ViewFn>(view)(m);
     }
 
-    template <typename A> friend void serialize(A& a, undo_action&) {}
-    template <typename A> friend void serialize(A& a, redo_action&) {}
-    template <typename A> friend void serialize(A& a, goto_action& x) { a(cereal::make_nvp("cursor", x.cursor)); }
-    template <typename A> friend void serialize(A& a, model& x)
-    {
-        a(cereal::make_nvp("cursor", x.cursor),
-          cereal::make_nvp("init", x.init),
-          cereal::make_nvp("history", x.history));
-    }
-    template <typename A> friend void serialize(A& a, step& x)
-    {
-        a(cereal::make_nvp("action", x.action),
-          cereal::make_nvp("model", x.model));
-    }
+    LAGER_CEREAL_NESTED_STRUCT(undo_action);
+    LAGER_CEREAL_NESTED_STRUCT(redo_action);
+    LAGER_CEREAL_NESTED_STRUCT(goto_action, (cursor));
+    LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(init)(history));
+    LAGER_CEREAL_NESTED_STRUCT(step, (action)(model));
 };
 
 } // namespace lager

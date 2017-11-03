@@ -21,7 +21,7 @@
 
 #include <variant>
 #include <lager/util.hpp>
-#include <cereal/cereal.hpp>
+#include <lager/debug/cereal/struct.hpp>
 
 namespace counter {
 
@@ -54,9 +54,9 @@ model update(model c, action action)
         }, action);
 }
 
-template <typename A> void serialize(A& a, model& x) { a(cereal::make_nvp("value", x.value)); }
-template <typename A> void serialize(A& a, increment_action&) {}
-template <typename A> void serialize(A& a, decrement_action&) {}
-template <typename A> void serialize(A& a, reset_action& x) { a(cereal::make_nvp("new_value", x.new_value)); }
+LAGER_CEREAL_STRUCT(model, (value));
+LAGER_CEREAL_STRUCT(increment_action);
+LAGER_CEREAL_STRUCT(decrement_action);
+LAGER_CEREAL_STRUCT(reset_action, (new_value));
 
 } // namespace counter
