@@ -1,0 +1,44 @@
+language: nix
+dist: trusty
+
+matrix:
+  include:
+    - env: DO=check TYPE=Debug COVERAGE=true
+    - env: DO=check TYPE=Release
+    - env: DO=build
+
+before_install:
+  - |
+    : ${TYPE:=Debug}
+    function build-p { [[ "${DO}" == build ]]; }
+    function check-p { [[ "${DO}" == check ]]; }
+    function coverage-p { [[ "${COVERAGE}" == true ]]; }
+    function with-nix {
+        nix-shell --run "set -e; $1"
+    }
+
+install:
+  - with-nix "echo == nix environment ok"
+
+before_script:
+  - |
+    with-nix "
+        mkdir build && cd build
+        cmake .. \
+            -DCMAKE_BUILD_TYPE=${TYPE} \
+            -DENABLE_COVERAGE=${COVERAGE}
+    "
+
+script:
+  - |
+    set -e
+    ! build-p || nix-build
+    ! check-p || with-nix "cd build && make -j2 check"
+
+after_success:
+  - |
+    ! coverage-p || with-nix "
+        cd build
+        find . -name \"*.gcno\" | xargs gcov -bcprs ${PWD}
+        bash <(curl -s https://codecov.io/bash) -x gcov
+    "
