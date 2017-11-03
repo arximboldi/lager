@@ -30,8 +30,8 @@ target_include_directories(lager-dev SYSTEM INTERFACE
 target_link_libraries(lager-dev INTERFACE
   lager)
 if (ENABLE_COVERAGE)
-  target_compile_options(immer-dev INTERFACE "--coverage")
-  target_link_libraries(immer-dev INTERFACE "--coverage")
+  target_compile_options(lager-dev INTERFACE "--coverage")
+  target_link_libraries(lager-dev INTERFACE "--coverage")
 endif()
 
 add_custom_target(gui ALL
