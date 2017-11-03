@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>lagger debugger</title>
+    <title>Lager debugger</title>
     <base href="/">
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
@@ -11,6 +11,9 @@
   <body></body>
 
   <script type="text/javascript">
-    Elm.Main.fullscreen({ server: window.location.origin });
+   var app = Elm.Main.fullscreen({ server: window.location.origin });
+   app.ports.title.subscribe(function(title) {
+       document.title = title;
+   });
   </script>
 </html>

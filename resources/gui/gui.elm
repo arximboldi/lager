@@ -10,7 +10,7 @@
 -- or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 --
 
-module Main exposing (..)
+port module Main exposing (..)
 
 import Html exposing (..)
 import Html.Keyed as Keyed
@@ -32,6 +32,8 @@ main = Html.programWithFlags
        , update = update
        , subscriptions = subscriptions
        }
+
+port title : String -> Cmd a
 
 --
 -- data model
@@ -135,7 +137,7 @@ update msg model =
                 if index == (-1) || (status.cursor /= model.status.cursor &&
                                        index == model.status.cursor)
                 then selectStep newModel status.cursor
-                else (newModel, Cmd.none)
+                else (newModel, title <| "debugging: " ++ status.program)
         RecvStatus (Err err) ->
             Debug.log ("RecvStatus Err: " ++ toString err)
                 (model, Cmd.none)

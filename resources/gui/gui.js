@@ -10998,6 +10998,11 @@ var _elm_lang$elm_architecture_tutorial$Main$detailIndex = function (d) {
 			return -1;
 	}
 };
+var _elm_lang$elm_architecture_tutorial$Main$title = _elm_lang$core$Native_Platform.outgoingPort(
+	'title',
+	function (v) {
+		return v;
+	});
 var _elm_lang$elm_architecture_tutorial$Main$Flags = function (a) {
 	return {server: a};
 };
@@ -11359,7 +11364,12 @@ var _elm_lang$elm_architecture_tutorial$Main$update = F2(
 						model,
 						{status: _p6});
 					var index = _elm_lang$elm_architecture_tutorial$Main$detailIndex(model.detail);
-					return (_elm_lang$core$Native_Utils.eq(index, -1) || ((!_elm_lang$core$Native_Utils.eq(_p6.cursor, model.status.cursor)) && _elm_lang$core$Native_Utils.eq(index, model.status.cursor))) ? A2(_elm_lang$elm_architecture_tutorial$Main$selectStep, newModel, _p6.cursor) : {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
+					return (_elm_lang$core$Native_Utils.eq(index, -1) || ((!_elm_lang$core$Native_Utils.eq(_p6.cursor, model.status.cursor)) && _elm_lang$core$Native_Utils.eq(index, model.status.cursor))) ? A2(_elm_lang$elm_architecture_tutorial$Main$selectStep, newModel, _p6.cursor) : {
+						ctor: '_Tuple2',
+						_0: newModel,
+						_1: _elm_lang$elm_architecture_tutorial$Main$title(
+							A2(_elm_lang$core$Basics_ops['++'], 'debugging: ', _p6.program))
+					};
 				} else {
 					return A2(
 						_elm_lang$core$Debug$log,
