@@ -21,6 +21,7 @@ namespace cereal {
 template <typename Archive, typename T, typename MP>
 void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::box<T, MP>& b)
 {
+    ar(make_size_tag(size_type{1}));
     ar(b.get());
 }
 
@@ -28,6 +29,9 @@ template <typename Archive, typename T, typename MP>
 void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::box<T, MP>& b)
 {
     T x;
+    size_type size;
+    ar(make_size_tag(size));
+    assert(size == 1);
     ar(x);
     b = x;
 }
