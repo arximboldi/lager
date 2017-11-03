@@ -32,5 +32,8 @@ stdenv.mkDerivation rec {
   shellHook = ''
     export LAGER_ROOT=`dirname ${toString ./shell.nix}`
     export LAGER_RESOURCES_PATH="$LAGER_ROOT"/resources
+    export PATH=$PATH:"$LAGER_ROOT/build"
+    export PATH=$PATH:"$LAGER_ROOT/build/example"
+    export PATH=$PATH:"$LAGER_ROOT/build/test"
   '';
 }
