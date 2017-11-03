@@ -37,3 +37,20 @@ TEST_CASE("basic")
     CHECK(viewed->value == 1);
     CHECK(store.current().value == 1);
 }
+
+TEST_CASE("effect as a result")
+{
+    auto called = 0;
+    auto effect = [&] (lager::context<int> ctx) { ++called; };
+    auto store  = lager::make_store<int>(
+        0,
+        [=] (int model, int action) {
+            return std::pair{model + action, effect};
+        },
+        lager::noop,
+        lager::manual_event_loop{});
+
+    store.dispatch(2);
+    CHECK(store.current() == 2);
+    CHECK(called == 1);
+}

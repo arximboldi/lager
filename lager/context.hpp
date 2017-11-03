@@ -21,6 +21,7 @@
 #pragma once
 
 #include <functional>
+#include <lager/util.hpp>
 
 namespace lager {
 
@@ -51,5 +52,53 @@ struct context
         , finish(std::move(fn))
     {}
 };
+
+template <typename Action>
+using effect = std::function<void(const context<Action>&)>;
+
+template <typename Reducer, typename Model, typename Action,
+          typename Enable=void>
+struct has_effect
+    : std::false_type {};
+
+template <typename Reducer, typename Model, typename Action>
+struct has_effect<
+    Reducer, Model, Action,
+    std::enable_if_t<
+        std::is_convertible_v<
+            decltype(std::get<1>(std::invoke(std::declval<Reducer>(),
+                                           std::declval<Model>(),
+                                           std::declval<Action>()))),
+            effect<std::decay_t<Action>>>>>
+    : std::true_type {};
+
+template <typename Reducer, typename Model, typename Action>
+constexpr auto has_effect_v = has_effect<Reducer, Model, Action>::value;
+
+template <typename Reducer, typename Model, typename Action,
+          typename EffectHandler,
+          std::enable_if_t<has_effect_v<Reducer, Model, Action>,int> =0>
+auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
+                    EffectHandler&& handler)
+    -> std::decay_t<Model>
+{
+    auto [new_model, effect] = std::invoke(LAGER_FWD(reducer),
+                                          LAGER_FWD(model),
+                                          LAGER_FWD(action));
+    LAGER_FWD(handler)(effect);
+    return new_model;
+}
+
+template <typename Reducer, typename Model, typename Action,
+          typename EffectHandler,
+          std::enable_if_t<!has_effect_v<Reducer, Model, Action>,int> =0>
+auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
+                    EffectHandler&&)
+    -> std::decay_t<Model>
+{
+    return std::invoke(LAGER_FWD(reducer),
+                      LAGER_FWD(model),
+                      LAGER_FWD(action));
+}
 
 } // namespace lager

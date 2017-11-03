@@ -20,17 +20,6 @@
 
 namespace lager {
 
-template <typename Action>
-using effect = std::function<void(const context<Action>&)>;
-
-template <typename Model, typename Action>
-struct result : std::pair<Model, effect<Action>>
-{
-    using base_t = std::pair<Model, effect<Action>>;
-    using base_t::base_t;
-    result(Model m) : base_t{m, noop} {};
-};
-
 template <typename Action,
           typename Model,
           typename ReducerFn,
@@ -43,7 +32,6 @@ struct store
     using reducer_t    = ReducerFn;
     using view_t       = ViewFn;
     using event_loop_t = EventLoop;
-    using result_t     = result<Model, Action>;
     using context_t    = context<Action>;
 
     store(model_t init,
@@ -95,9 +83,10 @@ private:
         void dispatch(action_t action)
         {
             loop.post([=] {
-                auto [new_model, effect] = result_t{reducer(model, action)};
-                model = new_model;
-                effect(context);
+                model = invoke_reducer(reducer, model, action,
+                                       [&] (auto&& effect) {
+                                           LAGER_FWD(effect)(context);
+                                       });
                 view(model);
             });
         }
