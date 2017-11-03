@@ -2,7 +2,10 @@ build/*
 result
 resources/gui/*.css
 resources/gui/*.css.map
-resources/gui/*.js
+# I am too stupid to now how to make `elm` work properly inside Nix,
+# so let's distribute this suck that building the package does not
+# need to call `elm-make`
+#   resources/gui/*.js
 resources/gui/elm-stuff
 .sass-cache
 lager/config.hpp

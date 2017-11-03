@@ -20,9 +20,6 @@ stdenv.mkDerivation rec {
     cmake
     gcc7
     sass
-    elmPackages.elm-reactor
-    elmPackages.elm-make
-    elmPackages.elm-package
   ];
   propagatedBuildInputs = [
     boost
