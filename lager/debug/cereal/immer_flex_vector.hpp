@@ -13,8 +13,8 @@
 #pragma once
 
 #include <cereal/cereal.hpp>
-#include <immer/vector.hpp>
-#include <immer/vector_transient.hpp>
+#include <immer/flex_vector.hpp>
+#include <immer/flex_vector_transient.hpp>
 #include <type_traits>
 
 // This code has mostly been adapted from <cereal/types/vector.hpp>
@@ -24,28 +24,28 @@
 namespace cereal {
 
 template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::vector<T, MP, B, BL>& vector)
+void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::flex_vector<T, MP, B, BL>& flex_vector)
 {
-    ar(make_size_tag(static_cast<size_type>(vector.size())));
-    for (auto&& v : vector)
+    ar(make_size_tag(static_cast<size_type>(flex_vector.size())));
+    for (auto&& v : flex_vector)
         ar(v);
 }
 
 template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::vector<T, MP, B, BL>& vector)
+void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::flex_vector<T, MP, B, BL>& flex_vector)
 {
     size_type size;
     ar(make_size_tag(size));
 
-    auto t = std::move(vector).transient();
+    auto t = std::move(flex_vector).transient();
     for (auto i = size_type{}; i < size; ++i) {
         T x;
         ar(x);
         t.push_back(std::move(x));
     }
-    vector = std::move(t).persistent();
+    flex_vector = std::move(t).persistent();
 
-    assert(size == vector.size());
+    assert(size == flex_vector.size());
 }
 
 } // namespace cereal
