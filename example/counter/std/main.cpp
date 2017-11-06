@@ -29,6 +29,20 @@ void draw(counter::model c)
     std::cout << "current value: " << c.value << '\n';
 }
 
+std::optional<counter::action> intent(char event)
+{
+    switch (event) {
+    case '+':
+        return counter::increment_action{};
+    case '-':
+        return counter::decrement_action{};
+    case '.':
+        return counter::reset_action{};
+    default:
+        return std::nullopt;
+    }
+}
+
 int main()
 {
     auto store = lager::make_store<counter::action>(
@@ -39,18 +53,7 @@ int main()
 
     auto event = char{};
     while (std::cin >> event) {
-        switch (event) {
-        case '+':
-            store.dispatch(counter::increment_action{});
-            break;
-        case '-':
-            store.dispatch(counter::decrement_action{});
-            break;
-        case '.':
-            store.dispatch(counter::reset_action{});
-            break;
-        case 'q': return 0;
-        default:  continue;
-        }
+        if (auto act = intent(event))
+            store.dispatch(*act);
     }
 }
