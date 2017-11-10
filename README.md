@@ -4,5 +4,9 @@
 
 ----
 
+<p align="center">
+  <img src="https://cdn.rawgit.com/arximboldi/lager/c9bba0a6/resources/logo-front.svg">
+</p>
+
 ![worker](http://www.textfiles.com/underconstruction/CaCapeCanaveralHangar2256construction.gif)
 ![under construction](http://www.textfiles.com/underconstruction/ininterlinksyouthunder_constructionA.gif)
