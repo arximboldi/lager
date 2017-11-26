@@ -31,9 +31,9 @@ struct constant_fps_step
     int frame_rate_;
     float ticks_per_frame_;
 
-    int ticks_ = 0;
+    int ticks_       = SDL_GetTicks();
     int frame_count_ = 0;
-    int last_ticks_ = 0;
+    int last_ticks_  = 0;
 
     constant_fps_step(int rate = 60)
         : frame_rate_{rate}
@@ -42,8 +42,8 @@ struct constant_fps_step
 
     float operator() ()
     {
-        auto current_ticks = SDL_GetTicks ();
-        auto delta_ticks   = ticks_ - current_ticks;
+        auto current_ticks = SDL_GetTicks();
+        auto delta_ticks   = current_ticks - ticks_;
         auto target_ticks  = last_ticks_ + ticks_per_frame_ * frame_count_;
         if (current_ticks <= target_ticks) {
             SDL_Delay(target_ticks - current_ticks);
