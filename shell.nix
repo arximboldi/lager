@@ -21,6 +21,8 @@ stdenv.mkDerivation rec {
     deps.cereal
     deps.immer
     sass
+    SDL2
+    SDL2_ttf
     elmPackages.elm-reactor
     elmPackages.elm-make
     elmPackages.elm-package

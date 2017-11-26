@@ -23,12 +23,30 @@ target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
   $<INSTALL_INTERFACE:include>)
 
+# the library, with http debugger
+find_package(Boost 1.56 COMPONENTS system)
+find_package(Threads)
+find_package(Immer)
+find_package(LibHttpServer)
+add_library(lager-debugger INTERFACE)
+target_include_directories(lager-debugger INTERFACE
+  $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
+  $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
+  $<INSTALL_INTERFACE:include>
+  ${Boost_INCLUDE_DIR}
+  ${LIBHTTPSERVER_INCLUDE_DIRS})
+target_link_libraries(lager-debugger INTERFACE
+  lager
+  immer
+  ${CMAKE_THREAD_LIBS_INIT}
+  ${Boost_LIBRARIES}
+  ${LIBHTTPSERVER_LIBRARIES})
+
 # the library, local development target
 add_library(lager-dev INTERFACE)
 target_include_directories(lager-dev SYSTEM INTERFACE
   "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
-target_link_libraries(lager-dev INTERFACE
-  lager)
+target_link_libraries(lager-dev INTERFACE lager)
 if (ENABLE_COVERAGE)
   target_compile_options(lager-dev INTERFACE "--coverage")
   target_link_libraries(lager-dev INTERFACE "--coverage")
@@ -42,7 +60,7 @@ add_custom_target(gui ALL
 configure_file(lager/config.hpp.in
   "${CMAKE_SOURCE_DIR}/lager/config.hpp")
 
-install(TARGETS lager EXPORT LagerConfig)
+install(TARGETS lager lager-debugger EXPORT LagerConfig)
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
 install(DIRECTORY lager DESTINATION include)
 install(FILES
