@@ -2,8 +2,8 @@
 add_custom_target(examples COMMENT "Build all examples")
 add_dependencies(check examples)
 
-# std examples
-# ============
+# std  examples
+# ====================
 
 add_executable(counter-std EXCLUDE_FROM_ALL
   counter/std/main.cpp)
@@ -38,8 +38,8 @@ target_link_libraries(counter-ncurses-meta ${counter_ncurses_link_libraries})
 target_compile_definitions(counter-ncurses-meta PUBLIC DEBUGGER META_DEBUGGER)
 add_dependencies(examples counter-ncurses-meta)
 
-# ncurses examples
-# ================
+# sdl examples
+# ===========
 
 find_package(SDL2)
 find_package(SDL2_ttf)
@@ -54,3 +54,14 @@ target_link_libraries(counter-sdl2
   ${SDL2_LIBRARY}
   ${SDL2_TTF_LIBRARIES})
 add_dependencies(examples counter-sdl2)
+
+add_executable(autopong EXCLUDE_FROM_ALL
+  autopong/main.cpp)
+target_include_directories(autopong SYSTEM PUBLIC
+  ${SDL2_INCLUDE_DIR}
+  ${SDL2_TTF_INCLUDE_DIR})
+target_link_libraries(autopong
+  lager-debugger
+  ${SDL2_LIBRARY}
+  ${SDL2_TTF_LIBRARIES})
+add_dependencies(examples autopong)

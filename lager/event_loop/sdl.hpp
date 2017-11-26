@@ -24,6 +24,41 @@ namespace lager {
 
 struct with_sdl_event_loop;
 
+namespace detail {
+
+struct constant_fps_step
+{
+    int frame_rate_;
+    float ticks_per_frame_;
+
+    int ticks_ = 0;
+    int frame_count_ = 0;
+    int last_ticks_ = 0;
+
+    constant_fps_step(int rate = 60)
+        : frame_rate_{rate}
+        , ticks_per_frame_{1000.f / rate}
+    {}
+
+    float operator() ()
+    {
+        auto current_ticks = SDL_GetTicks ();
+        auto delta_ticks   = ticks_ - current_ticks;
+        auto target_ticks  = last_ticks_ + ticks_per_frame_ * frame_count_;
+        if (current_ticks <= target_ticks) {
+            SDL_Delay(target_ticks - current_ticks);
+        } else {
+            frame_count_ = 0;
+            last_ticks_  = SDL_GetTicks();
+        }
+        ticks_ = current_ticks;
+        frame_count_ ++;
+        return delta_ticks;
+    }
+};
+
+} // detail
+
 struct sdl_event_loop
 {
     using event_fn = std::function<void()>;
@@ -43,6 +78,26 @@ struct sdl_event_loop
                     continue_ = handler(event);
                 }
             }
+        }
+    }
+
+    template <typename Fn1, typename Fn2>
+    void run(Fn1&& handler, Fn2&& tick, int fps = 60)
+    {
+        auto continue_ = true;
+        auto step = detail::constant_fps_step{fps};
+        while (continue_ && !done_) {
+            auto event = SDL_Event{};
+            while (SDL_PollEvent(&event)) {
+                if (event.type == post_event_type_) {
+                    auto fnp = reinterpret_cast<event_fn*>(&event.user.data1);
+                    (*fnp)();
+                    fnp->~event_fn();
+                } else {
+                    continue_ = continue_ && handler(event);
+                }
+            }
+            continue_ = continue_ && tick(step());
         }
     }
 
