@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include <lager/config.hpp>
 #include <lager/context.hpp>
 #include <lager/debug/cereal/variant_with_name.hpp>
 
@@ -26,10 +25,6 @@
 #include <memory>
 #include <sstream>
 #include <vector>
-
-#ifndef LAGER_RESOURCES_PREFIX
-#define LAGER_RESOURCES_PREFIX "/usr/share/lager"
-#endif
 
 namespace lager {
 

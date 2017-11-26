@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <functional>
 
 namespace lager {
@@ -78,6 +80,14 @@ auto comp(Fn&& f, Fns&& ...fns)
         std::forward<Fn>(f),
         comp(std::forward<Fns>(fns)...)
     };
+}
+
+inline const char* resources_path()
+{
+    auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
+    return env_resources_path
+        ? env_resources_path
+        : LAGER_PREFIX_PATH "/share/lager";
 }
 
 } // namespace lager
