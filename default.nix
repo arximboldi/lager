@@ -15,6 +15,8 @@ stdenv.mkDerivation rec {
             ./.;
   buildInputs = [
     ncurses
+    SDL2
+    SDL2_ttf
   ];
   nativeBuildInputs = [
     cmake
