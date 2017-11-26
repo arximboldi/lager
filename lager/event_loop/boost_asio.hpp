@@ -18,7 +18,7 @@
 
 namespace lager {
 
-struct boost_asio_event_loop
+struct with_boost_asio_event_loop
 {
     std::reference_wrapper<boost::asio::io_service> service;
     std::function<void()> finalizer = {};

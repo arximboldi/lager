@@ -67,7 +67,7 @@ int main(int argc, const char** argv)
         counter::model{},
         counter::update,
         draw,
-        lager::boost_asio_event_loop{serv},
+        lager::with_boost_asio_event_loop{serv},
         lager::comp(
 #ifdef DEBUGGER
             lager::enable_debug(debugger),

@@ -17,7 +17,7 @@
 
 namespace lager {
 
-struct manual_event_loop
+struct with_manual_event_loop
 {
     template <typename Fn>
     void async(Fn&& fn)

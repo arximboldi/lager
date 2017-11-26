@@ -40,7 +40,7 @@ int main()
         counter::model{},
         counter::update,
         draw,
-        lager::manual_event_loop{});
+        lager::with_manual_event_loop{});
 
     auto event = char{};
     while (std::cin >> event) {
