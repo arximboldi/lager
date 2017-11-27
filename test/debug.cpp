@@ -44,7 +44,7 @@ TEST_CASE("basic")
         counter::model{},
         counter::update,
         view,
-        lager::manual_event_loop{},
+        lager::with_manual_event_loop{},
         lager::enable_debug(debugger));
 
     store.dispatch(counter::increment_action{});
@@ -62,7 +62,7 @@ TEST_CASE("effect as a result")
             return std::pair{model + action, effect};
         },
         lager::noop,
-        lager::manual_event_loop{},
+        lager::with_manual_event_loop{},
         lager::enable_debug(debugger));
 
     store.dispatch(2);
