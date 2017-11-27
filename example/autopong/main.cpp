@@ -30,10 +30,11 @@ constexpr auto padding       = 20;
 constexpr auto border        = 4;
 constexpr auto ball_r        = 4;
 constexpr auto ball_init_v   = point{ 0.2f, 0.2f };
-constexpr auto ball_a        = 1.1;
+constexpr auto ball_a        = 1.1f;
 constexpr auto paddle_width  = 100;
 constexpr auto paddle_height = 10;
 constexpr auto paddle_y      = window_height - 2*padding - paddle_height;
+constexpr auto paddle_sens   = 0.5f;
 constexpr auto font_size     = 32;
 constexpr auto game_rect     = SDL_Rect {
     padding,
@@ -44,7 +45,7 @@ constexpr auto game_rect     = SDL_Rect {
 
 struct game
 {
-    int score      = 0;
+    int   score    = 0;
     point ball     = { window_width / 2, padding * 2 };
     point ball_v   = ball_init_v;
     float paddle_x = window_width / 2 - paddle_width / 2;
@@ -100,7 +101,7 @@ float segment_norm(point l1p1, point l1p2, point l2p1, point l2p2)
     return norm(dP);
 }
 
-struct paddle_move_action { int center_x; };
+struct paddle_move_action { float delta; };
 struct tick_action { float delta; };
 
 using action = std::variant<
@@ -112,7 +113,9 @@ game update(game g, action a)
     return std::visit(lager::visitor{
         [&] (paddle_move_action a)
         {
-            g.paddle_x = a.center_x - paddle_width / 2;
+            g.paddle_x = std::max(
+                0.f, std::min((float) window_width - paddle_width,
+                             g.paddle_x + a.delta * paddle_sens));
             return g;
         },
         [&] (tick_action a)
@@ -217,7 +220,7 @@ std::optional<action> intent(const SDL_Event& event)
 {
     switch (event.type) {
     case SDL_MOUSEMOTION:
-        return paddle_move_action{event.motion.x};
+        return paddle_move_action{(float) event.motion.xrel};
     default:
         return std::nullopt;
     }
@@ -229,7 +232,7 @@ int main()
 
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
-    SDL_ShowCursor(false);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     auto view  = sdl_view{};
     auto loop  = lager::sdl_event_loop{};
