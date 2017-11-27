@@ -43,12 +43,17 @@ constexpr auto game_rect     = SDL_Rect {
     window_height - 2 * padding,
 };
 
+constexpr auto bounce_anim_speed = 0.002f;
+constexpr auto death_anim_speed  = 0.001f;
+
 struct game
 {
-    int   score    = 0;
-    point ball     = { window_width / 2, padding * 2 };
-    point ball_v   = ball_init_v;
-    float paddle_x = window_width / 2 - paddle_width / 2;
+    int   score       = 0;
+    point ball        = { window_width / 2, padding * 2 };
+    point ball_v      = ball_init_v;
+    float paddle_x    = window_width / 2 - paddle_width / 2;
+    float death_anim  = 0;
+    float bounce_anim = 0;
 };
 
 float x(const point& p)    { return p.real(); }
@@ -121,6 +126,10 @@ game update(game g, action a)
         [&] (tick_action a)
         {
             auto ball = g.ball + g.ball_v * a.delta;
+            g.death_anim  =
+                std::max(0.f, g.death_anim  - a.delta * death_anim_speed);
+            g.bounce_anim =
+                std::max(0.f, g.bounce_anim - a.delta * bounce_anim_speed);
             if ((x(g.ball_v) < 0 && x(ball) - ball_r <= padding) ||
                 (x(g.ball_v) > 0 && x(ball) + ball_r >= window_width - padding))
                 x(g.ball_v, -x(g.ball_v));
@@ -133,6 +142,7 @@ game update(game g, action a)
                 y(g.ball_v, -y(g.ball_v));
                 g.ball_v *= ball_a;
                 g.score ++;
+                g.bounce_anim = 1;
             } else if (y(g.ball_v) > 0 && y(ball) - ball_r >= window_height - padding) {
                 g.score  = 0;
                 g.ball_v = ball_init_v;
@@ -141,6 +151,7 @@ game update(game g, action a)
                     * (window_width - padding * 4),
                     padding * 2
                 };
+                g.death_anim = 1;
             } else
                 g.ball = ball;
             return g;
@@ -176,8 +187,9 @@ void draw(sdl_view& v, game g)
     }
     // render text
     {
+        auto c = (std::uint8_t) (255 * (1 - std::cos(g.death_anim * M_PI - M_PI / 2)));
         auto msg  = std::to_string(g.score);
-        auto surf = TTF_RenderText_Blended(v.font, msg.c_str(), {255, 255, 255, 255});
+        auto surf = TTF_RenderText_Blended(v.font, msg.c_str(), {255, c, c, 255});
         auto text = SDL_CreateTextureFromSurface(v.renderer, surf);
         SDL_FreeSurface(surf);
 
@@ -187,7 +199,8 @@ void draw(sdl_view& v, game g)
     }
     // render border
     {
-        SDL_SetRenderDrawColor(v.renderer, 255, 255, 255, 255);
+        auto c = (std::uint8_t) (255 * (1 - std::cos(g.death_anim * M_PI - M_PI / 2)));
+        SDL_SetRenderDrawColor(v.renderer, 255, c, c, 255);
         auto rect = SDL_Rect{padding - border, padding - border,
                              window_width - 2*padding + 2*border,
                              window_height - 2*padding + 2*border};
@@ -196,8 +209,9 @@ void draw(sdl_view& v, game g)
     }
     // render game
     {
+        auto c = (std::uint8_t) (255 * (1. - std::sin(g.bounce_anim * M_PI / 2)));
         SDL_RenderSetClipRect(v.renderer, &game_rect);
-        SDL_SetRenderDrawColor(v.renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(v.renderer, 255, c, c, 255);
         // paddle
         {
             auto rect = SDL_Rect{(int) g.paddle_x, paddle_y,
