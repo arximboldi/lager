@@ -82,7 +82,7 @@ struct sdl_event_loop
     }
 
     template <typename Fn1, typename Fn2>
-    void run(Fn1&& handler, Fn2&& tick, int fps = 60)
+    void run(Fn1&& handler, Fn2&& tick, int fps = 120)
     {
         auto continue_ = true;
         auto step = detail::constant_fps_step{fps};
