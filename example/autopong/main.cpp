@@ -138,8 +138,8 @@ game update(game g, action a)
                 y(g.ball_v, -y(g.ball_v));
             if (y(g.ball_v) > 0 && ball_r * ball_r
                 > segment_norm(g.ball, ball,
-                               point{g.paddle_x, paddle_y},
-                               point{g.paddle_x + paddle_width, paddle_y})) {
+                               point{g.paddle_x - ball_r, paddle_y},
+                               point{g.paddle_x + paddle_width + ball_r, paddle_y})) {
                 y(g.ball_v, -y(g.ball_v));
                 g.ball_v *= ball_a;
                 g.score ++;
