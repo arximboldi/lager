@@ -49,6 +49,7 @@ constexpr auto death_anim_speed  = 0.001f;
 struct game
 {
     int   score       = 0;
+    int   max_score   = 0;
     point ball        = { window_width / 2, padding * 2 };
     point ball_v      = ball_init_v;
     float paddle_x    = window_width / 2 - paddle_width / 2;
@@ -144,6 +145,7 @@ game update(game g, action a)
                 g.score ++;
                 g.bounce_anim = 1;
             } else if (y(g.ball_v) > 0 && y(ball) - ball_r >= window_height - padding) {
+                g.max_score = std::max(g.max_score, g.score);
                 g.score  = 0;
                 g.ball_v = ball_init_v;
                 g.ball   = {
@@ -192,10 +194,19 @@ void draw(sdl_view& v, game g)
         auto surf = TTF_RenderText_Blended(v.font, msg.c_str(), {255, c, c, 255});
         auto text = SDL_CreateTextureFromSurface(v.renderer, surf);
         SDL_FreeSurface(surf);
-
         auto rect = SDL_Rect{2 * padding, 2 * padding - font_size / 3 };
         SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
         SDL_RenderCopy(v.renderer, text, nullptr, &rect);
+        if (g.max_score) {
+            auto msg  = std::to_string(g.max_score);
+            auto surf = TTF_RenderText_Blended(v.font, msg.c_str(), {255, c, c, 255});
+            auto text = SDL_CreateTextureFromSurface(v.renderer, surf);
+            SDL_FreeSurface(surf);
+            auto rect = SDL_Rect{2 * padding, 2 * padding - font_size / 3 };
+            SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+            rect.x = window_width - rect.x - rect.w;
+            SDL_RenderCopy(v.renderer, text, nullptr, &rect);
+        }
     }
     // render border
     {
