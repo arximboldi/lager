@@ -23,6 +23,7 @@
 #include <lager/debug/cereal/struct.hpp>
 
 #include <variant>
+#include <functional>
 
 namespace lager {
 

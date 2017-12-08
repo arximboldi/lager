@@ -65,3 +65,15 @@ target_link_libraries(autopong
   ${SDL2_LIBRARY}
   ${SDL2_TTF_LIBRARIES})
 add_dependencies(examples autopong)
+
+add_executable(autopong-debug EXCLUDE_FROM_ALL
+  autopong/main.cpp)
+target_compile_definitions(autopong-debug PUBLIC DEBUGGER)
+target_include_directories(autopong-debug SYSTEM PUBLIC
+  ${SDL2_INCLUDE_DIR}
+  ${SDL2_TTF_INCLUDE_DIR})
+target_link_libraries(autopong-debug
+  lager-debugger
+  ${SDL2_LIBRARY}
+  ${SDL2_TTF_LIBRARIES})
+add_dependencies(examples autopong-debug)

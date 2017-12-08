@@ -15,6 +15,10 @@
 
 #include <lager/store.hpp>
 #include <lager/event_loop/sdl.hpp>
+#include <lager/debug/cereal/struct.hpp>
+#include <lager/debug/http_server.hpp>
+#include <lager/debug/enable.hpp>
+#include <cereal/types/complex.hpp>
 
 #include <variant>
 #include <string>
@@ -63,6 +67,11 @@ struct tick_action { float delta; };
 using action = std::variant<
     paddle_move_action,
     tick_action>;
+
+LAGER_CEREAL_STRUCT(game, (score)(max_score)(ball)(ball_v)(paddle_x)
+                    (death_anim)(bounce_anim));
+LAGER_CEREAL_STRUCT(paddle_move_action, (delta));
+LAGER_CEREAL_STRUCT(tick_action, (delta));
 
 float x(const point& p)    { return p.real(); }
 void  x(point& p, float v) { return p.real(v); }
@@ -251,7 +260,7 @@ std::optional<action> intent(const SDL_Event& event)
     }
 }
 
-int main()
+int main(int argc, const char** argv)
 {
     using namespace std::placeholders;
 
@@ -259,13 +268,22 @@ int main()
     TTF_Init();
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
+#ifdef DEBUGGER
+    auto debugger = lager::http_debug_server{argc, argv, 8080};
+#endif
     auto view  = sdl_view{};
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<action>(
         game{},
         update,
         std::bind(draw, view, _1),
-        lager::with_sdl_event_loop{loop});
+        lager::with_sdl_event_loop{loop},
+#ifdef DEBUGGER
+        lager::enable_debug(debugger)
+#else
+        lager::identity
+#endif
+        );
 
     loop.run(
         [&] (const SDL_Event& ev) {

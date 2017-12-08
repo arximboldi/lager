@@ -36,7 +36,7 @@ auto enable_debug(Server& serv)
                                              LAGER_FWD(model),
                                              LAGER_FWD(action));
                 },
-                [&handle, view=LAGER_FWD(view)] (auto&& model) {
+                [&handle, view=LAGER_FWD(view)] (auto&& model) mutable {
                     return debugger_t::view(handle, view, LAGER_FWD(model));
                 },
                 LAGER_FWD(loop));
