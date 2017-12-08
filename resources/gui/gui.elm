@@ -103,6 +103,7 @@ type Msg = RecvStatus (Result Http.Error Status)
          | GotoStep Int
          | Pause
          | Resume
+         | TogglePause
          | Undo
          | Redo
          | KeyUp
@@ -164,6 +165,10 @@ update msg model =
             (model, queryPause model.server)
         Resume ->
             (model, queryResume model.server)
+        TogglePause ->
+            (model, if model.status.paused
+                    then queryResume model.server
+                    else queryPause model.server)
         Undo ->
             (model, queryUndo model.server)
         Redo ->
@@ -293,6 +298,7 @@ keys = [ Keys.combo2 (Keys.control, Keys.z) Undo
        , Keys.combo2 (Keys.shift, Keys.down) KeyGoDown
        , Keys.combo1 Keys.up KeyUp
        , Keys.combo1 Keys.down KeyDown
+       , Keys.combo1 Keys.space TogglePause
        ]
 
 subscriptions : Model -> Sub Msg
