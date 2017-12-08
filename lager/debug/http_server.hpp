@@ -114,7 +114,8 @@ public:
                     auto a = cereal::JSONOutputArchive{s};
                     a(cereal::make_nvp("program", this->self.program_),
                       cereal::make_nvp("size",    m.history.size()),
-                      cereal::make_nvp("cursor",  m.cursor));
+                      cereal::make_nvp("cursor",  m.cursor),
+                      cereal::make_nvp("paused",  m.paused));
                 }
                 return httpserver::http_response_builder(
                     s.str(), 200, "text/json");
@@ -170,6 +171,22 @@ public:
         } redo_resource_ = {*this};
 
         struct : resource_t { using resource_t::resource_t;
+            response_t render_POST(const request_t& req) override
+            {
+                this->self.context_.dispatch(typename Debugger::pause_action{});
+                return httpserver::http_response_builder("", 200);
+            }
+        } pause_resource_ = {*this};
+
+        struct : resource_t { using resource_t::resource_t;
+            response_t render_POST(const request_t& req) override
+            {
+                this->self.context_.dispatch(typename Debugger::resume_action{});
+                return httpserver::http_response_builder("", 200);
+            }
+        } resume_resource_ = {*this};
+
+        struct : resource_t { using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
                 auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
@@ -210,6 +227,8 @@ public:
         server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
         server_.register_resource("/api/undo",          &hdl.undo_resource_);
         server_.register_resource("/api/redo",          &hdl.redo_resource_);
+        server_.register_resource("/api/pause",         &hdl.pause_resource_);
+        server_.register_resource("/api/resume",        &hdl.resume_resource_);
         server_.register_resource("/api/?",             &hdl.root_resource_);
         server_.register_resource("/?.*",               &hdl.gui_resource_);
         handle_ = std::move(hdl_);

@@ -38,12 +38,16 @@ struct debugger
     struct goto_action { cursor_t cursor; };
     struct undo_action {};
     struct redo_action {};
+    struct pause_action {};
+    struct resume_action {};
 
     using action = std::variant<
         Action,
         goto_action,
         undo_action,
-        redo_action>;
+        redo_action,
+        pause_action,
+        resume_action>;
 
     struct step
     {
@@ -53,6 +57,7 @@ struct debugger
     struct model
     {
         cursor_t cursor = {};
+        bool paused = {};
         Model init;
         immer::vector<step> history = {};
 
@@ -100,6 +105,14 @@ struct debugger
                         ++m.cursor;
                     return {m, noop};
                 },
+                [&] (pause_action) -> result_t {
+                    m.paused = true;
+                    return {m, noop};
+                },
+                [&] (resume_action) -> result_t {
+                    m.paused = false;
+                    return {m, noop};
+                },
             }, act);
     }
 
@@ -112,8 +125,10 @@ struct debugger
 
     LAGER_CEREAL_NESTED_STRUCT(undo_action);
     LAGER_CEREAL_NESTED_STRUCT(redo_action);
+    LAGER_CEREAL_NESTED_STRUCT(pause_action);
+    LAGER_CEREAL_NESTED_STRUCT(resume_action);
     LAGER_CEREAL_NESTED_STRUCT(goto_action, (cursor));
-    LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(init)(history));
+    LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(paused)(init)(history));
     LAGER_CEREAL_NESTED_STRUCT(step, (action)(model));
 };
 
