@@ -15,9 +15,8 @@
 #include <lager/util.hpp>
 #include <lager/context.hpp>
 
-#include <immer/array.hpp>
-#include <immer/box.hpp>
 #include <immer/vector.hpp>
+#include <immer/algorithm.hpp>
 
 #include <lager/debug/cereal/immer_vector.hpp>
 #include <lager/debug/cereal/variant_with_name.hpp>
@@ -60,6 +59,7 @@ struct debugger
         bool paused = {};
         Model init;
         immer::vector<step> history = {};
+        immer::vector<Action> pending = {};
 
         model() = default;
         model(Model i) : init{i} {}
@@ -79,16 +79,20 @@ struct debugger
         using result_t = std::pair<model, effect<action>>;
         return std::visit(visitor{
                 [&] (Action act) -> result_t {
-                    auto result_eff = effect<action>{noop};
-                    m.history = m.history
-                        .take(m.cursor)
-                        .push_back({act, invoke_reducer(
-                                    reducer, m, act,
-                                    [&] (auto&& eff) {
-                                        result_eff = LAGER_FWD(eff);
-                                    })});
-                    m.cursor = m.history.size();
-                    return {m, result_eff};
+                    if (m.paused) {
+                        m.pending = m.pending.push_back(act);
+                        return {m, noop};
+                    } else {
+                        auto eff = effect<action>{noop};
+                        auto state = invoke_reducer(
+                            reducer, m, act,
+                            [&] (auto&& e) { eff = LAGER_FWD(e); });
+                        m.history = m.history
+                            .take(m.cursor)
+                            .push_back({act, state});
+                        m.cursor = m.history.size();
+                        return {m, eff};
+                    }
                 },
                 [&] (goto_action act) -> result_t {
                     if (act.cursor <= m.history.size())
@@ -107,11 +111,26 @@ struct debugger
                 },
                 [&] (pause_action) -> result_t {
                     m.paused = true;
-                    return {m, noop};
+                    return {m, [] (auto&& ctx) { ctx.pause(); }};
                 },
                 [&] (resume_action) -> result_t {
+                    auto resume_eff = effect<action>{[] (auto&& ctx) {
+                        ctx.resume();
+                    }};
+                    auto eff = effect<action>{noop};
+                    auto pending = m.pending;
                     m.paused = false;
-                    return {m, noop};
+                    m.pending = {};
+                    std::tie(m, eff) = immer::accumulate(
+                        pending,
+                        std::pair{m, eff},
+                        [&] (result_t acc, auto&& act) -> result_t {
+                            auto [m, eff] = LAGER_FWD(acc);
+                            auto [new_m, new_eff] =
+                                update(reducer, std::move(m), LAGER_FWD(act));
+                            return {new_m, sequence(eff, new_eff)};
+                        });
+                    return {m, sequence(resume_eff, eff)};
                 },
             }, act);
     }

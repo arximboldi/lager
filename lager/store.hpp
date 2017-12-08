@@ -73,7 +73,9 @@ private:
             , view{std::move(view_)}
             , context{[this] (auto ev) { dispatch(ev); },
                       [this] (auto fn) { loop.async(fn); },
-                      [this] { loop.finish(); }}
+                      [this] { loop.finish(); },
+                      [this] { loop.pause(); },
+                      [this] { loop.resume(); }}
         {
             loop.post([=] {
                 view(model);

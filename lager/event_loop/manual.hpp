@@ -38,6 +38,8 @@ struct with_manual_event_loop
     }
 
     void finish() {}
+    void pause() {}
+    void resume() {}
 
 private:
     using post_fn_t = std::function<void()>;

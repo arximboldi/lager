@@ -88,7 +88,9 @@ struct sdl_event_loop
         auto step = detail::constant_fps_step{fps};
         while (continue_ && !done_) {
             auto event = SDL_Event{};
-            while (SDL_PollEvent(&event)) {
+            while (continue_ &&
+                   ((!paused_ && SDL_PollEvent(&event)) ||
+                    (paused_ && SDL_WaitEvent(&event)))) {
                 if (event.type == post_event_type_) {
                     auto fnp = reinterpret_cast<event_fn*>(&event.user.data1);
                     (*fnp)();
@@ -97,7 +99,7 @@ struct sdl_event_loop
                     continue_ = continue_ && handler(event);
                 }
             }
-            continue_ = continue_ && tick(step());
+            continue_ = continue_ && (paused_ || tick(step()));
         }
     }
 
@@ -114,15 +116,15 @@ struct sdl_event_loop
         SDL_PushEvent(&event);
     }
 
-    void finish()
-    {
-        done_ = true;
-    }
+    void finish() { done_ = true; }
+    void pause() { paused_ = true; }
+    void resume() { paused_ = false; }
 
 private:
     friend with_sdl_event_loop;
 
     std::atomic<bool> done_ {false};
+    std::atomic<bool> paused_ {false};
     std::uint32_t post_event_type_ = SDL_RegisterEvents(1);
 };
 
@@ -137,15 +139,11 @@ struct with_sdl_event_loop
     }
 
     template <typename Fn>
-    void post(Fn&& fn)
-    {
-        loop.get().post(std::forward<Fn>(fn));
-    }
+    void post(Fn&& fn) { loop.get().post(std::forward<Fn>(fn)); }
 
-    void finish()
-    {
-        loop.get().finish();
-    }
+    void finish() { loop.get().finish(); }
+    void pause() { loop.get().pause(); }
+    void resume() { loop.get().resume(); }
  };
 
 } // namespace lager

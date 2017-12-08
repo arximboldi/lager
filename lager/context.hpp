@@ -21,13 +21,15 @@ template <typename Action>
 struct context
 {
     using action_t      = Action;
-    using finish_t      = std::function<void()>;
+    using command_t     = std::function<void()>;
     using dispatch_t    = std::function<void(action_t)>;
     using async_t       = std::function<void(std::function<void()>)>;
 
     dispatch_t dispatch;
     async_t    async;
-    finish_t   finish;
+    command_t  finish;
+    command_t  pause;
+    command_t  resume;
 
     context() = default;
 
@@ -36,12 +38,20 @@ struct context
         : dispatch(ctx.dispatch)
         , async(ctx.async)
         , finish(ctx.finish)
+        , pause(ctx.pause)
+        , resume(ctx.resume)
     {}
 
-    context(dispatch_t ds, async_t as, finish_t fn)
-        : dispatch(std::move(ds))
-        , async(std::move(as))
-        , finish(std::move(fn))
+    context(dispatch_t dispatch_,
+            async_t async_,
+            command_t finish_,
+            command_t pause_,
+            command_t resume_)
+        : dispatch(std::move(dispatch_))
+        , async(std::move(async_))
+        , finish(std::move(finish_))
+        , pause(std::move(pause_))
+        , resume(std::move(resume_))
     {}
 };
 
@@ -91,6 +101,21 @@ auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
     return std::invoke(LAGER_FWD(reducer),
                       LAGER_FWD(model),
                       LAGER_FWD(action));
+}
+
+template <typename Action>
+effect<Action> sequence(effect<Action> a, effect<Action> b)
+{
+    return
+        (!a || a.template target<decltype(noop)>() == &noop) &&
+        (!b || b.template target<decltype(noop)>() == &noop)    ? noop :
+        !a  || a.template target<decltype(noop)>() == &noop     ? b :
+        !b  || b.template target<decltype(noop)>() == &noop     ? a :
+        // otherwise
+        [a, b] (auto&& ctx) {
+            a(ctx);
+            b(ctx);
+        };
 }
 
 } // namespace lager

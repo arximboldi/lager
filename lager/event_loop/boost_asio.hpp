@@ -43,6 +43,9 @@ struct with_boost_asio_event_loop
         if (finalizer) finalizer();
         else service.get().stop();
     }
+
+    void pause() {}
+    void resume() {}
 };
 
 } // namespace lager
