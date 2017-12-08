@@ -103,8 +103,8 @@ type Msg = RecvStatus (Result Http.Error Status)
          | GotoStep Int
          | Pause
          | Resume
-         | KeyUndo
-         | KeyRedo
+         | Undo
+         | Redo
          | KeyUp
          | KeyDown
          | KeyGoUp
@@ -164,9 +164,9 @@ update msg model =
             (model, queryPause model.server)
         Resume ->
             (model, queryResume model.server)
-        KeyUndo ->
+        Undo ->
             (model, queryUndo model.server)
-        KeyRedo ->
+        Redo ->
             (model, queryRedo model.server)
         KeyUp ->
             selectStep model (detailIndex model.detail - 1)
@@ -204,15 +204,31 @@ viewHeader model =
         , div [ class "right-side" ]
             [ span [] [text "program has run "]
             , span [class "hl"] [text (toString model.status.size)]
-            , span [class "hl"] [text " steps"]
+            , span [class "hl space-right"] [text " steps"]
             , viewPlayButton model.status.paused
+            , viewRedoButton model.status
+            , viewUndoButton model.status
             ]
         ]
 
 viewPlayButton : Bool -> Html Msg
 viewPlayButton paused = if paused
-                        then span [class "hl"] [text "PAUSED"]
-                        else span [class "hl"] [text "RUNNING"]
+                        then div [class "button"] [text "⏴"]
+                        else div [class "button"] [text "⏸"]
+
+viewUndoButton : Status -> Html Msg
+viewUndoButton status =
+    let disabled = status.cursor == 0
+    in div [ classes [(True, "button"), (disabled, "disabled")]
+           , onClick Undo ]
+        [text "↶"]
+
+viewRedoButton : Status -> Html Msg
+viewRedoButton status =
+    let disabled = status.cursor == status.size
+    in div [ classes [(True, "button"), (disabled, "disabled")]
+           , onClick Redo ]
+        [text "↷"]
 
 viewNoStep  = div [class "info"] [text "No step selected"]
 viewLoading = div [class "info"] [text "Loading..."]
@@ -273,8 +289,8 @@ view model =
 -- subs
 --
 
-keys = [ Keys.combo2 (Keys.control, Keys.z) KeyUndo
-       , Keys.combo2 (Keys.control, Keys.y) KeyRedo
+keys = [ Keys.combo2 (Keys.control, Keys.z) Undo
+       , Keys.combo2 (Keys.control, Keys.y) Redo
        , Keys.combo2 (Keys.shift, Keys.up) KeyGoUp
        , Keys.combo2 (Keys.shift, Keys.down) KeyGoDown
        , Keys.combo1 Keys.up KeyUp

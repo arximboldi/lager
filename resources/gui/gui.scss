@@ -19,12 +19,27 @@ body {
     font-family: $normal-font;
 }
 
+.interactive {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    cursor: default;
+}
+
+.space-right {
+    margin-right: 1em;
+}
+
 .header {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    height: 3em;
+    height: 3rem;
+    margin: 0;
+    padding: 0;
 
     background-color: #0C0C0D;
     color: #676769;
@@ -44,49 +59,62 @@ body {
         margin-left: 1em;
         top: 0;
         bottom: 0;
-        line-height: 100%;
         line-height: 3em;
     }
 
     .right-side {
         position: relative;
         float: right;
-        margin-right: 1em;
-        line-height: 100%;
         top: 0;
         bottom: 0;
-        line-height: 3em;
+        line-height: 3rem;
+    }
+
+    .button {
+        @extend .interactive;
+        float: right;
+        color: white;
+        background-color: transparent;
+        height: 3rem;
+        width: 3rem;
+        font-size: 1.8em;
+        line-height: 3rem;
+        text-align: center;
+        border-left: 1px solid #323234;
+        &:hover {
+            color: #1abdff;
+            background-color: #323234;
+        }
+        &:active {
+            color: #1abdff;
+            background-color: transparent;
+        }
+        &.disabled, &.disabled:hover {
+            color: #323234;
+            background-color: transparent;
+        }
     }
 }
 
-.interactive {
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    -webkit-touch-callout: none;
-    cursor: default;
-}
-
-$history-width: 5em;
+$history-width: 5rem;
 
 .main {
     position: absolute;
-    top: 3em;
+    top: 3rem;
     bottom: 0;
     left: 0;
     right: 0;
 
     .detail {
         position: absolute;
-        right: 5em;
+        right: 5rem;
         left: 0;
         bottom: 0;
         top: 0;
         color: #B1B1B1;
         background-color: #323234;
         overflow: auto;
-        padding: 2em;
+        padding: 2rem;
 
         .info {
             font-weight: bold;
