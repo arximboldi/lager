@@ -57,6 +57,13 @@ struct game
     float bounce_anim = 0;
 };
 
+struct paddle_move_action { float delta; };
+struct tick_action { float delta; };
+
+using action = std::variant<
+    paddle_move_action,
+    tick_action>;
+
 float x(const point& p)    { return p.real(); }
 void  x(point& p, float v) { return p.real(v); }
 float y(const point& p)    { return p.imag(); }
@@ -67,8 +74,7 @@ float dot(const point& a, const point& b)
     return x(conj(a) * b);
 }
 
-// squared distance between two segments
-float segment_norm(point l1p1, point l1p2, point l2p1, point l2p2)
+float segment_squared_distance(point l1p1, point l1p2, point l2p1, point l2p2)
 {
     constexpr auto epsilon = 0.00000001;
     auto u = l1p2 - l1p1;
@@ -101,18 +107,11 @@ float segment_norm(point l1p1, point l1p2, point l2p1, point l2p2)
         else if ((-d + b) > a) sN = sD;
         else {                 sN = (-d + b); sD = a; }
     }
-    sc = (std::abs(sN) < epsilon ? 0.0 : sN / sD);
-    tc = (std::abs(tN) < epsilon ? 0.0 : tN / tD);
+    sc = std::abs(sN) < epsilon ? 0.0 : sN / sD;
+    tc = std::abs(tN) < epsilon ? 0.0 : tN / tD;
     auto dP = w + (u * sc) - (v * tc);
     return norm(dP);
 }
-
-struct paddle_move_action { float delta; };
-struct tick_action { float delta; };
-
-using action = std::variant<
-    paddle_move_action,
-    tick_action>;
 
 game update(game g, action a)
 {
@@ -137,9 +136,10 @@ game update(game g, action a)
             if (y(g.ball_v) < 0 && y(ball) - ball_r <= padding)
                 y(g.ball_v, -y(g.ball_v));
             if (y(g.ball_v) > 0 && ball_r * ball_r
-                > segment_norm(g.ball, ball,
-                               point{g.paddle_x - ball_r, paddle_y},
-                               point{g.paddle_x + paddle_width + ball_r, paddle_y})) {
+                > segment_squared_distance(
+                    g.ball, ball,
+                    point{g.paddle_x - ball_r, paddle_y},
+                    point{g.paddle_x + paddle_width + ball_r, paddle_y})) {
                 y(g.ball_v, -y(g.ball_v));
                 g.ball_v *= ball_a;
                 g.score ++;
