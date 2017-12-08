@@ -43,6 +43,7 @@ type alias Status =
     { program: String
     , size: Int
     , cursor: Int
+    , paused: Bool
     }
 
 type alias Step =
@@ -63,7 +64,7 @@ type alias Model =
     , keys: Keys.Model Msg
     }
 
-initStatus = Status "" 0 0
+initStatus = Status "" 0 0 False
 initModel server = Model server initStatus NoStep (Keys.init keys ComboMsg)
 
 init : Flags -> (Model, Cmd Msg)
@@ -80,10 +81,11 @@ detailIndex d =
         NoStep              -> -1
 
 decodeStatus : Decode.Decoder Status
-decodeStatus = Decode.map3 Status
+decodeStatus = Decode.map4 Status
                (Decode.field "program" Decode.string)
                (Decode.field "size"    Decode.int)
                (Decode.field "cursor"  Decode.int)
+               (Decode.field "paused"  Decode.bool)
 
 decodeStep : Decode.Decoder Step
 decodeStep = Decode.map2 Step
@@ -99,6 +101,8 @@ type Msg = RecvStatus (Result Http.Error Status)
          | RecvPost (Result Http.Error ())
          | SelectStep Int
          | GotoStep Int
+         | Pause
+         | Resume
          | KeyUndo
          | KeyRedo
          | KeyUp
@@ -156,6 +160,10 @@ update msg model =
             selectStep model index
         GotoStep index ->
             (model, queryGoto model.server index)
+        Pause ->
+            (model, queryPause model.server)
+        Resume ->
+            (model, queryResume model.server)
         KeyUndo ->
             (model, queryUndo model.server)
         KeyRedo ->
@@ -197,8 +205,14 @@ viewHeader model =
             [ span [] [text "program has run "]
             , span [class "hl"] [text (toString model.status.size)]
             , span [class "hl"] [text " steps"]
+            , viewPlayButton model.status.paused
             ]
         ]
+
+viewPlayButton : Bool -> Html Msg
+viewPlayButton paused = if paused
+                        then span [class "hl"] [text "PAUSED"]
+                        else span [class "hl"] [text "RUNNING"]
 
 viewNoStep  = div [class "info"] [text "No step selected"]
 viewLoading = div [class "info"] [text "Loading..."]
@@ -303,4 +317,14 @@ queryUndo server =
 queryRedo : String -> Cmd Msg
 queryRedo server =
     let url = server ++ "/api/redo"
+    in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
+
+queryPause : String -> Cmd Msg
+queryPause server =
+    let url = server ++ "/api/pause"
+    in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
+
+queryResume : String -> Cmd Msg
+queryResume server =
+    let url = server ++ "/api/resume"
     in Http.send RecvPost (Http.post url Http.emptyBody (Decode.succeed ()))
