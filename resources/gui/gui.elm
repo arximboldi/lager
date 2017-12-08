@@ -200,7 +200,7 @@ viewHeader model =
               , div [class "block"] [text model.server]
               , div [class "block"]
                   [ span [class "hl"] [text <| (toString model.status.size)]
-                  , text " steps" ]
+                  , text " steps" ] -- ⸽
               ]
         , div [ class "right-side" ]
             [ viewPlayButton model.status.paused
@@ -219,14 +219,14 @@ viewUndoButton status =
     let disabled = status.cursor == 0
     in div [ classes [(True, "button"), (disabled, "disabled")]
            , onClick Undo ]
-        [text "⮌"]
+        [text "⮌"] -- alt: ⮌↶↺⮢⮠⮪⏪⏮
 
 viewRedoButton : Status -> Html Msg
 viewRedoButton status =
     let disabled = status.cursor == status.size
     in div [ classes [(True, "button"), (disabled, "disabled")]
            , onClick Redo ]
-        [text "⮎"]
+        [text "⮎"] -- alt: ⮎↷↻⮣⮡⮫⏩⏭
 
 viewNoStep  = div [class "info"] [text "No step selected"]
 viewLoading = div [class "info"] [text "Loading..."]
