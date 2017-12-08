@@ -196,16 +196,14 @@ viewHeader : Model -> Html Msg
 viewHeader model =
     div [ class "header" ]
         [ div [ class "left-side" ]
-              [ span [] [text "debugging "]
-              , span [class "tt hl"] [text model.status.program]
-              , span [] [text " via "]
-              , span [class "tt hl"] [text model.server]
+              [ div [class "block tt hl"] [text model.status.program]
+              , div [class "block"] [text model.server]
+              , div [class "block"]
+                  [ span [class "hl"] [text <| (toString model.status.size)]
+                  , text " steps" ]
               ]
         , div [ class "right-side" ]
-            [ span [] [text "program has run "]
-            , span [class "hl"] [text (toString model.status.size)]
-            , span [class "hl space-right"] [text " steps"]
-            , viewPlayButton model.status.paused
+            [ viewPlayButton model.status.paused
             , viewRedoButton model.status
             , viewUndoButton model.status
             ]
@@ -221,14 +219,14 @@ viewUndoButton status =
     let disabled = status.cursor == 0
     in div [ classes [(True, "button"), (disabled, "disabled")]
            , onClick Undo ]
-        [text "↶"]
+        [text "⮌"]
 
 viewRedoButton : Status -> Html Msg
 viewRedoButton status =
     let disabled = status.cursor == status.size
     in div [ classes [(True, "button"), (disabled, "disabled")]
            , onClick Redo ]
-        [text "↷"]
+        [text "⮎"]
 
 viewNoStep  = div [class "info"] [text "No step selected"]
 viewLoading = div [class "info"] [text "Loading..."]
