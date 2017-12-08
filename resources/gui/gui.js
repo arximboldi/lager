@@ -10849,132 +10849,6 @@ var _elm_lang$elm_architecture_tutorial$Main$viewDetail = function (model) {
 			}
 		}());
 };
-var _elm_lang$elm_architecture_tutorial$Main$viewHeader = function (model) {
-	return A2(
-		_elm_lang$html$Html$div,
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('header'),
-			_1: {ctor: '[]'}
-		},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('left-side'),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$span,
-						{ctor: '[]'},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('debugging '),
-							_1: {ctor: '[]'}
-						}),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$span,
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html_Attributes$class('tt hl'),
-								_1: {ctor: '[]'}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text(model.status.program),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$span,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text(' via '),
-									_1: {ctor: '[]'}
-								}),
-							_1: {
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$span,
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$class('tt hl'),
-										_1: {ctor: '[]'}
-									},
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html$text(model.server),
-										_1: {ctor: '[]'}
-									}),
-								_1: {ctor: '[]'}
-							}
-						}
-					}
-				}),
-			_1: {
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$div,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$class('right-side'),
-						_1: {ctor: '[]'}
-					},
-					{
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$span,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('program has run '),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$span,
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$class('hl'),
-									_1: {ctor: '[]'}
-								},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text(
-										_elm_lang$core$Basics$toString(model.status.size)),
-									_1: {ctor: '[]'}
-								}),
-							_1: {
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$span,
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$class('hl'),
-										_1: {ctor: '[]'}
-									},
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html$text(' steps'),
-										_1: {ctor: '[]'}
-									}),
-								_1: {ctor: '[]'}
-							}
-						}
-					}),
-				_1: {ctor: '[]'}
-			}
-		});
-};
 var _elm_lang$elm_architecture_tutorial$Main$classes = function (cls) {
 	return _elm_lang$html$Html_Attributes$class(
 		A2(
@@ -11006,17 +10880,18 @@ var _elm_lang$elm_architecture_tutorial$Main$title = _elm_lang$core$Native_Platf
 var _elm_lang$elm_architecture_tutorial$Main$Flags = function (a) {
 	return {server: a};
 };
-var _elm_lang$elm_architecture_tutorial$Main$Status = F3(
-	function (a, b, c) {
-		return {program: a, size: b, cursor: c};
+var _elm_lang$elm_architecture_tutorial$Main$Status = F4(
+	function (a, b, c, d) {
+		return {program: a, size: b, cursor: c, paused: d};
 	});
-var _elm_lang$elm_architecture_tutorial$Main$initStatus = A3(_elm_lang$elm_architecture_tutorial$Main$Status, '', 0, 0);
-var _elm_lang$elm_architecture_tutorial$Main$decodeStatus = A4(
-	_elm_lang$core$Json_Decode$map3,
+var _elm_lang$elm_architecture_tutorial$Main$initStatus = A4(_elm_lang$elm_architecture_tutorial$Main$Status, '', 0, 0, false);
+var _elm_lang$elm_architecture_tutorial$Main$decodeStatus = A5(
+	_elm_lang$core$Json_Decode$map4,
 	_elm_lang$elm_architecture_tutorial$Main$Status,
 	A2(_elm_lang$core$Json_Decode$field, 'program', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'size', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'cursor', _elm_lang$core$Json_Decode$int));
+	A2(_elm_lang$core$Json_Decode$field, 'cursor', _elm_lang$core$Json_Decode$int),
+	A2(_elm_lang$core$Json_Decode$field, 'paused', _elm_lang$core$Json_Decode$bool));
 var _elm_lang$elm_architecture_tutorial$Main$Step = F2(
 	function (a, b) {
 		return {action: a, model: b};
@@ -11065,20 +10940,77 @@ var _elm_lang$elm_architecture_tutorial$Main$KeyGoDown = {ctor: 'KeyGoDown'};
 var _elm_lang$elm_architecture_tutorial$Main$KeyGoUp = {ctor: 'KeyGoUp'};
 var _elm_lang$elm_architecture_tutorial$Main$KeyDown = {ctor: 'KeyDown'};
 var _elm_lang$elm_architecture_tutorial$Main$KeyUp = {ctor: 'KeyUp'};
-var _elm_lang$elm_architecture_tutorial$Main$KeyRedo = {ctor: 'KeyRedo'};
-var _elm_lang$elm_architecture_tutorial$Main$KeyUndo = {ctor: 'KeyUndo'};
+var _elm_lang$elm_architecture_tutorial$Main$Redo = {ctor: 'Redo'};
+var _elm_lang$elm_architecture_tutorial$Main$viewRedoButton = function (status) {
+	var disabled = _elm_lang$core$Native_Utils.eq(status.cursor, status.size);
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$elm_architecture_tutorial$Main$classes(
+				{
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: true, _1: 'button'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: disabled, _1: 'disabled'},
+						_1: {ctor: '[]'}
+					}
+				}),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onClick(_elm_lang$elm_architecture_tutorial$Main$Redo),
+				_1: {ctor: '[]'}
+			}
+		},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text('⮎'),
+			_1: {ctor: '[]'}
+		});
+};
+var _elm_lang$elm_architecture_tutorial$Main$Undo = {ctor: 'Undo'};
+var _elm_lang$elm_architecture_tutorial$Main$viewUndoButton = function (status) {
+	var disabled = _elm_lang$core$Native_Utils.eq(status.cursor, 0);
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$elm_architecture_tutorial$Main$classes(
+				{
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: true, _1: 'button'},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: disabled, _1: 'disabled'},
+						_1: {ctor: '[]'}
+					}
+				}),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onClick(_elm_lang$elm_architecture_tutorial$Main$Undo),
+				_1: {ctor: '[]'}
+			}
+		},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text('⮌'),
+			_1: {ctor: '[]'}
+		});
+};
+var _elm_lang$elm_architecture_tutorial$Main$TogglePause = {ctor: 'TogglePause'};
 var _elm_lang$elm_architecture_tutorial$Main$keys = {
 	ctor: '::',
 	_0: A2(
 		_scottcorgan$keyboard_combo$Keyboard_Combo$combo2,
 		{ctor: '_Tuple2', _0: _scottcorgan$keyboard_combo$Keyboard_Combo$control, _1: _scottcorgan$keyboard_combo$Keyboard_Combo$z},
-		_elm_lang$elm_architecture_tutorial$Main$KeyUndo),
+		_elm_lang$elm_architecture_tutorial$Main$Undo),
 	_1: {
 		ctor: '::',
 		_0: A2(
 			_scottcorgan$keyboard_combo$Keyboard_Combo$combo2,
 			{ctor: '_Tuple2', _0: _scottcorgan$keyboard_combo$Keyboard_Combo$control, _1: _scottcorgan$keyboard_combo$Keyboard_Combo$y},
-			_elm_lang$elm_architecture_tutorial$Main$KeyRedo),
+			_elm_lang$elm_architecture_tutorial$Main$Redo),
 		_1: {
 			ctor: '::',
 			_0: A2(
@@ -11097,7 +11029,11 @@ var _elm_lang$elm_architecture_tutorial$Main$keys = {
 					_1: {
 						ctor: '::',
 						_0: A2(_scottcorgan$keyboard_combo$Keyboard_Combo$combo1, _scottcorgan$keyboard_combo$Keyboard_Combo$down, _elm_lang$elm_architecture_tutorial$Main$KeyDown),
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: A2(_scottcorgan$keyboard_combo$Keyboard_Combo$combo1, _scottcorgan$keyboard_combo$Keyboard_Combo$space, _elm_lang$elm_architecture_tutorial$Main$TogglePause),
+							_1: {ctor: '[]'}
+						}
 					}
 				}
 			}
@@ -11111,6 +11047,146 @@ var _elm_lang$elm_architecture_tutorial$Main$initModel = function (server) {
 		_elm_lang$elm_architecture_tutorial$Main$initStatus,
 		_elm_lang$elm_architecture_tutorial$Main$NoStep,
 		A2(_scottcorgan$keyboard_combo$Keyboard_Combo$init, _elm_lang$elm_architecture_tutorial$Main$keys, _elm_lang$elm_architecture_tutorial$Main$ComboMsg));
+};
+var _elm_lang$elm_architecture_tutorial$Main$Resume = {ctor: 'Resume'};
+var _elm_lang$elm_architecture_tutorial$Main$Pause = {ctor: 'Pause'};
+var _elm_lang$elm_architecture_tutorial$Main$viewPlayButton = function (paused) {
+	return paused ? A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('button'),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onClick(_elm_lang$elm_architecture_tutorial$Main$Resume),
+				_1: {ctor: '[]'}
+			}
+		},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text('⏴'),
+			_1: {ctor: '[]'}
+		}) : A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('button'),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html_Events$onClick(_elm_lang$elm_architecture_tutorial$Main$Pause),
+				_1: {ctor: '[]'}
+			}
+		},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text('⏸'),
+			_1: {ctor: '[]'}
+		});
+};
+var _elm_lang$elm_architecture_tutorial$Main$viewHeader = function (model) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('header'),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$div,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$class('left-side'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$div,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('block tt hl'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text(model.status.program),
+							_1: {ctor: '[]'}
+						}),
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$div,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$class('block'),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text(model.server),
+								_1: {ctor: '[]'}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('block'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$span,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('hl'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(
+												_elm_lang$core$Basics$toString(model.status.size)),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(' steps'),
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('right-side'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: _elm_lang$elm_architecture_tutorial$Main$viewPlayButton(model.status.paused),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$elm_architecture_tutorial$Main$viewRedoButton(model.status),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$elm_architecture_tutorial$Main$viewUndoButton(model.status),
+								_1: {ctor: '[]'}
+							}
+						}
+					}),
+				_1: {ctor: '[]'}
+			}
+		});
 };
 var _elm_lang$elm_architecture_tutorial$Main$GotoStep = function (a) {
 	return {ctor: 'GotoStep', _0: a};
@@ -11269,6 +11345,30 @@ var _elm_lang$elm_architecture_tutorial$Main$queryRedo = function (server) {
 			_elm_lang$core$Json_Decode$succeed(
 				{ctor: '_Tuple0'})));
 };
+var _elm_lang$elm_architecture_tutorial$Main$queryPause = function (server) {
+	var url = A2(_elm_lang$core$Basics_ops['++'], server, '/api/pause');
+	return A2(
+		_elm_lang$http$Http$send,
+		_elm_lang$elm_architecture_tutorial$Main$RecvPost,
+		A3(
+			_elm_lang$http$Http$post,
+			url,
+			_elm_lang$http$Http$emptyBody,
+			_elm_lang$core$Json_Decode$succeed(
+				{ctor: '_Tuple0'})));
+};
+var _elm_lang$elm_architecture_tutorial$Main$queryResume = function (server) {
+	var url = A2(_elm_lang$core$Basics_ops['++'], server, '/api/resume');
+	return A2(
+		_elm_lang$http$Http$send,
+		_elm_lang$elm_architecture_tutorial$Main$RecvPost,
+		A3(
+			_elm_lang$http$Http$post,
+			url,
+			_elm_lang$http$Http$emptyBody,
+			_elm_lang$core$Json_Decode$succeed(
+				{ctor: '_Tuple0'})));
+};
 var _elm_lang$elm_architecture_tutorial$Main$RecvStep = function (a) {
 	return {ctor: 'RecvStep', _0: a};
 };
@@ -11414,13 +11514,31 @@ var _elm_lang$elm_architecture_tutorial$Main$update = F2(
 					_0: model,
 					_1: A2(_elm_lang$elm_architecture_tutorial$Main$queryGoto, model.server, _p5._0)
 				};
-			case 'KeyUndo':
+			case 'Pause':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _elm_lang$elm_architecture_tutorial$Main$queryPause(model.server)
+				};
+			case 'Resume':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _elm_lang$elm_architecture_tutorial$Main$queryResume(model.server)
+				};
+			case 'TogglePause':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: model.status.paused ? _elm_lang$elm_architecture_tutorial$Main$queryResume(model.server) : _elm_lang$elm_architecture_tutorial$Main$queryPause(model.server)
+				};
+			case 'Undo':
 				return {
 					ctor: '_Tuple2',
 					_0: model,
 					_1: _elm_lang$elm_architecture_tutorial$Main$queryUndo(model.server)
 				};
-			case 'KeyRedo':
+			case 'Redo':
 				return {
 					ctor: '_Tuple2',
 					_0: model,
