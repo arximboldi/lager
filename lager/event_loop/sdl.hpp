@@ -30,14 +30,16 @@ struct constant_fps_step
 {
     int frame_rate_;
     float ticks_per_frame_;
+    float max_ticks_per_frame_;
 
     int ticks_       = SDL_GetTicks();
     int frame_count_ = 0;
     int last_ticks_  = 0;
 
-    constant_fps_step(int rate = 60)
+    constant_fps_step(int rate = 60, int min_sim_rate = 15)
         : frame_rate_{rate}
         , ticks_per_frame_{1000.f / rate}
+        , max_ticks_per_frame_{1000.f / min_sim_rate}
     {}
 
     float operator() ()
@@ -53,7 +55,7 @@ struct constant_fps_step
         }
         ticks_ = current_ticks;
         frame_count_ ++;
-        return delta_ticks;
+        return std::min((float) delta_ticks, max_ticks_per_frame_);
     }
 };
 
@@ -82,10 +84,12 @@ struct sdl_event_loop
     }
 
     template <typename Fn1, typename Fn2>
-    void run(Fn1&& handler, Fn2&& tick, int fps = 120)
+    void run(Fn1&& handler, Fn2&& tick,
+             int fps = 120,
+             int min_sim_fps = 15)
     {
         auto continue_ = true;
-        auto step = detail::constant_fps_step{fps};
+        auto step = detail::constant_fps_step{fps, min_sim_fps};
         while (continue_ && !done_) {
             auto event = SDL_Event{};
             while (continue_ &&
