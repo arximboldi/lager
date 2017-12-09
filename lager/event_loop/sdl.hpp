@@ -100,7 +100,7 @@ struct sdl_event_loop
                     (*fnp)();
                     fnp->~event_fn();
                 } else {
-                    continue_ = continue_ && handler(event);
+                    continue_ = continue_ && (paused_ || handler(event));
                 }
             }
             continue_ = continue_ && (paused_ || tick(step()));
