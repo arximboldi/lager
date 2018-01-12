@@ -13,6 +13,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif()
 
+option(lager_BUILD_DEBUGGER "Build the time-traveling debugger" ON)
+option(lager_BUILD_TESTS "Build tests" ON)
+option(lager_BUILD_EXAMPLES "Build examples" ON)
+
 #  Targets
 #  =======
 
@@ -23,60 +27,72 @@ target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
   $<INSTALL_INTERFACE:include>)
 
-# the library, with http debugger
-find_package(Boost 1.56 COMPONENTS system)
-find_package(Threads)
-find_package(Immer)
-find_package(LibHttpServer)
-add_library(lager-debugger INTERFACE)
-target_include_directories(lager-debugger INTERFACE
-  $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
-  $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
-  $<INSTALL_INTERFACE:include>
-  ${Boost_INCLUDE_DIR}
-  ${LIBHTTPSERVER_INCLUDE_DIRS})
-target_link_libraries(lager-debugger INTERFACE
-  lager
-  immer
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${Boost_LIBRARIES}
-  ${LIBHTTPSERVER_LIBRARIES})
+install(TARGETS lager EXPORT LagerConfig)
 
-# the library, local development target
-add_library(lager-dev INTERFACE)
-target_include_directories(lager-dev SYSTEM INTERFACE
-  "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
-target_link_libraries(lager-dev INTERFACE lager)
-if (ENABLE_COVERAGE)
-  target_compile_options(lager-dev INTERFACE "--coverage")
-  target_link_libraries(lager-dev INTERFACE "--coverage")
+# the library, with http debugger
+if(lager_BUILD_DEBUGGER)
+  find_package(Boost 1.56 COMPONENTS system REQUIRED)
+  find_package(Threads REQUIRED)
+  find_package(Immer REQUIRED)
+  find_package(LibHttpServer REQUIRED)
+  add_library(lager-debugger INTERFACE)
+  target_include_directories(lager-debugger INTERFACE
+    $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
+    $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
+    $<INSTALL_INTERFACE:include>
+    ${Boost_INCLUDE_DIR}
+    ${LIBHTTPSERVER_INCLUDE_DIRS})
+  target_link_libraries(lager-debugger INTERFACE
+    lager
+    immer
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_LIBRARIES}
+    ${LIBHTTPSERVER_LIBRARIES})
+
+  add_custom_target(gui ALL
+    COMMAND make
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
+    COMMENT "Build debugger web UI")
+    
+  install(TARGETS lager-debugger EXPORT LagerConfig)
+  
+  install(FILES
+    resources/gui/gui.js
+    resources/gui/gui.css
+    resources/gui/index.html
+    DESTINATION share/lager/gui)
 endif()
 
-add_custom_target(gui ALL
-  COMMAND make
-  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
-  COMMENT "Build debugger web UI")
+# the library, local development target
+if(lager_BUILD_TESTS)
+  add_library(lager-dev INTERFACE)
+  target_include_directories(lager-dev SYSTEM INTERFACE
+    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
+  target_link_libraries(lager-dev INTERFACE lager)
+  if (ENABLE_COVERAGE)
+    target_compile_options(lager-dev INTERFACE "--coverage")
+    target_link_libraries(lager-dev INTERFACE "--coverage")
+  endif()
+
+  enable_testing()
+  add_custom_target(check
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Build and run all the tests and examples.")
+    
+  add_subdirectory(test)
+endif()
+
+if(lager_BUILD_EXAMPLES)
+  if(NOT lager_BUILD_DEBUGGER)
+    message(FATAL_ERROR "Examples require the debugger")
+  endif()
+  add_subdirectory(example)
+endif()
 
 configure_file(lager/config.hpp.in
   "${CMAKE_SOURCE_DIR}/lager/config.hpp")
 
-install(TARGETS lager lager-debugger EXPORT LagerConfig)
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
 install(DIRECTORY lager DESTINATION include)
-install(FILES
-  resources/gui/gui.js
-  resources/gui/gui.css
-  resources/gui/index.html
-  DESTINATION share/lager/gui)
 
-enable_testing()
-add_custom_target(check
-  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Build and run all the tests and examples.")
-
-#  Subdirs
-#  =======
-
-add_subdirectory(example)
-add_subdirectory(test)
