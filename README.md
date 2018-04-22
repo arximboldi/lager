@@ -2,7 +2,7 @@
 <a href="https://sinusoid.al"><img align="right" src="https://cdn.rawgit.com/arximboldi/immer/355a113782aedc2ea22463444014809269c2376d/doc/_static/sinusoidal-badge.svg"></a>
 
 <p align="center">
-  <img src="https://cdn.rawgit.com/arximboldi/lager/c9bba0a6/resources/logo-front.svg">
+  <img src="https://cdn.rawgit.com/arximboldi/lager/ccb5a1c8/resources/logo-front.svg">
 </p>
 
 Library for functional interactive C++ programs... **Redux for C++**.
