@@ -1,8 +1,8 @@
 { nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
     owner  = "NixOS";
     repo   = "nixpkgs";
-    rev    = "d0d905668c010b65795b57afdf7f0360aac6245b";
-    sha256 = "1kqxfmsik1s1jsmim20n5l4kq6wq8743h5h17igfxxbbwwqry88l";
+    rev    = "d45e3e36f85ebf98f7e9bcb4105c44463a171655";
+    sha256 = "0k0sf2r3cngd99v18l4panmxq2l5bqw85cvg4wcm4affw61w037a";
   }}:
 
 with import nixpkgs {};
@@ -11,7 +11,7 @@ let
   deps = import ./nix/deps.nix { inherit nixpkgs; };
 in
 stdenv.mkDerivation rec {
-  name = "ewig-env";
+  name = "lager-env";
   buildInputs = [
     gcc7
     cmake
