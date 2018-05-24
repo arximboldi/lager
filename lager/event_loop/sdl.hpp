@@ -73,9 +73,9 @@ struct sdl_event_loop
             auto event = SDL_Event{};
             if (SDL_WaitEvent(&event)) {
                 if (event.type == post_event_type_) {
-                    auto fnp = reinterpret_cast<event_fn*>(&event.user.data1);
+                    auto fnp = static_cast<event_fn*>(event.user.data1);
                     (*fnp)();
-                    fnp->~event_fn();
+                    delete fnp;
                 } else {
                     continue_ = handler(event);
                 }
@@ -96,9 +96,9 @@ struct sdl_event_loop
                    ((!paused_ && SDL_PollEvent(&event)) ||
                     (paused_ && SDL_WaitEvent(&event)))) {
                 if (event.type == post_event_type_) {
-                    auto fnp = reinterpret_cast<event_fn*>(&event.user.data1);
+                    auto fnp = static_cast<event_fn*>(event.user.data1);
                     (*fnp)();
-                    fnp->~event_fn();
+                    delete fnp;
                 } else {
                     continue_ = continue_ && (paused_ || handler(event));
                 }
@@ -109,14 +109,10 @@ struct sdl_event_loop
 
     void post(event_fn ev)
     {
-        static_assert(sizeof(event_fn) <=
-                      sizeof(SDL_Event) - offsetof(SDL_Event, user.data1),
-                      "Ooops! A funciton does not fit in the SDL_Event");
         auto event = SDL_Event{};
+        SDL_zero(event);
         event.type = post_event_type_;
-        auto region = static_cast<void*>(&event.user.data1);
-        auto obj = new (region) event_fn{std::move(ev)};
-        assert((void*) obj == (void*) &event.user.data1);
+        event.user.data1 = new event_fn{std::move(ev)};
         SDL_PushEvent(&event);
     }
 
