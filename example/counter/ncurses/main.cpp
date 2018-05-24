@@ -92,7 +92,7 @@ int main(int argc, const char** argv)
                         term.stop();
                 },
                 [&] (ncurses::resize_event) {
-                    draw((const counter::model&)store.current());
+                    store.update();
                 }
             }, ev);
     });

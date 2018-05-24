@@ -48,8 +48,8 @@ struct store
     void dispatch(action_t action)
     { impl_->dispatch(action); }
 
-    const model_t& current() const
-    { return impl_->model; }
+    void update()
+    { return impl_->update(); }
 
     context_t get_context()
     { return impl_->context; }
@@ -77,10 +77,15 @@ private:
                       [this] { loop.pause(); },
                       [this] { loop.resume(); }}
         {
+            update();
+        };
+
+        void update()
+        {
             loop.post([=] {
                 view(model);
             });
-        };
+        }
 
         void dispatch(action_t action)
         {
