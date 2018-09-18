@@ -54,6 +54,7 @@ struct debugger
         Action action;
         Model model;
     };
+
     struct model
     {
         cursor_t cursor = {};
@@ -65,11 +66,22 @@ struct debugger
         model() = default;
         model(Model i) : init{i} {}
 
-        operator const Model& () const {
-            assert(cursor <= history.size());
+        using lookup_result = std::pair<std::optional<Action>, const Model&>;
+
+        lookup_result lookup(cursor_t cursor) const
+        {
+            if (cursor > history.size())
+                throw std::runtime_error{"bad cursor"};
             return cursor == 0
-                ? init
-                : history[cursor - 1].model;
+                ? lookup_result{{}, init}
+                : [&] {
+                    auto& step = history[cursor - 1];
+                    return lookup_result{step.action, step.model};
+                }();
+        }
+
+        operator const Model& () const {
+            return lookup(cursor).second;
         }
     };
 
