@@ -10882,14 +10882,14 @@ var _elm_lang$elm_architecture_tutorial$Main$Flags = function (a) {
 };
 var _elm_lang$elm_architecture_tutorial$Main$Status = F4(
 	function (a, b, c, d) {
-		return {program: a, size: b, cursor: c, paused: d};
+		return {program: a, summary: b, cursor: c, paused: d};
 	});
 var _elm_lang$elm_architecture_tutorial$Main$initStatus = A4(_elm_lang$elm_architecture_tutorial$Main$Status, '', 0, 0, false);
 var _elm_lang$elm_architecture_tutorial$Main$decodeStatus = A5(
 	_elm_lang$core$Json_Decode$map4,
 	_elm_lang$elm_architecture_tutorial$Main$Status,
 	A2(_elm_lang$core$Json_Decode$field, 'program', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'size', _elm_lang$core$Json_Decode$int),
+	A2(_elm_lang$core$Json_Decode$field, 'summary', _elm_lang$core$Json_Decode$int),
 	A2(_elm_lang$core$Json_Decode$field, 'cursor', _elm_lang$core$Json_Decode$int),
 	A2(_elm_lang$core$Json_Decode$field, 'paused', _elm_lang$core$Json_Decode$bool));
 var _elm_lang$elm_architecture_tutorial$Main$Step = F2(
@@ -10942,7 +10942,7 @@ var _elm_lang$elm_architecture_tutorial$Main$KeyDown = {ctor: 'KeyDown'};
 var _elm_lang$elm_architecture_tutorial$Main$KeyUp = {ctor: 'KeyUp'};
 var _elm_lang$elm_architecture_tutorial$Main$Redo = {ctor: 'Redo'};
 var _elm_lang$elm_architecture_tutorial$Main$viewRedoButton = function (status) {
-	var disabled = _elm_lang$core$Native_Utils.eq(status.cursor, status.size);
+	var disabled = _elm_lang$core$Native_Utils.eq(status.cursor, status.summary);
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -11149,7 +11149,7 @@ var _elm_lang$elm_architecture_tutorial$Main$viewHeader = function (model) {
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html$text(
-												_elm_lang$core$Basics$toString(model.status.size)),
+												_elm_lang$core$Basics$toString(model.status.summary)),
 											_1: {ctor: '[]'}
 										}),
 									_1: {
@@ -11259,7 +11259,7 @@ var _elm_lang$elm_architecture_tutorial$Main$viewHistory = function (model) {
 				_1: A3(_elm_lang$elm_architecture_tutorial$Main$viewHistoryItem, model.status.cursor, selected, idx)
 			};
 		},
-		A2(_elm_lang$core$List$range, 0, model.status.size));
+		A2(_elm_lang$core$List$range, 0, model.status.summary));
 	return A3(
 		_elm_lang$html$Html_Keyed$node,
 		'div',
@@ -11394,7 +11394,7 @@ var _elm_lang$elm_architecture_tutorial$Main$queryStep = F2(
 	});
 var _elm_lang$elm_architecture_tutorial$Main$selectStep = F2(
 	function (model, index) {
-		if ((_elm_lang$core$Native_Utils.cmp(index, 0) < 0) || (_elm_lang$core$Native_Utils.cmp(index, model.status.size) > 0)) {
+		if ((_elm_lang$core$Native_Utils.cmp(index, 0) < 0) || (_elm_lang$core$Native_Utils.cmp(index, model.status.summary) > 0)) {
 			return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 		} else {
 			var detail = function () {

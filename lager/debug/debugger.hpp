@@ -80,6 +80,11 @@ struct debugger
                 }();
         }
 
+        std::size_t summary() const
+        {
+            return history.size();
+        }
+
         operator const Model& () const {
             return lookup(cursor).second;
         }

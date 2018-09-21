@@ -113,7 +113,7 @@ public:
                 {
                     auto a = cereal::JSONOutputArchive{s};
                     a(cereal::make_nvp("program", this->self.program_),
-                      cereal::make_nvp("size",    m.history.size()),
+                      cereal::make_nvp("summary", m.summary()),
                       cereal::make_nvp("cursor",  m.cursor),
                       cereal::make_nvp("paused",  m.paused));
                 }
