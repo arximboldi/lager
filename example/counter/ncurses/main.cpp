@@ -16,6 +16,7 @@
 #include <lager/store.hpp>
 #include <lager/event_loop/boost_asio.hpp>
 #include <lager/debug/http_server.hpp>
+#include <lager/debug/tree_debugger.hpp>
 #include <lager/debug/enable.hpp>
 
 using namespace std::string_literals;
@@ -57,7 +58,7 @@ int main(int argc, const char** argv)
     ::init_pair(1, COLOR_WHITE, COLOR_GREEN);
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
-#ifdef DEBUGGER
+#if defined(DEBUGGER) || defined(TREE_DEBUGGER)
     auto debugger = lager::http_debug_server{argc, argv, 8080};
 #endif
 #ifdef META_DEBUGGER
@@ -71,6 +72,9 @@ int main(int argc, const char** argv)
         lager::comp(
 #ifdef DEBUGGER
             lager::enable_debug(debugger),
+#endif
+#ifdef TREE_DEBUGGER
+            lager::enable_debug<lager::tree_debugger>(debugger),
 #endif
 #ifdef META_DEBUGGER
             lager::enable_debug(meta_debugger),
