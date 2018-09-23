@@ -17,6 +17,7 @@
 
 #include <immer/box.hpp>
 #include <immer/vector.hpp>
+#include <immer/vector_transient.hpp>
 #include <immer/algorithm.hpp>
 
 #include <lager/debug/cereal/immer_vector.hpp>
@@ -65,6 +66,17 @@ struct tree_debugger
         Action action;
         Model model;
         immer::vector<history> branches;
+    };
+
+    struct summary_step_t;
+
+    using summary_history_t = immer::vector<immer::box<summary_step_t>>;
+    using summary_t = immer::vector<summary_history_t>;
+
+    struct summary_step_t
+    {
+        std::size_t steps;
+        summary_t branches;
     };
 
     struct model
@@ -165,9 +177,29 @@ struct tree_debugger
             }
         }
 
-        std::size_t summary() const
+        summary_t do_summary(const immer::vector<history>& branches) const
         {
-            return branches.size();
+            auto result = summary_t{}.transient();
+            immer::for_each(branches, [&] (auto&& history) {
+                auto steps = std::size_t{};
+                auto current = summary_history_t{}.transient();
+                immer::for_each(history, [&] (auto&& step) {
+                    if (step->branches.empty())
+                        ++steps;
+                    else {
+                        current.push_back({steps, do_summary(step->branches)});
+                        steps = 0;
+                    }
+                });
+                current.push_back(summary_step_t{steps, {}});
+                result.push_back(std::move(current).persistent());
+            });
+            return std::move(result).persistent();
+        }
+
+        summary_t summary() const
+        {
+            return do_summary(branches);
         }
 
         operator const Model& () const
@@ -255,6 +287,7 @@ struct tree_debugger
     LAGER_CEREAL_NESTED_STRUCT(pos_t, (branch)(step));
     LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(paused)(init)(branches));
     LAGER_CEREAL_NESTED_STRUCT(step, (action)(model)(branches));
+    LAGER_CEREAL_NESTED_STRUCT(summary_step_t, (steps)(branches));
 };
 
 } // namespace lager
