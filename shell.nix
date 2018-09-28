@@ -17,6 +17,7 @@ stdenv.mkDerivation rec {
     cmake
     ncurses
     boost
+    glibcLocales
     deps.libhttpserver
     deps.cereal
     deps.immer
