@@ -41,7 +41,7 @@ port title : String -> Cmd a
 
 type alias Status =
     { program: String
-    , size: Int
+    , summary: Int
     , cursor: Int
     , paused: Bool
     }
@@ -83,7 +83,7 @@ detailIndex d =
 decodeStatus : Decode.Decoder Status
 decodeStatus = Decode.map4 Status
                (Decode.field "program" Decode.string)
-               (Decode.field "size"    Decode.int)
+               (Decode.field "summary"    Decode.int)
                (Decode.field "cursor"  Decode.int)
                (Decode.field "paused"  Decode.bool)
 
@@ -115,7 +115,7 @@ type Msg = RecvStatus (Result Http.Error Status)
 
 selectStep : Model -> Int -> (Model, Cmd Msg)
 selectStep model index =
-    if index < 0 || index > model.status.size
+    if index < 0 || index > model.status.summary
     then (model, Cmd.none)
     else let detail = case model.detail of
                           LoadedStep _ step   -> ChangingStep index step
@@ -204,7 +204,7 @@ viewHeader model =
               [ div [class "block tt hl"] [text model.status.program]
               , div [class "block"] [text model.server]
               , div [class "block"]
-                  [ span [class "hl"] [text <| (toString model.status.size)]
+                  [ span [class "hl"] [text <| (toString model.status.summary)]
                   , text " steps" ] -- ⸽
               ]
         , div [ class "right-side" ]
@@ -216,7 +216,7 @@ viewHeader model =
 
 viewPlayButton : Bool -> Html Msg
 viewPlayButton paused = if paused
-                        then div [class "button", onClick Resume] [text "⏴"]
+                        then div [class "button", onClick Resume] [text "⏵"]
                         else div [class "button", onClick Pause] [text "⏸"]
 
 viewUndoButton : Status -> Html Msg
@@ -228,7 +228,7 @@ viewUndoButton status =
 
 viewRedoButton : Status -> Html Msg
 viewRedoButton status =
-    let disabled = status.cursor == status.size
+    let disabled = status.cursor == status.summary
     in div [ classes [(True, "button"), (disabled, "disabled")]
            , onClick Redo ]
         [text "⮎"] -- alt: ⮎↷↻⮣⮡⮫⏩⏭
@@ -270,7 +270,7 @@ viewHistoryItem cursor selected idx =
 viewHistory : Model -> Html Msg
 viewHistory model =
     let selected = detailIndex model.detail
-        selectors = List.range 0 model.status.size
+        selectors = List.range 0 model.status.summary
                   |> List.map (\idx ->
                                   ( toString idx
                                   , viewHistoryItem

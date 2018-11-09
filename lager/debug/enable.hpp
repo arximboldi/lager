@@ -17,7 +17,8 @@
 
 namespace lager {
 
-template <typename Server>
+template <template<class,class> class Debugger = debugger,
+          typename Server>
 auto enable_debug(Server& serv)
 {
     return [&] (auto next) {
@@ -26,7 +27,7 @@ auto enable_debug(Server& serv)
         {
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
-            using debugger_t = debugger<action_t, model_t>;
+            using debugger_t = Debugger<action_t, model_t>;
             auto& handle     = serv.enable(debugger_t{});
             auto  store      = next(
                 type_<typename debugger_t::action>{},

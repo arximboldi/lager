@@ -12,8 +12,8 @@
 *
 */
 
-$normal-font: Source Sans Pro, sans;
-$tt-font: Fira Code, Fira Mono, Inconsolata, monospace;
+$normal-font: "Source Sans Pro", sans;
+$tt-font: "Fira Code", "Fira Mono", Inconsolata, monospace;
 
 body {
     font-family: $normal-font;
@@ -80,6 +80,7 @@ body {
 
         .button {
             @extend .interactive;
+            font-family: $tt-font;
             float: right;
             color: white;
             background-color: transparent;

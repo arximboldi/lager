@@ -113,7 +113,7 @@ public:
                 {
                     auto a = cereal::JSONOutputArchive{s};
                     a(cereal::make_nvp("program", this->self.program_),
-                      cereal::make_nvp("size",    m.history.size()),
+                      cereal::make_nvp("summary", m.summary()),
                       cereal::make_nvp("cursor",  m.cursor),
                       cereal::make_nvp("paused",  m.paused));
                 }
@@ -127,17 +127,12 @@ public:
             {
                 auto m = this->self.get_model_();
                 auto s = std::ostringstream{};
-                auto cursor = std::stoul(req.get_arg("cursor"));
-                if (cursor > m.history.size()) return {};
                 {
+                    auto cursor = std::stoul(req.get_arg("cursor"));
+                    auto result = m.lookup(cursor);
                     auto a = cereal::JSONOutputArchive{s};
-                    if (cursor == 0)
-                        a(cereal::make_nvp("model", m.init));
-                    else {
-                        auto& step = m.history[cursor - 1];
-                        a(cereal::make_nvp("action", step.action));
-                        a(cereal::make_nvp("model",  step.model));
-                    }
+                    if (result.first) a(cereal::make_nvp("action", *result.first));
+                    a(cereal::make_nvp("model",  result.second));
                 }
                 return httpserver::http_response_builder(
                     s.str(), 200, "text/json");
