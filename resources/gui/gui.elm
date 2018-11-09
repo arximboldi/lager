@@ -216,7 +216,7 @@ viewHeader model =
 
 viewPlayButton : Bool -> Html Msg
 viewPlayButton paused = if paused
-                        then div [class "button", onClick Resume] [text "⏴"]
+                        then div [class "button", onClick Resume] [text "⏵"]
                         else div [class "button", onClick Pause] [text "⏸"]
 
 viewUndoButton : Status -> Html Msg

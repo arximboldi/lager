@@ -11064,7 +11064,7 @@ var _elm_lang$elm_architecture_tutorial$Main$viewPlayButton = function (paused) 
 		},
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html$text('⏴'),
+			_0: _elm_lang$html$Html$text('⏵'),
 			_1: {ctor: '[]'}
 		}) : A2(
 		_elm_lang$html$Html$div,
