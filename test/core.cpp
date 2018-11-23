@@ -30,16 +30,16 @@ TEST_CASE("basic")
 
     CHECK(viewed);
     CHECK(viewed->value == 0);
-    CHECK(store.current().value == 0);
 
     store.dispatch(counter::increment_action{});
     CHECK(viewed);
     CHECK(viewed->value == 1);
-    CHECK(store.current().value == 1);
 }
 
 TEST_CASE("effect as a result")
 {
+    auto viewed = std::optional<int>{std::nullopt};
+    auto view   = [&] (auto model) { viewed = model; };
     auto called = 0;
     auto effect = [&] (lager::context<int> ctx) { ++called; };
     auto store  = lager::make_store<int>(
@@ -47,10 +47,11 @@ TEST_CASE("effect as a result")
         [=] (int model, int action) {
             return std::pair{model + action, effect};
         },
-        lager::noop,
+        view,
         lager::with_manual_event_loop{});
 
     store.dispatch(2);
-    CHECK(store.current() == 2);
+    CHECK(viewed);
+    CHECK(*viewed == 2);
     CHECK(called == 1);
 }
