@@ -17,6 +17,16 @@
 
 namespace lager {
 
+//!
+// Provide some _context_ for effectful functions, allowing them to control the
+// event loop and dispatch new actions into the store.
+//
+// @note This is a reference type and it's life-time is bound to the associated
+//       store.  It is invalid to use it after the store has been destructed.
+//       Its methods may modify the store's underlying state.
+//
+// @todo Make constructors private.
+//
 template <typename Action>
 struct context
 {
@@ -55,9 +65,16 @@ struct context
     {}
 };
 
+//!
+// Effectful procedure that uses the store context.
+//
 template <typename Action>
 using effect = std::function<void(const context<Action>&)>;
 
+//!
+// Metafunction that returns whether the @a Reducer returns an effect when
+// invoked with a given @a Model and @a Action types
+//
 template <typename Reducer, typename Model, typename Action,
           typename Enable=void>
 struct has_effect
@@ -77,6 +94,12 @@ struct has_effect<
 template <typename Reducer, typename Model, typename Action>
 constexpr auto has_effect_v = has_effect<Reducer, Model, Action>::value;
 
+//!
+// Invokes the @a reducer with the @a model and @a action. If the reducer returns
+// an effect, it evaluates the @a handler passing the effect to it.  This
+// function can be used to generically handle both reducers with or without
+// side-effects.
+//
 template <typename Reducer, typename Model, typename Action,
           typename EffectHandler,
           std::enable_if_t<has_effect_v<Reducer, Model, Action>,int> =0>
@@ -103,6 +126,9 @@ auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
                       LAGER_FWD(action));
 }
 
+//!
+// Returns an effects that evalates the effects @a a and @a b in order.
+//
 template <typename Action>
 effect<Action> sequence(effect<Action> a, effect<Action> b)
 {
