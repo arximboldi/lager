@@ -55,3 +55,22 @@ TEST_CASE("effect as a result")
     CHECK(*viewed == 2);
     CHECK(called == 1);
 }
+
+TEST_CASE("store type erasure")
+{
+    auto viewed = std::optional<counter::model>{std::nullopt};
+    auto view   = [&] (auto model) { viewed = model; };
+    lager::store<counter::action, counter::model> store
+        = lager::make_store<counter::action>(
+            counter::model{},
+            counter::update,
+            view,
+            lager::with_manual_event_loop{});
+
+    CHECK(viewed);
+    CHECK(viewed->value == 0);
+
+    store.dispatch(counter::increment_action{});
+    CHECK(viewed);
+    CHECK(viewed->value == 1);
+}

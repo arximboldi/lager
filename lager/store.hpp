@@ -25,103 +25,91 @@ namespace lager {
 // update it.  @see make_store for details about the different initialization
 // components.
 //
-template <typename Action,
-          typename Model,
-          typename ReducerFn,
-          typename ViewFn,
-          typename EventLoop>
-struct store
-{
-    using action_t     = Action;
-    using model_t      = Model;
-    using reducer_t    = ReducerFn;
-    using view_t       = ViewFn;
-    using event_loop_t = EventLoop;
-    using context_t    = context<Action>;
+template <typename Action, typename Model>
+struct store {
+    using action_t  = Action;
+    using model_t   = Model;
+    using context_t = context<Action>;
 
-    store(model_t init,
-          reducer_t reducer,
-          view_t view,
-          event_loop_t loop)
-        : impl_{std::make_unique<impl>(
+    template <typename ReducerFn, typename ViewFn, typename EventLoop>
+    store(model_t init, ReducerFn reducer, ViewFn view, EventLoop loop)
+        : impl_{std::make_unique<impl<ReducerFn, ViewFn, EventLoop>>(
             std::move(init),
             std::move(reducer),
             std::move(view),
             std::move(loop))}
     {}
 
-    //!
-    // Schedule an action.  This will update the data-model using the @a reducer
-    // and re-execute the @a view.
-    //
-    void dispatch(action_t action)
-    { impl_->dispatch(action); }
-
-    //!
-    // Schedule a re-execution of the the view procedure on the current state.
-    // This can be useful when the view has hidden effectful sources.
-    //
-    // @note This operation might disappear in the future.  The same effect can
-    //       be achieved by providing a no-op action.
-    //
-    void update()
-    { return impl_->update(); }
-
-    //!
-    // Return the context for this @a store.
-    //
-    // @note The context is a reference type. It becomes invalidated when the
-    //       store goes away.
-    //
-    context_t get_context()
-    { return impl_->context; }
+    void dispatch(action_t action) { impl_->dispatch(action); }
+    void update() { return impl_->update(); }
+    context_t get_context() { return impl_->context; }
 
 private:
-    struct impl
+    struct impl_base
     {
-        event_loop_t loop;
+        context_t context;
         model_t model;
+
+        impl_base(context_t context_, model_t model_)
+            : context{std::move(context_)}
+            , model{std::move(model_)}
+        {}
+
+        virtual ~impl_base() = default;
+        virtual void dispatch(action_t action) = 0;
+        virtual void update() = 0;
+    };
+
+    template <typename ReducerFn, typename ViewFn, typename EventLoop>
+    struct impl final : impl_base
+    {
+        using reducer_t    = ReducerFn;
+        using view_t       = ViewFn;
+        using event_loop_t = EventLoop;
+
+        event_loop_t loop;
         reducer_t reducer;
         view_t view;
-        context_t context;
 
         impl(model_t init_,
              reducer_t reducer_,
              view_t view_,
              event_loop_t loop_)
-            : loop{std::move(loop_)}
-            , model{std::move(init_)}
+            : impl_base{
+                context_t{
+                    [this](auto ev) { dispatch(ev); },
+                    [this](auto fn) { loop.async(fn); },
+                    [this] { loop.finish(); },
+                    [this] { loop.pause(); },
+                    [this] { loop.resume(); }
+                },
+                std::move(init_)}
+            , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
             , view{std::move(view_)}
-            , context{[this] (auto ev) { dispatch(ev); },
-                      [this] (auto fn) { loop.async(fn); },
-                      [this] { loop.finish(); },
-                      [this] { loop.pause(); },
-                      [this] { loop.resume(); }}
         {
             update();
         };
 
-        void update()
+        void update() override
         {
-            loop.post([=] {
-                view(model);
-            });
+            loop.post([=] { view(this->model); });
         }
 
-        void dispatch(action_t action)
+        void dispatch(action_t action) override
         {
             loop.post([=] {
-                model = invoke_reducer(reducer, model, action,
-                                       [&] (auto&& effect) {
-                                           LAGER_FWD(effect)(context);
-                                       });
-                view(model);
+                this->model = invoke_reducer(
+                    reducer,
+                    this->model,
+                    action,
+                    [&](auto&& effect) { LAGER_FWD(effect)(this->context); });
+                view(this->model);
             });
         }
     };
 
-    std::unique_ptr<impl> impl_;
+    std::unique_ptr<impl_base> impl_;
 };
 
 //!
@@ -188,12 +176,15 @@ auto make_store(Model&& init,
                 EventLoop&& loop,
                 Enhancer&& enhancer)
 {
-    auto store_creator = enhancer([&] (auto action, auto&& ...args) {
-        using action_t = typename decltype(action)::type;
-        return store<action_t, std::decay_t<decltype(args)>...>{
-            std::forward<decltype(args)>(args)...
-        };
-    });
+    auto store_creator = enhancer(
+        [&] (auto action, auto&& model, auto&& ...args) {
+            using action_t = typename decltype(action)::type;
+            using model_t  = std::decay_t<decltype(model)>;
+            return store<action_t, model_t>{
+                std::forward<decltype(model)>(model),
+                std::forward<decltype(args)>(args)...
+            };
+        });
     return store_creator(
         type_<Action>{},
         std::forward<Model>(init),
