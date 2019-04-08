@@ -88,3 +88,16 @@ TEST_CASE("merging")
     CHECK(d4.get<foo>().x == 42);
     CHECK(d4.get<bar>().s == std::string{"yeah"});
 }
+
+TEST_CASE("type deduction and references")
+{
+    auto f  = foo{};
+    auto d1 = lager::make_deps(std::ref(f), bar{});
+    auto d2 = lager::deps<foo&, bar>{d1};
+
+    f.x = 42;
+    CHECK(d1.get<foo>().x == 42);
+    CHECK(d1.get<bar>().s == std::string{"lol"});
+    CHECK(d2.get<foo>().x == 42);
+    CHECK(d2.get<bar>().s == std::string{"lol"});
+}

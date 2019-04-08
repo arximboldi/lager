@@ -23,6 +23,22 @@
 #include <utility>
 
 namespace lager {
+
+namespace detail {
+
+template <typename T>
+struct is_reference_wrapper : std::false_type
+{};
+template <typename T>
+struct is_reference_wrapper<std::reference_wrapper<T>> : std::true_type
+{};
+
+template <typename T>
+constexpr auto is_reference_wrapper_v =
+    is_reference_wrapper<std::decay_t<T>>::value;
+
+} // namespace detail
+
 namespace dep {
 
 struct spec
@@ -37,6 +53,7 @@ constexpr auto is_spec_v = is_spec<T>::value;
 template <typename T>
 struct val : spec
 {
+    using type    = val;
     using key     = boost::hana::type<T>;
     using storage = T;
 
@@ -50,6 +67,7 @@ struct val : spec
 template <typename T>
 struct ref : spec
 {
+    using type    = ref;
     using key     = boost::hana::type<T>;
     using storage = std::reference_wrapper<T>;
 
@@ -61,12 +79,17 @@ struct ref : spec
 };
 
 template <typename T>
-using to_spec =
-    std::conditional_t<is_spec_v<T>,
-                       T,
-                       std::conditional_t<std::is_reference_v<T>,
-                                          ref<std::remove_reference_t<T>>,
-                                          val<T>>>;
+struct ref<std::reference_wrapper<T>> : ref<T>
+{};
+
+template <typename T>
+using to_spec = typename std::conditional_t<
+    is_spec_v<T>,
+    T,
+    std::conditional_t<std::is_reference_v<T> ||
+                           detail::is_reference_wrapper_v<T>,
+                       ref<std::remove_reference_t<T>>,
+                       val<T>>>::type;
 
 template <typename T>
 using key_t = typename dep::to_spec<T>::key;
@@ -87,11 +110,9 @@ namespace detail {
 template <typename T>
 struct is_deps : std::false_type
 {};
-
 template <typename... Ts>
 struct is_deps<deps<Ts...>> : std::true_type
 {};
-
 template <typename T>
 constexpr auto is_deps_v = is_deps<std::decay_t<T>>::value;
 
@@ -187,5 +208,11 @@ private:
 
     storage_t storage_;
 };
+
+template <typename... Ts>
+auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>
+{
+    return {std::forward<Ts>(args)...};
+}
 
 } // namespace lager
