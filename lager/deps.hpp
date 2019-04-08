@@ -13,7 +13,9 @@
 #pragma once
 
 #include <boost/hana/at_key.hpp>
+#include <boost/hana/intersection.hpp>
 #include <boost/hana/map.hpp>
+#include <boost/hana/set.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -75,31 +77,84 @@ using storage_t = typename dep::to_spec<T>::storage;
 
 } // namespace dep
 
-namespace detail {} // namespace detail
+template <typename... Deps>
+struct deps;
+
+namespace detail {
+
+template <typename T>
+struct is_deps : std::false_type
+{};
+
+template <typename... Ts>
+struct is_deps<deps<Ts...>> : std::true_type
+{};
+
+template <typename T>
+constexpr auto is_deps_v = is_deps<std::decay_t<T>>::value;
+
+} // namespace detail
 
 template <typename... Deps>
-struct deps
+class deps
 {
-    template <typename... Ts>
-    deps(Ts&&... ts)
-        : storage_{boost::hana::make_pair(
-              dep::key_c<Deps>, dep::storage_t<Deps>{std::forward<Ts>(ts)})...}
+    static constexpr auto spec_set =
+        boost::hana::make_set(boost::hana::type_c<dep::to_spec<Deps>>...);
+
+public:
+    template <typename T,
+              typename... Ts,
+              std::enable_if_t<!detail::is_deps_v<T> &&
+                                   sizeof...(Ts) + 1 == sizeof...(Deps),
+                               bool> = true>
+    deps(T&& t, Ts&&... ts)
+        : storage_{make_storage_(std::forward<T>(t), std::forward<Ts>(ts)...)}
     {}
+
+    template <typename... Ds,
+              std::enable_if_t<spec_set == boost::hana::intersection(
+                                               spec_set, deps<Ds...>::spec_set),
+                               bool> = true>
+    deps(deps<Ds...> other)
+        : storage_{make_storage_from_(std::move(other.storage_))}
+    {}
+
+    deps(const deps&) = default;
+    deps(deps&&)      = default;
 
     template <typename Key>
     decltype(auto) get()
     {
         using key_t  = dep::key_t<Key>;
-        using spec_t = std::decay_t<decltype(specs_t{}[key_t{}])>;
+        using spec_t = std::decay_t<decltype(spec_map_t{}[key_t{}])>;
         return spec_t::get(storage_[key_t{}]);
     }
 
 private:
-    using specs_t = boost::hana::map<
+    template <typename... Ds>
+    friend struct deps;
+
+    using spec_map_t = boost::hana::map<
         boost::hana::pair<dep::key_t<Deps>, dep::to_spec<Deps>>...>;
 
     using storage_t = boost::hana::map<
         boost::hana::pair<dep::key_t<Deps>, dep::storage_t<Deps>>...>;
+
+    template <typename... Ts>
+    storage_t make_storage_(Ts&&... ts)
+    {
+        return storage_t{boost::hana::make_pair(
+            dep::key_c<Deps>, dep::storage_t<Deps>{std::forward<Ts>(ts)})...};
+    }
+
+    template <typename Storage>
+    storage_t make_storage_from_(Storage&& other)
+    {
+        return storage_t{
+            boost::hana::make_pair(dep::key_c<Deps>,
+                                   dep::storage_t<Deps>{std::forward<Storage>(
+                                       other)[dep::key_t<Deps>{}]})...};
+    }
 
     storage_t storage_;
 };

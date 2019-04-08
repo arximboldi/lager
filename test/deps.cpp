@@ -24,6 +24,11 @@ struct bar
     const char* s = "lol";
 };
 
+struct yas
+{
+    double z = 42.;
+};
+
 TEST_CASE("basic")
 {
     auto x = lager::deps<foo, bar>{foo{}, bar{}};
@@ -38,4 +43,34 @@ TEST_CASE("reference")
     f.x    = 42;
     CHECK(x.get<foo>().x == 42);
     CHECK(x.get<bar>().s == std::string{"lol"});
+}
+
+TEST_CASE("copiable")
+{
+    auto f = foo{};
+
+    auto x1 = lager::deps<foo&, bar>{f, bar{}};
+    f.x     = 42;
+    CHECK(x1.get<foo>().x == 42);
+    CHECK(x1.get<bar>().s == std::string{"lol"});
+
+    auto x2 = x1;
+    CHECK(x2.get<foo>().x == 42);
+    CHECK(x2.get<bar>().s == std::string{"lol"});
+}
+
+TEST_CASE("subsets")
+{
+    auto d1 = lager::deps<foo, bar, yas>{foo{42}, bar{"hehe"}, yas{15.}};
+
+    auto d2 = lager::deps<foo, yas>{d1};
+    CHECK(d2.get<foo>().x == 42);
+    CHECK(d2.get<yas>().z == 15.);
+
+    auto d3 = lager::deps<bar>{d1};
+    CHECK(d3.get<bar>().s == std::string{"hehe"});
+
+    auto d4 = lager::deps<yas, foo>{d2};
+    CHECK(d4.get<foo>().x == 42);
+    CHECK(d4.get<yas>().z == 15.);
 }
