@@ -18,11 +18,24 @@ struct foo
 {
     int x = 0;
 };
+
 struct bar
-{};
+{
+    const char* s = "lol";
+};
 
 TEST_CASE("basic")
 {
     auto x = lager::deps<foo, bar>{foo{}, bar{}};
     CHECK(x.get<foo>().x == 0);
+    CHECK(x.get<bar>().s == std::string{"lol"});
+}
+
+TEST_CASE("reference")
+{
+    auto f = foo{};
+    auto x = lager::deps<foo&, bar>{f, bar{}};
+    f.x    = 42;
+    CHECK(x.get<foo>().x == 42);
+    CHECK(x.get<bar>().s == std::string{"lol"});
 }
