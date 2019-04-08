@@ -10,9 +10,9 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#include "cerealize.hpp"
 #include <catch.hpp>
 #include <lager/debug/cereal/struct.hpp>
-#include "cerealize.hpp"
 
 struct foo
 {
@@ -30,7 +30,8 @@ TEST_CASE("basic")
     CHECK(x.b == y.b);
 }
 
-struct empty_foo {};
+struct empty_foo
+{};
 LAGER_CEREAL_STRUCT(empty_foo);
 
 TEST_CASE("empty")

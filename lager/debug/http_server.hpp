@@ -16,8 +16,8 @@
 #include <lager/debug/cereal/variant_with_name.hpp>
 
 #include <cereal/archives/json.hpp>
-#include <cereal/types/optional.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/optional.hpp>
 #include <httpserver.hpp>
 
 #include <atomic>
@@ -32,11 +32,9 @@ namespace detail {
 
 bool ends_with(const std::string& str, const std::string& ending)
 {
-    return str.length() >= ending.length()
-        && str.compare(str.length() - ending.length(),
-                       ending.length(),
-                       ending) == 0;
-
+    return str.length() >= ending.length() &&
+           str.compare(
+               str.length() - ending.length(), ending.length(), ending) == 0;
 }
 
 } // namespace detail
@@ -58,10 +56,7 @@ public:
         using model       = typename Debugger::model;
         using context_t   = context<action>;
 
-        void set_context(context_t ctx)
-        {
-            context_ = std::move(ctx);
-        }
+        void set_context(context_t ctx) { context_ = std::move(ctx); }
 
         void view(const model& m)
         {
@@ -76,8 +71,8 @@ public:
         {}
 
         std::string program_ = {};
-        context_t context_ = {};
-        std::shared_ptr<const model> model_ {nullptr};
+        context_t context_   = {};
+        std::shared_ptr<const model> model_{nullptr};
 
         static std::string join_args_(int argc, const char** argv)
         {
@@ -92,20 +87,25 @@ public:
         model get_model_() const
         {
             auto m = std::atomic_load(&model_);
-            if (!m) throw std::runtime_error("not initialized yet");
+            if (!m)
+                throw std::runtime_error("not initialized yet");
             return *m;
         }
 
         struct resource_t : httpserver::http_resource
         {
             handle& self;
-            resource_t(handle& hdl) : self{hdl} {}
+            resource_t(handle& hdl)
+                : self{hdl}
+            {}
         };
 
         using response_t = const httpserver::http_response;
         using request_t  = httpserver::http_request;
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
                 auto m = this->self.get_model_();
@@ -114,15 +114,17 @@ public:
                     auto a = cereal::JSONOutputArchive{s};
                     a(cereal::make_nvp("program", this->self.program_),
                       cereal::make_nvp("summary", m.summary()),
-                      cereal::make_nvp("cursor",  m.cursor),
-                      cereal::make_nvp("paused",  m.paused));
+                      cereal::make_nvp("cursor", m.cursor),
+                      cereal::make_nvp("paused", m.paused));
                 }
                 return httpserver::http_response_builder(
                     s.str(), 200, "text/json");
             }
         } root_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
                 auto m = this->self.get_model_();
@@ -130,16 +132,19 @@ public:
                 {
                     auto cursor = std::stoul(req.get_arg("cursor"));
                     auto result = m.lookup(cursor);
-                    auto a = cereal::JSONOutputArchive{s};
-                    if (result.first) a(cereal::make_nvp("action", *result.first));
-                    a(cereal::make_nvp("model",  result.second));
+                    auto a      = cereal::JSONOutputArchive{s};
+                    if (result.first)
+                        a(cereal::make_nvp("action", *result.first));
+                    a(cereal::make_nvp("model", result.second));
                 }
                 return httpserver::http_response_builder(
                     s.str(), 200, "text/json");
             }
         } step_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
                 auto cursor = std::stoul(req.get_arg("cursor"));
@@ -149,7 +154,9 @@ public:
             }
         } goto_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::undo_action{});
@@ -157,7 +164,9 @@ public:
             }
         } undo_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::redo_action{});
@@ -165,7 +174,9 @@ public:
             }
         } redo_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::pause_action{});
@@ -173,32 +184,41 @@ public:
             }
         } pause_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_POST(const request_t& req) override
             {
-                this->self.context_.dispatch(typename Debugger::resume_action{});
+                this->self.context_.dispatch(
+                    typename Debugger::resume_action{});
                 return httpserver::http_response_builder("", 200);
             }
         } resume_resource_ = {*this};
 
-        struct : resource_t { using resource_t::resource_t;
+        struct : resource_t
+        {
+            using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
                 auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-                auto resources_path = env_resources_path
-                    ? env_resources_path
-                    : LAGER_PREFIX_PATH "/share/lager";
+                auto resources_path = env_resources_path ? env_resources_path
+                                                         : LAGER_PREFIX_PATH
+                                          "/share/lager";
                 auto req_path = req.get_path();
-                auto rel_path = req_path == "/"
-                    ? "/gui/index.html"
-                    : "/gui/" + req_path;
+                auto rel_path =
+                    req_path == "/" ? "/gui/index.html" : "/gui/" + req_path;
                 auto full_path = resources_path + rel_path;
                 auto content_type =
-                    detail::ends_with(full_path, ".html") ? "text/html" :
-                    detail::ends_with(full_path, ".js")   ? "text/javascript" :
-                    detail::ends_with(full_path, ".css")  ? "text/css"
-                    /* otherwise */                       : "text/plain";
-                return httpserver::http_response_builder(full_path, 200, content_type)
+                    detail::ends_with(full_path, ".html")
+                        ? "text/html"
+                        : detail::ends_with(full_path, ".js")
+                              ? "text/javascript"
+                              : detail::ends_with(full_path, ".css")
+                                    ? "text/css"
+                                    /* otherwise */
+                                    : "text/plain";
+                return httpserver::http_response_builder(
+                           full_path, 200, content_type)
                     .file_response();
             }
         } gui_resource_ = {*this};
@@ -216,16 +236,16 @@ public:
         assert(!handle_);
         assert(!server_.is_running());
         using handle_t = handle<Debugger>;
-        auto hdl_ = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
-        auto& hdl = *hdl_;
+        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
+        auto& hdl      = *hdl_;
         server_.register_resource("/api/step/{cursor}", &hdl.step_resource_);
         server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
-        server_.register_resource("/api/undo",          &hdl.undo_resource_);
-        server_.register_resource("/api/redo",          &hdl.redo_resource_);
-        server_.register_resource("/api/pause",         &hdl.pause_resource_);
-        server_.register_resource("/api/resume",        &hdl.resume_resource_);
-        server_.register_resource("/api/?",             &hdl.root_resource_);
-        server_.register_resource("/?.*",               &hdl.gui_resource_);
+        server_.register_resource("/api/undo", &hdl.undo_resource_);
+        server_.register_resource("/api/redo", &hdl.redo_resource_);
+        server_.register_resource("/api/pause", &hdl.pause_resource_);
+        server_.register_resource("/api/resume", &hdl.resume_resource_);
+        server_.register_resource("/api/?", &hdl.root_resource_);
+        server_.register_resource("/?.*", &hdl.gui_resource_);
         handle_ = std::move(hdl_);
         server_.start();
         return hdl;
@@ -234,7 +254,7 @@ public:
 private:
     int argc_;
     const char** argv_;
-    httpserver::webserver server_ = httpserver::create_webserver(8080);
+    httpserver::webserver server_        = httpserver::create_webserver(8080);
     std::unique_ptr<handle_base> handle_ = nullptr;
 };
 

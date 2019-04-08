@@ -12,8 +12,8 @@
 
 #include <catch.hpp>
 
-#include <lager/store.hpp>
 #include <lager/event_loop/manual.hpp>
+#include <lager/store.hpp>
 
 #include "../example/counter/counter.hpp"
 #include <optional>
@@ -21,12 +21,12 @@
 TEST_CASE("basic")
 {
     auto viewed = std::optional<counter::model>{std::nullopt};
-    auto view   = [&] (auto model) { viewed = model; };
-    auto store  = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        view,
-        lager::with_manual_event_loop{});
+    auto view   = [&](auto model) { viewed = model; };
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           counter::update,
+                                           view,
+                                           lager::with_manual_event_loop{});
 
     CHECK(viewed);
     CHECK(viewed->value == 0);
@@ -39,16 +39,16 @@ TEST_CASE("basic")
 TEST_CASE("effect as a result")
 {
     auto viewed = std::optional<int>{std::nullopt};
-    auto view   = [&] (auto model) { viewed = model; };
+    auto view   = [&](auto model) { viewed = model; };
     auto called = 0;
-    auto effect = [&] (lager::context<int> ctx) { ++called; };
-    auto store  = lager::make_store<int>(
-        0,
-        [=] (int model, int action) {
-            return std::pair{model + action, effect};
-        },
-        view,
-        lager::with_manual_event_loop{});
+    auto effect = [&](lager::context<int> ctx) { ++called; };
+    auto store =
+        lager::make_store<int>(0,
+                               [=](int model, int action) {
+                                   return std::pair{model + action, effect};
+                               },
+                               view,
+                               lager::with_manual_event_loop{});
 
     store.dispatch(2);
     CHECK(viewed);
@@ -59,13 +59,12 @@ TEST_CASE("effect as a result")
 TEST_CASE("store type erasure")
 {
     auto viewed = std::optional<counter::model>{std::nullopt};
-    auto view   = [&] (auto model) { viewed = model; };
-    lager::store<counter::action, counter::model> store
-        = lager::make_store<counter::action>(
-            counter::model{},
-            counter::update,
-            view,
-            lager::with_manual_event_loop{});
+    auto view   = [&](auto model) { viewed = model; };
+    lager::store<counter::action, counter::model> store =
+        lager::make_store<counter::action>(counter::model{},
+                                           counter::update,
+                                           view,
+                                           lager::with_manual_event_loop{});
 
     CHECK(viewed);
     CHECK(viewed->value == 0);

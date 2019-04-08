@@ -30,16 +30,16 @@ namespace lager {
 template <typename Action>
 struct context
 {
-    using action_t      = Action;
-    using command_t     = std::function<void()>;
-    using dispatch_t    = std::function<void(action_t)>;
-    using async_t       = std::function<void(std::function<void()>)>;
+    using action_t   = Action;
+    using command_t  = std::function<void()>;
+    using dispatch_t = std::function<void(action_t)>;
+    using async_t    = std::function<void(std::function<void()>)>;
 
     dispatch_t dispatch;
-    async_t    async;
-    command_t  finish;
-    command_t  pause;
-    command_t  resume;
+    async_t async;
+    command_t finish;
+    command_t pause;
+    command_t resume;
 
     context() = default;
 
@@ -75,55 +75,61 @@ using effect = std::function<void(const context<Action>&)>;
 // Metafunction that returns whether the @a Reducer returns an effect when
 // invoked with a given @a Model and @a Action types
 //
-template <typename Reducer, typename Model, typename Action,
-          typename Enable=void>
-struct has_effect
-    : std::false_type {};
+template <typename Reducer,
+          typename Model,
+          typename Action,
+          typename Enable = void>
+struct has_effect : std::false_type
+{};
 
 template <typename Reducer, typename Model, typename Action>
 struct has_effect<
-    Reducer, Model, Action,
-    std::enable_if_t<
-        std::is_convertible_v<
-            decltype(std::get<1>(std::invoke(std::declval<Reducer>(),
-                                           std::declval<Model>(),
-                                           std::declval<Action>()))),
-            effect<std::decay_t<Action>>>>>
-    : std::true_type {};
+    Reducer,
+    Model,
+    Action,
+    std::enable_if_t<std::is_convertible_v<
+        decltype(std::get<1>(std::invoke(std::declval<Reducer>(),
+                                         std::declval<Model>(),
+                                         std::declval<Action>()))),
+        effect<std::decay_t<Action>>>>> : std::true_type
+{};
 
 template <typename Reducer, typename Model, typename Action>
 constexpr auto has_effect_v = has_effect<Reducer, Model, Action>::value;
 
 //!
-// Invokes the @a reducer with the @a model and @a action. If the reducer returns
-// an effect, it evaluates the @a handler passing the effect to it.  This
+// Invokes the @a reducer with the @a model and @a action. If the reducer
+// returns an effect, it evaluates the @a handler passing the effect to it. This
 // function can be used to generically handle both reducers with or without
 // side-effects.
 //
-template <typename Reducer, typename Model, typename Action,
+template <typename Reducer,
+          typename Model,
+          typename Action,
           typename EffectHandler,
-          std::enable_if_t<has_effect_v<Reducer, Model, Action>,int> =0>
-auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
-                    EffectHandler&& handler)
-    -> std::decay_t<Model>
+          std::enable_if_t<has_effect_v<Reducer, Model, Action>, int> = 0>
+auto invoke_reducer(Reducer&& reducer,
+                    Model&& model,
+                    Action&& action,
+                    EffectHandler&& handler) -> std::decay_t<Model>
 {
-    auto [new_model, effect] = std::invoke(LAGER_FWD(reducer),
-                                          LAGER_FWD(model),
-                                          LAGER_FWD(action));
+    auto [new_model, effect] =
+        std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
     LAGER_FWD(handler)(effect);
     return new_model;
 }
 
-template <typename Reducer, typename Model, typename Action,
+template <typename Reducer,
+          typename Model,
+          typename Action,
           typename EffectHandler,
-          std::enable_if_t<!has_effect_v<Reducer, Model, Action>,int> =0>
-auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
-                    EffectHandler&&)
-    -> std::decay_t<Model>
+          std::enable_if_t<!has_effect_v<Reducer, Model, Action>, int> = 0>
+auto invoke_reducer(Reducer&& reducer,
+                    Model&& model,
+                    Action&& action,
+                    EffectHandler &&) -> std::decay_t<Model>
 {
-    return std::invoke(LAGER_FWD(reducer),
-                      LAGER_FWD(model),
-                      LAGER_FWD(action));
+    return std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
 }
 
 //!
@@ -132,16 +138,19 @@ auto invoke_reducer(Reducer&& reducer, Model&& model, Action&& action,
 template <typename Action>
 effect<Action> sequence(effect<Action> a, effect<Action> b)
 {
-    return
-        (!a || a.template target<decltype(noop)>() == &noop) &&
-        (!b || b.template target<decltype(noop)>() == &noop)    ? noop :
-        !a  || a.template target<decltype(noop)>() == &noop     ? b :
-        !b  || b.template target<decltype(noop)>() == &noop     ? a :
-        // otherwise
-        [a, b] (auto&& ctx) {
-            a(ctx);
-            b(ctx);
-        };
+    return (!a || a.template target<decltype(noop)>() == &noop) &&
+                   (!b || b.template target<decltype(noop)>() == &noop)
+               ? noop
+               : !a || a.template target<decltype(noop)>() == &noop
+                     ? b
+                     : !b || b.template target<decltype(noop)>() == &noop
+                           ? a
+                           :
+                           // otherwise
+                           [a, b](auto&& ctx) {
+                               a(ctx);
+                               b(ctx);
+                           };
 }
 
 } // namespace lager

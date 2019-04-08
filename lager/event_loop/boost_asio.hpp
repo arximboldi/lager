@@ -13,8 +13,8 @@
 #pragma once
 
 #include <boost/asio/io_service.hpp>
-#include <thread>
 #include <functional>
+#include <thread>
 
 namespace lager {
 
@@ -26,10 +26,9 @@ struct with_boost_asio_event_loop
     template <typename Fn>
     void async(Fn&& fn)
     {
-        std::thread([fn=std::move(fn),
-                     work=boost::asio::io_service::work(service)] {
-            fn();
-        }).detach();
+        std::thread([fn   = std::move(fn),
+                     work = boost::asio::io_service::work(service)] { fn(); })
+            .detach();
     }
 
     template <typename Fn>
@@ -40,8 +39,10 @@ struct with_boost_asio_event_loop
 
     void finish()
     {
-        if (finalizer) finalizer();
-        else service.get().stop();
+        if (finalizer)
+            finalizer();
+        else
+            service.get().stop();
     }
 
     void pause() {}

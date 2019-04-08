@@ -13,8 +13,8 @@
 #pragma once
 
 #include <cereal/cereal.hpp>
-#include <immer/vector.hpp>
 #include <immer/box.hpp>
+#include <immer/vector.hpp>
 #include <immer/vector_transient.hpp>
 #include <type_traits>
 
@@ -24,16 +24,25 @@
 
 namespace cereal {
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::vector<T, MP, B, BL>& vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_SAVE_FUNCTION_NAME(Archive& ar,
+                               const immer::vector<T, MP, B, BL>& vector)
 {
     ar(make_size_tag(static_cast<size_type>(vector.size())));
     for (auto&& v : vector)
         ar(v);
 }
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::vector<T, MP, B, BL>& vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::vector<T, MP, B, BL>& vector)
 {
     size_type size;
     ar(make_size_tag(size));
@@ -49,16 +58,26 @@ void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::vector<T, MP, B, BL>& vector
     assert(size == vector.size());
 }
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::vector<immer::box<T, MP>, MP, B, BL>& vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_SAVE_FUNCTION_NAME(
+    Archive& ar, const immer::vector<immer::box<T, MP>, MP, B, BL>& vector)
 {
     ar(make_size_tag(static_cast<size_type>(vector.size())));
     for (auto&& v : vector)
         ar(*v);
 }
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::vector<immer::box<T, MP>, MP, B, BL>& vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_LOAD_FUNCTION_NAME(
+    Archive& ar, immer::vector<immer::box<T, MP>, MP, B, BL>& vector)
 {
     size_type size;
     ar(make_size_tag(size));

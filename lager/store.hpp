@@ -12,11 +12,11 @@
 
 #pragma once
 
-#include <lager/util.hpp>
 #include <lager/context.hpp>
+#include <lager/util.hpp>
 
-#include <type_traits>
 #include <memory>
+#include <type_traits>
 
 namespace lager {
 
@@ -26,7 +26,8 @@ namespace lager {
 // components.
 //
 template <typename Action, typename Model>
-struct store {
+struct store
+{
     using action_t  = Action;
     using model_t   = Model;
     using context_t = context<Action>;
@@ -34,10 +35,10 @@ struct store {
     template <typename ReducerFn, typename ViewFn, typename EventLoop>
     store(model_t init, ReducerFn reducer, ViewFn view, EventLoop loop)
         : impl_{std::make_unique<impl<ReducerFn, ViewFn, EventLoop>>(
-            std::move(init),
-            std::move(reducer),
-            std::move(view),
-            std::move(loop))}
+              std::move(init),
+              std::move(reducer),
+              std::move(view),
+              std::move(loop))}
     {}
 
     void dispatch(action_t action) { impl_->dispatch(action); }
@@ -55,9 +56,9 @@ private:
             , model{std::move(model_)}
         {}
 
-        virtual ~impl_base() = default;
+        virtual ~impl_base()                   = default;
         virtual void dispatch(action_t action) = 0;
-        virtual void update() = 0;
+        virtual void update()                  = 0;
     };
 
     template <typename ReducerFn, typename ViewFn, typename EventLoop>
@@ -75,15 +76,12 @@ private:
              reducer_t reducer_,
              view_t view_,
              event_loop_t loop_)
-            : impl_base{
-                context_t{
-                    [this](auto ev) { dispatch(ev); },
-                    [this](auto fn) { loop.async(fn); },
-                    [this] { loop.finish(); },
-                    [this] { loop.pause(); },
-                    [this] { loop.resume(); }
-                },
-                std::move(init_)}
+            : impl_base{context_t{[this](auto ev) { dispatch(ev); },
+                                  [this](auto fn) { loop.async(fn); },
+                                  [this] { loop.finish(); },
+                                  [this] { loop.pause(); },
+                                  [this] { loop.resume(); }},
+                        std::move(init_)}
             , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
             , view{std::move(view_)}
@@ -100,10 +98,9 @@ private:
         {
             loop.post([=] {
                 this->model = invoke_reducer(
-                    reducer,
-                    this->model,
-                    action,
-                    [&](auto&& effect) { LAGER_FWD(effect)(this->context); });
+                    reducer, this->model, action, [&](auto&& effect) {
+                        LAGER_FWD(effect)(this->context);
+                    });
                 view(this->model);
             });
         }
@@ -134,21 +131,21 @@ private:
 //        of actions over time, this function "reduces" the sequence to a single
 //        model value.  This is a pure function and it should have no
 //        side-effects---it takes a model value with the current state of the
-//        world, and it should return a new model value with the updated state of
-//        the world.  If we evaluate the function with the same arguments, it
-//        should always return exactly the same arguments.  If, given the current
-//        action, it decides that some side-effects are required (reading or
-//        writing files, generating random numbers, making network requests,
-//        etc.) it should use the second signature, which allows to schedule
-//        side-effects.
+//        world, and it should return a new model value with the updated state
+//        of the world.  If we evaluate the function with the same arguments, it
+//        should always return exactly the same arguments.  If, given the
+//        current action, it decides that some side-effects are required
+//        (reading or writing files, generating random numbers, making network
+//        requests, etc.) it should use the second signature, which allows to
+//        schedule side-effects.
 //
 //        @see effect for details.
 //
 // @param view
-//        A procedure with the signature `(Model) -> void`.  It is invoked in the
-//        event-loop whenever the data-model changes, and it can perform
-//        side-effects to, for example, update the screen the present the current
-//        state to the user.
+//        A procedure with the signature `(Model) -> void`.  It is invoked in
+//        the event-loop whenever the data-model changes, and it can perform
+//        side-effects to, for example, update the screen the present the
+//        current state to the user.
 //
 // @param loop
 //        Event loop in which operations can be scheduled.  This allows
@@ -176,21 +173,19 @@ auto make_store(Model&& init,
                 EventLoop&& loop,
                 Enhancer&& enhancer)
 {
-    auto store_creator = enhancer(
-        [&] (auto action, auto&& model, auto&& ...args) {
+    auto store_creator =
+        enhancer([&](auto action, auto&& model, auto&&... args) {
             using action_t = typename decltype(action)::type;
             using model_t  = std::decay_t<decltype(model)>;
             return store<action_t, model_t>{
                 std::forward<decltype(model)>(model),
-                std::forward<decltype(args)>(args)...
-            };
+                std::forward<decltype(args)>(args)...};
         });
-    return store_creator(
-        type_<Action>{},
-        std::forward<Model>(init),
-        std::forward<ReducerFn>(reducer),
-        std::forward<ViewFn>(view),
-        std::forward<EventLoop>(loop));
+    return store_creator(type_<Action>{},
+                         std::forward<Model>(init),
+                         std::forward<ReducerFn>(reducer),
+                         std::forward<ViewFn>(view),
+                         std::forward<EventLoop>(loop));
 }
 
 template <typename Action,
@@ -203,12 +198,11 @@ auto make_store(Model&& init,
                 ViewFn&& view,
                 EventLoop&& loop)
 {
-    return make_store<Action>(
-        std::forward<Model>(init),
-        std::forward<ReducerFn>(reducer),
-        std::forward<ViewFn>(view),
-        std::forward<EventLoop>(loop),
-        identity);
+    return make_store<Action>(std::forward<Model>(init),
+                              std::forward<ReducerFn>(reducer),
+                              std::forward<ViewFn>(view),
+                              std::forward<EventLoop>(loop),
+                              identity);
 }
 
 } // namespace lager

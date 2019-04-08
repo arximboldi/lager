@@ -14,8 +14,8 @@
 #include <SDL_ttf.h>
 
 #include "../counter.hpp"
-#include <lager/store.hpp>
 #include <lager/event_loop/sdl.hpp>
+#include <lager/store.hpp>
 
 #include <iostream>
 #include <string>
@@ -31,10 +31,11 @@ struct sdl_view
     int width              = 640;
     int height             = 480;
     SDL_Window* window     = SDL_CreateWindow("Lager Counter Example",
-                                              SDL_WINDOWPOS_UNDEFINED,
-                                              SDL_WINDOWPOS_UNDEFINED,
-                                              width, height,
-                                              SDL_WINDOW_SHOWN);
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          width,
+                                          height,
+                                          SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     TTF_Font* font         = TTF_OpenFont(font_path().c_str(), 24);
 };
@@ -50,14 +51,15 @@ void draw(sdl_view& v, counter::model c)
     }
     // render text
     {
-        auto msg  = "counter value is " + std::to_string(c.value);
-        auto surf = TTF_RenderText_Blended(v.font, msg.c_str(), {255, 255, 255, 255});
+        auto msg = "counter value is " + std::to_string(c.value);
+        auto surf =
+            TTF_RenderText_Blended(v.font, msg.c_str(), {255, 255, 255, 255});
         auto text = SDL_CreateTextureFromSurface(v.renderer, surf);
         SDL_FreeSurface(surf);
 
         auto rect = SDL_Rect{};
         SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
-        rect.x = v.width  / 2 - rect.w / 2;
+        rect.x = v.width / 2 - rect.w / 2;
         rect.y = v.height / 2 - rect.h / 2;
         SDL_RenderCopy(v.renderer, text, nullptr, &rect);
     }
@@ -68,10 +70,14 @@ std::optional<counter::action> intent(const SDL_Event& event)
 {
     if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
-        case SDLK_UP:    return counter::increment_action{};
-        case SDLK_DOWN:  return counter::decrement_action{};
-        case SDLK_SPACE: return counter::reset_action{};
-        default: break;
+        case SDLK_UP:
+            return counter::increment_action{};
+        case SDLK_DOWN:
+            return counter::decrement_action{};
+        case SDLK_SPACE:
+            return counter::reset_action{};
+        default:
+            break;
         }
     }
     return std::nullopt;
@@ -84,15 +90,15 @@ int main()
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
-    auto view  = sdl_view{};
-    auto loop  = lager::sdl_event_loop{};
-    auto store = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        std::bind(draw, view, _1),
-        lager::with_sdl_event_loop{loop});
+    auto view = sdl_view{};
+    auto loop = lager::sdl_event_loop{};
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           counter::update,
+                                           std::bind(draw, view, _1),
+                                           lager::with_sdl_event_loop{loop});
 
-    loop.run([&] (const SDL_Event& ev) {
+    loop.run([&](const SDL_Event& ev) {
         if (auto act = intent(ev))
             store.dispatch(*act);
         return ev.type != SDL_QUIT;

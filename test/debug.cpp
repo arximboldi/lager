@@ -12,9 +12,9 @@
 
 #include <catch.hpp>
 
-#include <lager/store.hpp>
-#include <lager/event_loop/manual.hpp>
 #include <lager/debug/enable.hpp>
+#include <lager/event_loop/manual.hpp>
+#include <lager/store.hpp>
 
 #include "../example/counter/counter.hpp"
 #include <optional>
@@ -24,13 +24,18 @@ struct dummy_debugger
     struct handle
     {
         template <typename Context>
-        void set_context(Context) {}
+        void set_context(Context)
+        {}
         template <typename Model>
-        void view(const Model& m) {}
+        void view(const Model& m)
+        {}
     };
 
     template <typename Debugger>
-    handle& enable(Debugger) { return handle_; }
+    handle& enable(Debugger)
+    {
+        return handle_;
+    }
 
     handle handle_;
 };
@@ -38,14 +43,14 @@ struct dummy_debugger
 TEST_CASE("basic")
 {
     auto debugger = dummy_debugger{};
-    auto viewed = std::optional<counter::model>{std::nullopt};
-    auto view   = [&] (auto model) { viewed = model; };
-    auto store  = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        view,
-        lager::with_manual_event_loop{},
-        lager::enable_debug(debugger));
+    auto viewed   = std::optional<counter::model>{std::nullopt};
+    auto view     = [&](auto model) { viewed = model; };
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           counter::update,
+                                           view,
+                                           lager::with_manual_event_loop{},
+                                           lager::enable_debug(debugger));
 
     store.dispatch(counter::increment_action{});
 
@@ -56,18 +61,18 @@ TEST_CASE("basic")
 TEST_CASE("effect as a result")
 {
     auto debugger = dummy_debugger{};
-    auto viewed = std::optional<int>{std::nullopt};
-    auto view   = [&] (auto model) { viewed = model; };
-    auto called = 0;
-    auto effect = [&] (lager::context<int> ctx) { ++called; };
-    auto store  = lager::make_store<int>(
-        0,
-        [=] (int model, int action) {
-            return std::pair{model + action, effect};
-        },
-        view,
-        lager::with_manual_event_loop{},
-        lager::enable_debug(debugger));
+    auto viewed   = std::optional<int>{std::nullopt};
+    auto view     = [&](auto model) { viewed = model; };
+    auto called   = 0;
+    auto effect   = [&](lager::context<int> ctx) { ++called; };
+    auto store =
+        lager::make_store<int>(0,
+                               [=](int model, int action) {
+                                   return std::pair{model + action, effect};
+                               },
+                               view,
+                               lager::with_manual_event_loop{},
+                               lager::enable_debug(debugger));
 
     store.dispatch(2);
     CHECK(viewed);

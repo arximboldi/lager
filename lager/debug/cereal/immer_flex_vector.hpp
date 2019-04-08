@@ -23,16 +23,26 @@
 
 namespace cereal {
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::flex_vector<T, MP, B, BL>& flex_vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_SAVE_FUNCTION_NAME(
+    Archive& ar, const immer::flex_vector<T, MP, B, BL>& flex_vector)
 {
     ar(make_size_tag(static_cast<size_type>(flex_vector.size())));
     for (auto&& v : flex_vector)
         ar(v);
 }
 
-template <typename Archive, typename T, typename MP, std::uint32_t B, std::uint32_t BL>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::flex_vector<T, MP, B, BL>& flex_vector)
+template <typename Archive,
+          typename T,
+          typename MP,
+          std::uint32_t B,
+          std::uint32_t BL>
+void CEREAL_LOAD_FUNCTION_NAME(Archive& ar,
+                               immer::flex_vector<T, MP, B, BL>& flex_vector)
 {
     size_type size;
     ar(make_size_tag(size));

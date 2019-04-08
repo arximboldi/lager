@@ -11,9 +11,9 @@
 //
 
 #include "../counter.hpp"
-#include <lager/store.hpp>
-#include <lager/event_loop/manual.hpp>
 #include <iostream>
+#include <lager/event_loop/manual.hpp>
+#include <lager/store.hpp>
 
 void draw(counter::model c)
 {
@@ -36,11 +36,11 @@ std::optional<counter::action> intent(char event)
 
 int main()
 {
-    auto store = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        draw,
-        lager::with_manual_event_loop{});
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           counter::update,
+                                           draw,
+                                           lager::with_manual_event_loop{});
 
     auto event = char{};
     while (std::cin >> event) {

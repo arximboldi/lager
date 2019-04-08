@@ -20,14 +20,22 @@ namespace lager {
 
 // copied from cppreference, in practice, use scelta::visit,
 // atria::match, mpark::match, etc.
-template <class... Ts> struct visitor : Ts... { using Ts::operator()...; };
-template <class... Ts> visitor(Ts...) -> visitor<Ts...>;
+template <class... Ts>
+struct visitor : Ts...
+{
+    using Ts::operator()...;
+};
+template <class... Ts>
+visitor(Ts...)->visitor<Ts...>;
 
-constexpr auto noop = [] (auto&&...) {};
-constexpr auto identity = [] (auto&& x) { return std::forward<decltype(x)>(x); };
+constexpr auto noop     = [](auto&&...) {};
+constexpr auto identity = [](auto&& x) { return std::forward<decltype(x)>(x); };
 
 template <typename Type>
-struct type_ { using type = Type; };
+struct type_
+{
+    using type = Type;
+};
 
 #define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
 
@@ -39,27 +47,29 @@ struct composed
     F f;
     G g;
 
-    template <class ...T>
-    decltype(auto) operator() (T&& ...xs)
+    template <class... T>
+    decltype(auto) operator()(T&&... xs)
     {
         return std::invoke(f, std::invoke(g, std::forward<T>(xs)...));
     }
 };
 
-template <typename ...Fns>
+template <typename... Fns>
 struct get_composed;
 
 template <typename... Ts>
 using get_composed_t = typename get_composed<Ts...>::type;
 
 template <typename F>
-struct get_composed<F> {
+struct get_composed<F>
+{
     using type = F;
 };
 
 template <typename F, typename... Fs>
-struct get_composed<F, Fs...> {
-    using type = composed<F, get_composed_t<Fs...> >;
+struct get_composed<F, Fs...>
+{
+    using type = composed<F, get_composed_t<Fs...>>;
 };
 
 } // namespace detail
@@ -70,24 +80,20 @@ auto comp(F&& f) -> F&&
     return std::forward<F>(f);
 }
 
-template <typename Fn, typename ...Fns>
-auto comp(Fn&& f, Fns&& ...fns)
+template <typename Fn, typename... Fns>
+auto comp(Fn&& f, Fns&&... fns)
     -> detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>
 {
-    using result_t = detail::get_composed_t<std::decay_t<Fn>,
-                                           std::decay_t<Fns>...>;
-    return result_t{
-        std::forward<Fn>(f),
-        comp(std::forward<Fns>(fns)...)
-    };
+    using result_t =
+        detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>;
+    return result_t{std::forward<Fn>(f), comp(std::forward<Fns>(fns)...)};
 }
 
 inline const char* resources_path()
 {
     auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-    return env_resources_path
-        ? env_resources_path
-        : LAGER_PREFIX_PATH "/share/lager";
+    return env_resources_path ? env_resources_path
+                              : LAGER_PREFIX_PATH "/share/lager";
 }
 
 } // namespace lager

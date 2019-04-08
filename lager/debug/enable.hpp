@@ -12,32 +12,32 @@
 
 #pragma once
 
-#include <lager/util.hpp>
 #include <lager/debug/debugger.hpp>
+#include <lager/util.hpp>
 
 namespace lager {
 
-template <template<class,class> class Debugger = debugger,
-          typename Server>
+template <template <class, class> class Debugger = debugger, typename Server>
 auto enable_debug(Server& serv)
 {
-    return [&] (auto next) {
-        return [&serv, next]
-            (auto action, auto&& model, auto&& reducer, auto&& view, auto&& loop)
-        {
+    return [&](auto next) {
+        return [&serv, next](auto action,
+                             auto&& model,
+                             auto&& reducer,
+                             auto&& view,
+                             auto&& loop) {
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
             using debugger_t = Debugger<action_t, model_t>;
             auto& handle     = serv.enable(debugger_t{});
-            auto  store      = next(
+            auto store       = next(
                 type_<typename debugger_t::action>{},
                 typename debugger_t::model{LAGER_FWD(model)},
-                [reducer=LAGER_FWD(reducer)] (auto&& model, auto&& action) {
-                    return debugger_t::update(reducer,
-                                             LAGER_FWD(model),
-                                             LAGER_FWD(action));
+                [reducer = LAGER_FWD(reducer)](auto&& model, auto&& action) {
+                    return debugger_t::update(
+                        reducer, LAGER_FWD(model), LAGER_FWD(action));
                 },
-                [&handle, view=LAGER_FWD(view)] (auto&& model) mutable {
+                [&handle, view = LAGER_FWD(view)](auto&& model) mutable {
                     return debugger_t::view(handle, view, LAGER_FWD(model));
                 },
                 LAGER_FWD(loop));

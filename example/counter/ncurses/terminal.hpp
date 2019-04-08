@@ -13,13 +13,14 @@
 #pragma once
 
 #include <boost/asio/io_service.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
+#include <boost/asio/signal_set.hpp>
 
 #include <functional>
 #include <variant>
 
-extern "C" {
+extern "C"
+{
 #include <ncurses.h>
 }
 
@@ -33,12 +34,15 @@ struct coord
 
 using key_code = std::tuple<int, wint_t>;
 
-struct key_event { key_code key; };
-struct resize_event { coord size; };
-
-using event = std::variant<
-    key_event,
-    resize_event>;
+struct key_event
+{
+    key_code key;
+};
+struct resize_event
+{
+    coord size;
+};
+using event = std::variant<key_event, resize_event>;
 
 struct terminal
 {
@@ -54,7 +58,7 @@ struct terminal
 private:
     struct cleanup_fn
     {
-        void operator() (_win_st* win) const;
+        void operator()(_win_st* win) const;
     };
 
     void next_key_();

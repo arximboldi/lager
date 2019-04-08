@@ -24,7 +24,7 @@ struct variant_save_visitor
 {
     Archive& ar;
 
-    template<class T>
+    template <class T>
     void operator()(const T& value) const
     {
         ar(CEREAL_NVP_("data", value));
@@ -39,40 +39,43 @@ const std::string& get_type_name()
 }
 
 //! @internal
-template<int N, class Variant, class ... Args, class Archive>
+template <int N, class Variant, class... Args, class Archive>
 typename std::enable_if<N == std::variant_size_v<Variant>, void>::type
 load_variant(Archive& /*ar*/, const std::string&, Variant&)
 {
     throw ::cereal::Exception("Invalid variant type name");
 }
 
-template<int N, class Variant, class H, class ... T, class Archive>
-typename std::enable_if<N < std::variant_size_v<Variant>, void>::type
-load_variant(Archive& ar, const std::string& target, Variant& variant)
+template <int N, class Variant, class H, class... T, class Archive>
+    typename std::enable_if <
+    N<std::variant_size_v<Variant>, void>::type
+    load_variant(Archive& ar, const std::string& target, Variant& variant)
 {
     if (get_type_name<H>() == target) {
         H value;
         ar(CEREAL_NVP_("data", value));
         variant = std::move(value);
     } else {
-        load_variant<N+1, Variant, T...>(ar, target, variant);
+        load_variant<N + 1, Variant, T...>(ar, target, variant);
     }
 }
 
 } // namespace detail
 
-template <class Archive, typename... Ts> inline
-void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, const std::variant<Ts...>& variant)
+template <class Archive, typename... Ts>
+inline void CEREAL_SAVE_FUNCTION_NAME(Archive& ar,
+                                      const std::variant<Ts...>& variant)
 {
-    ar(CEREAL_NVP_("type", std::visit([] (auto x) {
-        return detail::get_type_name<decltype(x)>();
-    }, variant)));
+    ar(CEREAL_NVP_(
+        "type",
+        std::visit([](auto x) { return detail::get_type_name<decltype(x)>(); },
+                   variant)));
     std::visit(detail::variant_save_visitor<Archive>{ar}, variant);
 }
 
 //! Loading for std::variant
-template <class Archive, typename... Ts> inline
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, std::variant<Ts...>& variant)
+template <class Archive, typename... Ts>
+inline void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, std::variant<Ts...>& variant)
 {
     using variant_t = typename std::variant<Ts...>;
 

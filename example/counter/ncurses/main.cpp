@@ -13,21 +13,20 @@
 #include "../counter.hpp"
 #include "terminal.hpp"
 
-#include <lager/store.hpp>
-#include <lager/event_loop/boost_asio.hpp>
+#include <lager/debug/enable.hpp>
 #include <lager/debug/http_server.hpp>
 #include <lager/debug/tree_debugger.hpp>
-#include <lager/debug/enable.hpp>
+#include <lager/event_loop/boost_asio.hpp>
+#include <lager/store.hpp>
 
 using namespace std::string_literals;
 
 void draw(const counter::model& c)
 {
-    static const auto prelude = "current value is "s;
-    static const auto instructions =
-        "  arrow up   -- decrease counter\n"
-        "  arrow down -- increase counter\n"
-        "  space bar  -- reset counter";
+    static const auto prelude      = "current value is "s;
+    static const auto instructions = "  arrow up   -- decrease counter\n"
+                                     "  arrow down -- increase counter\n"
+                                     "  space bar  -- reset counter";
     auto message = prelude + std::to_string(c.value);
     auto max_x = 0, max_y = 0;
     getmaxyx(stdscr, max_y, max_x);
@@ -36,9 +35,10 @@ void draw(const counter::model& c)
     auto pos_y = max_y / 2;
     auto pos_x = (max_x - message.size()) / 2;
     ::clear();
-    auto color = c.value < -3 ? 3 :
-                 c.value > 3  ? 2
-                 /* else */   : 1;
+    auto color = c.value < -3 ? 3
+                              : c.value > 3 ? 2
+                                            /* else */
+                                            : 1;
     ::attron(COLOR_PAIR(color));
     ::bkgd(COLOR_PAIR(color));
     attrset(A_NORMAL);
@@ -53,8 +53,8 @@ void draw(const counter::model& c)
 
 int main(int argc, const char** argv)
 {
-    auto serv  = boost::asio::io_service{};
-    auto term  = ncurses::terminal{serv};
+    auto serv = boost::asio::io_service{};
+    auto term = ncurses::terminal{serv};
     ::init_pair(1, COLOR_WHITE, COLOR_GREEN);
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
@@ -79,15 +79,16 @@ int main(int argc, const char** argv)
 #ifdef META_DEBUGGER
             lager::enable_debug(meta_debugger),
 #endif
-            lager::identity
-            ));
+            lager::identity));
 
-    term.start([&] (auto ev) {
-        std::visit(lager::visitor {
-                [&] (ncurses::key_event ev) {
+    term.start([&](auto ev) {
+        std::visit(
+            lager::visitor{
+                [&](ncurses::key_event ev) {
                     if (ev.key == ncurses::key_code{KEY_CODE_YES, KEY_UP})
                         store.dispatch(counter::increment_action{});
-                    else if (ev.key == ncurses::key_code{KEY_CODE_YES, KEY_DOWN})
+                    else if (ev.key ==
+                             ncurses::key_code{KEY_CODE_YES, KEY_DOWN})
                         store.dispatch(counter::decrement_action{});
                     else if (ev.key == ncurses::key_code{OK, ' '})
                         store.dispatch(counter::reset_action{});
@@ -95,10 +96,8 @@ int main(int argc, const char** argv)
                              ev.key == ncurses::key_code{OK, '[' - '@'}) // esc
                         term.stop();
                 },
-                [&] (ncurses::resize_event) {
-                    store.update();
-                }
-            }, ev);
+                [&](ncurses::resize_event) { store.update(); }},
+            ev);
     });
 
     serv.run();

@@ -10,9 +10,9 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#include "cerealize.hpp"
 #include <catch.hpp>
 #include <lager/debug/cereal/immer_box.hpp>
-#include "cerealize.hpp"
 
 TEST_CASE("basic")
 {
