@@ -74,3 +74,17 @@ TEST_CASE("subsets")
     CHECK(d4.get<foo>().x == 42);
     CHECK(d4.get<yas>().z == 15.);
 }
+
+TEST_CASE("merging")
+{
+    auto d1 = lager::deps<bar>{bar{"yeah"}};
+    auto d2 = lager::deps<foo>{foo{42}};
+
+    auto d3 = d1.merge(d2);
+    CHECK(d3.get<foo>().x == 42);
+    CHECK(d3.get<bar>().s == std::string{"yeah"});
+
+    auto d4 = lager::deps<foo, bar>{d1, d2};
+    CHECK(d4.get<foo>().x == 42);
+    CHECK(d4.get<bar>().s == std::string{"yeah"});
+}

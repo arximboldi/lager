@@ -16,6 +16,8 @@
 #include <boost/hana/intersection.hpp>
 #include <boost/hana/map.hpp>
 #include <boost/hana/set.hpp>
+#include <boost/hana/union.hpp>
+#include <boost/hana/unpack.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -93,6 +95,10 @@ struct is_deps<deps<Ts...>> : std::true_type
 template <typename T>
 constexpr auto is_deps_v = is_deps<std::decay_t<T>>::value;
 
+BOOST_HANA_CONSTEXPR_LAMBDA auto deps_from = [](auto... ts) {
+    return boost::hana::type_c<deps<typename decltype(ts)::type...>>;
+};
+
 } // namespace detail
 
 template <typename... Deps>
@@ -119,6 +125,20 @@ public:
         : storage_{make_storage_from_(std::move(other.storage_))}
     {}
 
+    template <
+        typename... D1s,
+        typename... D2s,
+        std::enable_if_t<spec_set == boost::hana::union_(
+                                         boost::hana::intersection(
+                                             spec_set, deps<D1s...>::spec_set),
+                                         boost::hana::intersection(
+                                             spec_set, deps<D2s...>::spec_set)),
+                         bool> = true>
+    deps(deps<D1s...> other1, deps<D2s...> other2)
+        : storage_{make_storage_from_(boost::hana::union_(
+              std::move(other1.storage_), std::move(other2.storage_)))}
+    {}
+
     deps(const deps&) = default;
     deps(deps&&)      = default;
 
@@ -128,6 +148,15 @@ public:
         using key_t  = dep::key_t<Key>;
         using spec_t = std::decay_t<decltype(spec_map_t{}[key_t{}])>;
         return spec_t::get(storage_[key_t{}]);
+    }
+
+    template <typename... Ds>
+    auto merge(deps<Ds...> other)
+    {
+        using result_t = typename decltype(boost::hana::unpack(
+            boost::hana::union_(spec_set, deps<Ds...>::spec_set),
+            detail::deps_from))::type;
+        return result_t{*this, std::move(other)};
     }
 
 private:
