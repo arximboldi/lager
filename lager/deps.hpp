@@ -53,6 +53,8 @@ constexpr auto is_spec_v = is_spec<T>::value;
 template <typename T>
 struct val : spec
 {
+    static_assert(!is_spec_v<T>, "val<> must be a most nested descriptor");
+
     using type     = val;
     using key_type = T;
     using storage  = T;
@@ -67,6 +69,8 @@ struct val : spec
 template <typename T>
 struct ref : spec
 {
+    static_assert(!is_spec_v<T>, "val<> must be a most nested descriptor");
+
     using type     = ref;
     using key_type = T;
     using storage  = std::reference_wrapper<T>;
@@ -105,6 +109,13 @@ class deps
 {
     static constexpr auto spec_set =
         boost::hana::make_set(boost::hana::type_c<dep::to_spec<Deps>>...);
+
+    static constexpr auto key_set = boost::hana::make_set(
+        boost::hana::type_c<typename dep::to_spec<Deps>::key_type>...);
+
+    static_assert(sizeof...(Deps) == boost::hana::length(key_set),
+                  "There are dependencies with duplicate keys. Use "
+                  "lager::dep::key<> to disambiguate them.");
 
     template <typename T>
     using get_key_t = boost::hana::type<typename dep::to_spec<T>::key_type>;
