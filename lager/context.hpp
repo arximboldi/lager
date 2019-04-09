@@ -159,22 +159,32 @@ auto invoke_reducer(Reducer&& reducer,
 //!
 // Returns an effects that evalates the effects @a a and @a b in order.
 //
-template <typename Action>
-effect<Action> sequence(effect<Action> a, effect<Action> b)
+template <typename Action, typename Deps1, typename Deps2>
+auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
 {
+    using deps_t = decltype(std::declval<Deps1>().merge(std::declval<Deps2>()));
+    using result_t = effect<Action, deps_t>;
+
     return (!a || a.template target<decltype(noop)>() == &noop) &&
                    (!b || b.template target<decltype(noop)>() == &noop)
-               ? noop
+               ? result_t{noop}
                : !a || a.template target<decltype(noop)>() == &noop
-                     ? b
+                     ? result_t{b}
                      : !b || b.template target<decltype(noop)>() == &noop
-                           ? a
-                           :
-                           // otherwise
-                           [a, b](auto&& ctx) {
-                               a(ctx);
-                               b(ctx);
-                           };
+                           ? result_t{a}
+                           : result_t{[a, b](auto&& ctx) {
+                                 a(ctx);
+                                 b(ctx);
+                             }};
+}
+
+template <typename Action, typename Deps1, typename Deps2, typename... Effects>
+auto sequence(effect<Action, Deps1> a,
+              effect<Action, Deps2> b,
+              Effects&&... effects)
+{
+    return sequence(sequence(std::move(a), std::move(b)),
+                    std::forward<Effects>(effects)...);
 }
 
 } // namespace lager
