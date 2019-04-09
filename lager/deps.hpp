@@ -146,15 +146,14 @@ public:
         : storage_{make_storage_from_(std::move(other.storage_))}
     {}
 
-    template <
-        typename... D1s,
-        typename... D2s,
-        std::enable_if_t<spec_set == boost::hana::union_(
-                                         boost::hana::intersection(
-                                             spec_set, deps<D1s...>::spec_set),
-                                         boost::hana::intersection(
-                                             spec_set, deps<D2s...>::spec_set)),
-                         bool> = true>
+    template <typename... D1s,
+              typename... D2s,
+              std::enable_if_t<
+                  spec_set == boost::hana::intersection(
+                                  spec_set,
+                                  boost::hana::union_(deps<D1s...>::spec_set,
+                                                      deps<D2s...>::spec_set)),
+                  bool> = true>
     deps(deps<D1s...> other1, deps<D2s...> other2)
         : storage_{make_storage_from_(boost::hana::union_(
               std::move(other1.storage_), std::move(other2.storage_)))}
