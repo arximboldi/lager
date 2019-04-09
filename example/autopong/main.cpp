@@ -14,7 +14,7 @@
 #include <SDL_ttf.h>
 
 #include <lager/debug/cereal/struct.hpp>
-#include <lager/debug/enable.hpp>
+#include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
@@ -309,7 +309,7 @@ int main(int argc, const char** argv)
                                            std::bind(draw, view, _1),
                                            lager::with_sdl_event_loop{loop},
 #ifdef DEBUGGER
-                                           lager::enable_debug(debugger)
+                                           lager::with_debugger(debugger)
 #else
                                            lager::identity
 #endif

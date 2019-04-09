@@ -13,7 +13,7 @@
 #include "../counter.hpp"
 #include "terminal.hpp"
 
-#include <lager/debug/enable.hpp>
+#include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
 #include <lager/debug/tree_debugger.hpp>
 #include <lager/event_loop/boost_asio.hpp>
@@ -71,13 +71,13 @@ int main(int argc, const char** argv)
         lager::with_boost_asio_event_loop{serv},
         lager::comp(
 #ifdef DEBUGGER
-            lager::enable_debug(debugger),
+            lager::with_debugger(debugger),
 #endif
 #ifdef TREE_DEBUGGER
-            lager::enable_debug<lager::tree_debugger>(debugger),
+            lager::with_debugger<lager::tree_debugger>(debugger),
 #endif
 #ifdef META_DEBUGGER
-            lager::enable_debug(meta_debugger),
+            lager::with_debugger(meta_debugger),
 #endif
             lager::identity));
 

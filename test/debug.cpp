@@ -12,7 +12,7 @@
 
 #include <catch.hpp>
 
-#include <lager/debug/enable.hpp>
+#include <lager/debug/debugger.hpp>
 #include <lager/event_loop/manual.hpp>
 #include <lager/store.hpp>
 
@@ -50,7 +50,7 @@ TEST_CASE("basic")
                                            counter::update,
                                            view,
                                            lager::with_manual_event_loop{},
-                                           lager::enable_debug(debugger));
+                                           lager::with_debugger(debugger));
 
     store.dispatch(counter::increment_action{});
 
@@ -72,7 +72,7 @@ TEST_CASE("effect as a result")
                                },
                                view,
                                lager::with_manual_event_loop{},
-                               lager::enable_debug(debugger));
+                               lager::with_debugger(debugger));
 
     store.dispatch(2);
     CHECK(viewed);
