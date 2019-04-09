@@ -155,8 +155,11 @@ public:
               std::move(other1.storage_), std::move(other2.storage_)))}
     {}
 
+    deps()            = default;
     deps(const deps&) = default;
     deps(deps&&)      = default;
+    deps& operator=(const deps&) = default;
+    deps& operator=(deps&&) = default;
 
     template <typename Key>
     decltype(auto) get()

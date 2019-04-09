@@ -29,6 +29,12 @@ struct yas
     double z = 42.;
 };
 
+TEST_CASE("empty")
+{
+    auto x = lager::deps<>{};
+    (void) x;
+}
+
 TEST_CASE("basic")
 {
     auto x = lager::deps<foo, bar>{foo{}, bar{}};
