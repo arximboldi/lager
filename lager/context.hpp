@@ -12,8 +12,10 @@
 
 #pragma once
 
-#include <functional>
+#include <lager/deps.hpp>
 #include <lager/util.hpp>
+
+#include <functional>
 
 namespace lager {
 
@@ -27,10 +29,11 @@ namespace lager {
 //
 // @todo Make constructors private.
 //
-template <typename Action>
+template <typename Action, typename Deps = lager::deps<>>
 struct context
 {
     using action_t   = Action;
+    using deps_t     = Deps;
     using command_t  = std::function<void()>;
     using dispatch_t = std::function<void(action_t)>;
     using async_t    = std::function<void(std::function<void()>)>;
@@ -40,36 +43,52 @@ struct context
     command_t finish;
     command_t pause;
     command_t resume;
+    deps_t dependencies;
 
     context() = default;
 
-    template <typename Action_>
-    context(const context<Action_>& ctx)
-        : dispatch(ctx.dispatch)
-        , async(ctx.async)
-        , finish(ctx.finish)
-        , pause(ctx.pause)
-        , resume(ctx.resume)
+    template <typename Action_, typename Deps_>
+    context(const context<Action_, Deps_>& ctx)
+        : dispatch{ctx.dispatch}
+        , async{ctx.async}
+        , finish{ctx.finish}
+        , pause{ctx.pause}
+        , resume{ctx.resume}
+        , dependencies{ctx.dependencies}
     {}
 
     context(dispatch_t dispatch_,
             async_t async_,
             command_t finish_,
             command_t pause_,
-            command_t resume_)
-        : dispatch(std::move(dispatch_))
-        , async(std::move(async_))
-        , finish(std::move(finish_))
-        , pause(std::move(pause_))
-        , resume(std::move(resume_))
+            command_t resume_,
+            deps_t dependencies_)
+        : dispatch{std::move(dispatch_)}
+        , async{std::move(async_)}
+        , finish{std::move(finish_)}
+        , pause{std::move(pause_)}
+        , resume{std::move(resume_)}
+        , dependencies{std::move(dependencies_)}
     {}
+
+    template <typename Key>
+    decltype(auto) get() const
+    {
+        return dependencies.template get<Key>();
+    }
 };
+
+template <typename Key, typename Action, typename Deps>
+decltype(auto) get(const context<Action, Deps>& ctx)
+{
+    return ctx.template get<Key>();
+}
 
 //!
 // Effectful procedure that uses the store context.
 //
-template <typename Action>
-using effect = std::function<void(const context<Action>&)>;
+template <typename Action, typename Deps = lager::deps<>>
+using effect = std::function<void(const context<Action, Deps>&)>;
 
 //!
 // Metafunction that returns whether the @a Reducer returns an effect when
@@ -78,24 +97,26 @@ using effect = std::function<void(const context<Action>&)>;
 template <typename Reducer,
           typename Model,
           typename Action,
+          typename Deps,
           typename Enable = void>
 struct has_effect : std::false_type
 {};
 
-template <typename Reducer, typename Model, typename Action>
+template <typename Reducer, typename Model, typename Action, typename Deps>
 struct has_effect<
     Reducer,
     Model,
     Action,
+    Deps,
     std::enable_if_t<std::is_convertible_v<
         decltype(std::get<1>(std::invoke(std::declval<Reducer>(),
                                          std::declval<Model>(),
                                          std::declval<Action>()))),
-        effect<std::decay_t<Action>>>>> : std::true_type
+        effect<std::decay_t<Action>, std::decay_t<Deps>>>>> : std::true_type
 {};
 
-template <typename Reducer, typename Model, typename Action>
-constexpr auto has_effect_v = has_effect<Reducer, Model, Action>::value;
+template <typename Reducer, typename Model, typename Action, typename Deps>
+constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
 
 //!
 // Invokes the @a reducer with the @a model and @a action. If the reducer
@@ -103,11 +124,12 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action>::value;
 // function can be used to generically handle both reducers with or without
 // side-effects.
 //
-template <typename Reducer,
+template <typename Deps = lager::deps<>,
+          typename Reducer,
           typename Model,
           typename Action,
           typename EffectHandler,
-          std::enable_if_t<has_effect_v<Reducer, Model, Action>, int> = 0>
+          std::enable_if_t<has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
 auto invoke_reducer(Reducer&& reducer,
                     Model&& model,
                     Action&& action,
@@ -119,11 +141,13 @@ auto invoke_reducer(Reducer&& reducer,
     return new_model;
 }
 
-template <typename Reducer,
-          typename Model,
-          typename Action,
-          typename EffectHandler,
-          std::enable_if_t<!has_effect_v<Reducer, Model, Action>, int> = 0>
+template <
+    typename Deps = lager::deps<>,
+    typename Reducer,
+    typename Model,
+    typename Action,
+    typename EffectHandler,
+    std::enable_if_t<!has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
 auto invoke_reducer(Reducer&& reducer,
                     Model&& model,
                     Action&& action,

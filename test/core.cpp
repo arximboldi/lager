@@ -73,3 +73,76 @@ TEST_CASE("store type erasure")
     CHECK(viewed);
     CHECK(viewed->value == 1);
 }
+
+namespace services {
+
+struct foo
+{
+    int x = 0;
+};
+
+struct params
+{
+    const char* host = "bar";
+};
+
+} // namespace services
+
+TEST_CASE("with deps enhancer")
+{
+    auto f     = services::foo{};
+    auto store = lager::make_store<counter::action>(
+        counter::model{},
+        counter::update,
+        [](auto) {},
+        lager::with_manual_event_loop{},
+        lager::with_deps(std::ref(f), services::params{"yeah"}));
+    f.x = 42;
+
+    auto ctx = store.get_context();
+    CHECK(ctx.get<services::foo>().x == 42);
+    CHECK(ctx.get<services::params>().host == std::string{"yeah"});
+}
+
+TEST_CASE("with deps, type erased, plus effects")
+{
+    auto called1 = 0;
+    auto called2 = 0;
+    auto called3 = 0;
+    auto effect1 =
+        [&](lager::context<counter::action, lager::deps<services::foo&>> ctx) {
+            CHECK(ctx.get<services::foo>().x == 42);
+            ++called1;
+        };
+    auto effect2 = [&](lager::context<counter::action,
+                                      lager::deps<services::params>> ctx) {
+        CHECK(ctx.get<services::params>().host == std::string{"yeah"});
+        ++called2;
+    };
+    auto effect3 = [&](auto ctx) {
+        CHECK(lager::get<services::foo>(ctx).x == 42);
+        CHECK(lager::get<services::params>(ctx).host == std::string{"yeah"});
+        ++called3;
+    };
+
+    auto f = services::foo{};
+    lager::store<counter::action, counter::model> store =
+        lager::make_store<counter::action>(
+            counter::model{},
+            [&](auto m, auto act) {
+                return std::make_pair(counter::update(m, act), [&](auto ctx) {
+                    effect1(ctx);
+                    effect2(ctx);
+                    effect3(ctx);
+                });
+            },
+            [](auto) {},
+            lager::with_manual_event_loop{},
+            lager::with_deps(std::ref(f), services::params{"yeah"}));
+
+    f.x = 42;
+    store.dispatch(counter::increment_action{});
+    CHECK(called1 == 1);
+    CHECK(called2 == 1);
+    CHECK(called3 == 1);
+}
