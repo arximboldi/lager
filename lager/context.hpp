@@ -30,10 +30,10 @@ namespace lager {
 // @todo Make constructors private.
 //
 template <typename Action, typename Deps = lager::deps<>>
-struct context
+struct context : Deps
 {
-    using action_t   = Action;
     using deps_t     = Deps;
+    using action_t   = Action;
     using command_t  = std::function<void()>;
     using dispatch_t = std::function<void(action_t)>;
     using async_t    = std::function<void(std::function<void()>)>;
@@ -43,18 +43,17 @@ struct context
     command_t finish;
     command_t pause;
     command_t resume;
-    deps_t dependencies;
 
     context() = default;
 
     template <typename Action_, typename Deps_>
     context(const context<Action_, Deps_>& ctx)
-        : dispatch{ctx.dispatch}
+        : deps_t{ctx}
+        , dispatch{ctx.dispatch}
         , async{ctx.async}
         , finish{ctx.finish}
         , pause{ctx.pause}
         , resume{ctx.resume}
-        , dependencies{ctx.dependencies}
     {}
 
     context(dispatch_t dispatch_,
@@ -62,27 +61,15 @@ struct context
             command_t finish_,
             command_t pause_,
             command_t resume_,
-            deps_t dependencies_)
-        : dispatch{std::move(dispatch_)}
+            deps_t deps_)
+        : deps_t{std::move(deps_)}
+        , dispatch{std::move(dispatch_)}
         , async{std::move(async_)}
         , finish{std::move(finish_)}
         , pause{std::move(pause_)}
         , resume{std::move(resume_)}
-        , dependencies{std::move(dependencies_)}
     {}
-
-    template <typename Key>
-    decltype(auto) get() const
-    {
-        return dependencies.template get<Key>();
-    }
 };
-
-template <typename Key, typename Action, typename Deps>
-decltype(auto) get(const context<Action, Deps>& ctx)
-{
-    return ctx.template get<Key>();
-}
 
 //!
 // Effectful procedure that uses the store context.

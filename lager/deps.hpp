@@ -101,22 +101,6 @@ struct key : to_spec<T>
 } // namespace dep
 
 template <typename... Deps>
-struct deps;
-
-namespace detail {
-
-template <typename T>
-struct is_deps : std::false_type
-{};
-template <typename... Ts>
-struct is_deps<deps<Ts...>> : std::true_type
-{};
-template <typename T>
-constexpr auto is_deps_v = is_deps<std::decay_t<T>>::value;
-
-} // namespace detail
-
-template <typename... Deps>
 class deps
 {
     static constexpr auto spec_set =
@@ -129,14 +113,11 @@ class deps
     using get_storage_t = typename dep::to_spec<T>::storage;
 
 public:
-    template <typename T,
-              typename... Ts,
-              std::enable_if_t<!detail::is_deps_v<T> &&
-                                   sizeof...(Ts) + 1 == sizeof...(Deps),
-                               bool> = true>
-    deps(T&& t, Ts&&... ts)
-        : storage_{make_storage_(std::forward<T>(t), std::forward<Ts>(ts)...)}
-    {}
+    template <typename... Ts>
+    static deps with(Ts&&... ts)
+    {
+        return {make_storage_(std::forward<Ts>(ts)...)};
+    }
 
     template <typename... Ds,
               std::enable_if_t<spec_set == boost::hana::intersection(
@@ -193,15 +174,19 @@ private:
     using storage_t = boost::hana::map<
         boost::hana::pair<get_key_t<Deps>, get_storage_t<Deps>>...>;
 
+    deps(storage_t storage)
+        : storage_{std::move(storage)}
+    {}
+
     template <typename... Ts>
-    storage_t make_storage_(Ts&&... ts)
+    static storage_t make_storage_(Ts&&... ts)
     {
         return storage_t{boost::hana::make_pair(
             get_key_t<Deps>{}, get_storage_t<Deps>{std::forward<Ts>(ts)})...};
     }
 
     template <typename Storage>
-    storage_t make_storage_from_(Storage&& other)
+    static storage_t make_storage_from_(Storage&& other)
     {
         return storage_t{
             boost::hana::make_pair(get_key_t<Deps>{},
@@ -221,7 +206,7 @@ decltype(auto) get(const deps<Ts...>& d)
 template <typename... Ts>
 auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>
 {
-    return {std::forward<Ts>(args)...};
+    return deps<std::decay_t<Ts>...>::with(std::forward<Ts>(args)...);
 }
 
 } // namespace lager

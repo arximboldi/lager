@@ -37,7 +37,7 @@ TEST_CASE("empty")
 
 TEST_CASE("basic")
 {
-    auto x = lager::deps<foo, bar>{foo{}, bar{}};
+    auto x = lager::deps<foo, bar>::with(foo{}, bar{});
     CHECK(x.get<foo>().x == 0);
     CHECK(lager::get<bar>(x).s == std::string{"lol"});
 }
@@ -45,7 +45,7 @@ TEST_CASE("basic")
 TEST_CASE("reference")
 {
     auto f = foo{};
-    auto x = lager::deps<foo&, bar>{f, bar{}};
+    auto x = lager::deps<foo&, bar>::with(f, bar{});
     f.x    = 42;
     CHECK(x.get<foo>().x == 42);
     CHECK(x.get<bar>().s == std::string{"lol"});
@@ -55,7 +55,7 @@ TEST_CASE("copiable")
 {
     auto f = foo{};
 
-    auto x1 = lager::deps<foo&, bar>{f, bar{}};
+    auto x1 = lager::deps<foo&, bar>::with(f, bar{});
     f.x     = 42;
     CHECK(x1.get<foo>().x == 42);
     CHECK(x1.get<bar>().s == std::string{"lol"});
@@ -67,7 +67,7 @@ TEST_CASE("copiable")
 
 TEST_CASE("subsets")
 {
-    auto d1 = lager::deps<foo, bar, yas>{foo{42}, bar{"hehe"}, yas{15.}};
+    auto d1 = lager::deps<foo, bar, yas>::with(foo{42}, bar{"hehe"}, yas{15.});
 
     auto d2 = lager::deps<foo, yas>{d1};
     CHECK(d2.get<foo>().x == 42);
@@ -83,8 +83,8 @@ TEST_CASE("subsets")
 
 TEST_CASE("merging")
 {
-    auto d1 = lager::deps<bar>{bar{"yeah"}};
-    auto d2 = lager::deps<foo>{foo{42}};
+    auto d1 = lager::deps<bar>::with(bar{"yeah"});
+    auto d2 = lager::deps<foo>::with(foo{42});
 
     auto d3 = d1.merge(d2);
     CHECK(d3.get<foo>().x == 42);
@@ -116,9 +116,8 @@ struct foo2
 TEST_CASE("keys")
 {
     auto f1 = foo{};
-    auto d =
-        lager::deps<lager::dep::key<foo1, foo&>, lager::dep::key<foo2, foo>>{
-            f1, foo{13}};
+    auto d  = lager::deps<lager::dep::key<foo1, foo&>,
+                         lager::dep::key<foo2, foo>>::with(f1, foo{13});
 
     f1.x = 42;
     CHECK(d.get<foo1>().x == 42);
