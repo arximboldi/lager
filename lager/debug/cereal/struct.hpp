@@ -22,29 +22,31 @@
 
 #include <cereal/cereal.hpp>
 
-#define LAGER_CEREAL_STRUCT_ITER__(r__, data__, i__, elem__)    \
-    BOOST_PP_COMMA_IF(i__)                                      \
+#define LAGER_CEREAL_STRUCT_ITER__(r__, data__, i__, elem__)                   \
+    BOOST_PP_COMMA_IF(i__)                                                     \
     cereal::make_nvp(BOOST_PP_STRINGIZE(elem__), x.elem__)
 
-#define LAGER_CEREAL_STRUCT_AUX__(seq__)                                \
+#define LAGER_CEREAL_STRUCT_AUX__(seq__)                                       \
     ar(BOOST_PP_SEQ_FOR_EACH_I(LAGER_CEREAL_STRUCT_ITER__, _, seq__));
 
-#define LAGER_CEREAL_STRUCT(name__, ...)                                 \
-    template <typename Archive>                                         \
-    void serialize(Archive& ar, name__& x)                              \
-    {                                                                   \
-        BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE((,##__VA_ARGS__)), 1), \
-                    BOOST_PP_EXPAND,                                    \
-                    LAGER_CEREAL_STRUCT_AUX__)(__VA_ARGS__)             \
-    }                                                                   \
+#define LAGER_CEREAL_STRUCT(name__, ...)                                       \
+    template <typename Archive>                                                \
+    void serialize(Archive& ar, name__& x)                                     \
+    {                                                                          \
+        BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE((, ##__VA_ARGS__)), 1), \
+                    BOOST_PP_EXPAND,                                           \
+                    LAGER_CEREAL_STRUCT_AUX__)                                 \
+        (__VA_ARGS__)                                                          \
+    }                                                                          \
     /**/
 
-#define LAGER_CEREAL_NESTED_STRUCT(name__, ...)                          \
-    template <typename Archive>                                         \
-    friend void serialize(Archive& ar, name__& x)                       \
-    {                                                                   \
-        BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE((,##__VA_ARGS__)), 1), \
-                    BOOST_PP_EXPAND,                                    \
-                    LAGER_CEREAL_STRUCT_AUX__) (__VA_ARGS__)            \
-    }                                                                   \
+#define LAGER_CEREAL_NESTED_STRUCT(name__, ...)                                \
+    template <typename Archive>                                                \
+    friend void serialize(Archive& ar, name__& x)                              \
+    {                                                                          \
+        BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE((, ##__VA_ARGS__)), 1), \
+                    BOOST_PP_EXPAND,                                           \
+                    LAGER_CEREAL_STRUCT_AUX__)                                 \
+        (__VA_ARGS__)                                                          \
+    }                                                                          \
     /**/

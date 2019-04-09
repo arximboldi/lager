@@ -24,7 +24,7 @@
 namespace cereal {
 
 template <typename Archive, typename T, typename MP>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::array<T, MP>& array)
+void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, const immer::array<T, MP>& array)
 {
     ar(make_size_tag(static_cast<size_type>(array.size())));
     for (auto&& v : array)
@@ -32,7 +32,7 @@ void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::array<T, MP>& array)
 }
 
 template <typename Archive, typename T, typename MP>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::array<T, MP>& array)
+void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::array<T, MP>& array)
 {
     size_type size;
     ar(make_size_tag(size));

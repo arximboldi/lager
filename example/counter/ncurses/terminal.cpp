@@ -26,7 +26,7 @@ terminal::terminal(boost::asio::io_service& serv)
         std::locale::global(std::locale(""));
         ::setlocale(LC_ALL, "");
         return ::initscr();
-      }()}
+    }()}
     , input_{serv, ::dup(STDIN_FILENO)}
     , signal_{serv, SIGWINCH}
 {
@@ -66,7 +66,7 @@ void terminal::stop()
 
 void terminal::next_resize_()
 {
-    signal_.async_wait([=] (auto ec, auto) {
+    signal_.async_wait([=](auto ec, auto) {
         if (!ec) {
             next_resize_();
             auto ws = ::winsize{};
@@ -83,7 +83,7 @@ void terminal::next_resize_()
 void terminal::next_key_()
 {
     using namespace boost::asio;
-    input_.async_read_some(null_buffers(), [&] (auto ec, auto) {
+    input_.async_read_some(null_buffers(), [&](auto ec, auto) {
         if (!ec) {
             auto key = wint_t{};
             auto res = int{};
@@ -95,14 +95,15 @@ void terminal::next_key_()
     });
 }
 
-void terminal::cleanup_fn::operator() (WINDOW* win) const
+void terminal::cleanup_fn::operator()(WINDOW* win) const
 {
     if (win) {
         // consume all remaining characters from the terminal so they
         // don't leak in the bash prompt after quitting, then restore
         // the terminal state
         auto key = wint_t{};
-        while (::get_wch(&key) != ERR);
+        while (::get_wch(&key) != ERR)
+            ;
         ::endwin();
     }
 }

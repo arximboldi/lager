@@ -19,13 +19,13 @@
 namespace cereal {
 
 template <typename Archive, typename T, typename MP>
-void CEREAL_SAVE_FUNCTION_NAME(Archive & ar, const immer::box<T, MP>& b)
+void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, const immer::box<T, MP>& b)
 {
     ar(cereal::make_nvp("value", b.get()));
 }
 
 template <typename Archive, typename T, typename MP>
-void CEREAL_LOAD_FUNCTION_NAME(Archive & ar, immer::box<T, MP>& b)
+void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::box<T, MP>& b)
 {
     T x;
     ar(cereal::make_nvp("value", x));

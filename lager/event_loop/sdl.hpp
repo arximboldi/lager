@@ -42,7 +42,7 @@ struct constant_fps_step
         , max_ticks_per_frame_{1000.f / min_sim_rate}
     {}
 
-    float operator() ()
+    float operator()()
     {
         auto current_ticks = SDL_GetTicks();
         auto delta_ticks   = current_ticks - ticks_;
@@ -54,12 +54,12 @@ struct constant_fps_step
             last_ticks_  = SDL_GetTicks();
         }
         ticks_ = current_ticks;
-        frame_count_ ++;
+        frame_count_++;
         return std::min((float) delta_ticks, max_ticks_per_frame_);
     }
 };
 
-} // detail
+} // namespace detail
 
 struct sdl_event_loop
 {
@@ -84,17 +84,14 @@ struct sdl_event_loop
     }
 
     template <typename Fn1, typename Fn2>
-    void run(Fn1&& handler, Fn2&& tick,
-             int fps = 120,
-             int min_sim_fps = 15)
+    void run(Fn1&& handler, Fn2&& tick, int fps = 120, int min_sim_fps = 15)
     {
         auto continue_ = true;
-        auto step = detail::constant_fps_step{fps, min_sim_fps};
+        auto step      = detail::constant_fps_step{fps, min_sim_fps};
         while (continue_ && !done_) {
             auto event = SDL_Event{};
-            while (continue_ &&
-                   ((!paused_ && SDL_PollEvent(&event)) ||
-                    (paused_ && SDL_WaitEvent(&event)))) {
+            while (continue_ && ((!paused_ && SDL_PollEvent(&event)) ||
+                                 (paused_ && SDL_WaitEvent(&event)))) {
                 if (event.type == post_event_type_) {
                     auto fnp = static_cast<event_fn*>(event.user.data1);
                     (*fnp)();
@@ -111,7 +108,7 @@ struct sdl_event_loop
     {
         auto event = SDL_Event{};
         SDL_zero(event);
-        event.type = post_event_type_;
+        event.type       = post_event_type_;
         event.user.data1 = new event_fn{std::move(ev)};
         SDL_PushEvent(&event);
     }
@@ -123,8 +120,8 @@ struct sdl_event_loop
 private:
     friend with_sdl_event_loop;
 
-    std::atomic<bool> done_ {false};
-    std::atomic<bool> paused_ {false};
+    std::atomic<bool> done_{false};
+    std::atomic<bool> paused_{false};
     std::uint32_t post_event_type_ = SDL_RegisterEvents(1);
 };
 
@@ -139,11 +136,14 @@ struct with_sdl_event_loop
     }
 
     template <typename Fn>
-    void post(Fn&& fn) { loop.get().post(std::forward<Fn>(fn)); }
+    void post(Fn&& fn)
+    {
+        loop.get().post(std::forward<Fn>(fn));
+    }
 
     void finish() { loop.get().finish(); }
     void pause() { loop.get().pause(); }
     void resume() { loop.get().resume(); }
- };
+};
 
 } // namespace lager

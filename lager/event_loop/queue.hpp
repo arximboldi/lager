@@ -25,7 +25,10 @@ struct queue_event_loop
     void pause() { throw std::logic_error{"not implemented!"}; }
     void resume() { throw std::logic_error{"not implemented!"}; }
     template <typename Fn>
-    void async(Fn&& fn) { throw std::logic_error{"not implemented!"}; }
+    void async(Fn&& fn)
+    {
+        throw std::logic_error{"not implemented!"};
+    }
 
     void step()
     {
@@ -46,12 +49,18 @@ struct with_queue_event_loop
     std::reference_wrapper<queue_event_loop> loop;
 
     template <typename Fn>
-    void async(Fn&& fn) { loop.get().async(std::forward<Fn>(fn)); }
+    void async(Fn&& fn)
+    {
+        loop.get().async(std::forward<Fn>(fn));
+    }
     template <typename Fn>
-    void post(Fn&& fn) { loop.get().post(std::forward<Fn>(fn)); }
+    void post(Fn&& fn)
+    {
+        loop.get().post(std::forward<Fn>(fn));
+    }
     void finish() { loop.get().finish(); }
     void pause() { loop.get().pause(); }
     void resume() { loop.get().resume(); }
 };
 
-}  // namespace lager
+} // namespace lager

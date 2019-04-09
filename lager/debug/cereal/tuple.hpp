@@ -22,8 +22,8 @@ namespace detail {
 template <size_t Height>
 struct serialize
 {
-    template <class Archive, class ... Types> inline
-    static void apply(Archive& ar, std::tuple<Types...>& tuple)
+    template <class Archive, class... Types>
+    inline static void apply(Archive& ar, std::tuple<Types...>& tuple)
     {
         serialize<Height - 1>::template apply(ar, tuple);
         ar(std::get<Height - 1>(tuple));
@@ -33,15 +33,16 @@ struct serialize
 template <>
 struct serialize<0>
 {
-    template <class Archive, class ... Types> inline
-    static void apply(Archive&, std::tuple<Types...>&)
+    template <class Archive, class... Types>
+    inline static void apply(Archive&, std::tuple<Types...>&)
     {}
 };
 
 } // namespace detail
 
-template <class Archive, class ... Types> inline
-void CEREAL_SERIALIZE_FUNCTION_NAME(Archive& ar, std::tuple<Types...>& tuple)
+template <class Archive, class... Types>
+inline void CEREAL_SERIALIZE_FUNCTION_NAME(Archive& ar,
+                                           std::tuple<Types...>& tuple)
 {
     auto ts = sizeof...(Types);
     ar(make_size_tag(ts));

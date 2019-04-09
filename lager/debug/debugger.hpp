@@ -12,42 +12,49 @@
 
 #pragma once
 
-#include <lager/util.hpp>
 #include <lager/context.hpp>
+#include <lager/util.hpp>
 
-#include <immer/vector.hpp>
 #include <immer/algorithm.hpp>
+#include <immer/vector.hpp>
 
 #include <lager/debug/cereal/immer_vector.hpp>
-#include <lager/debug/cereal/variant_with_name.hpp>
 #include <lager/debug/cereal/struct.hpp>
+#include <lager/debug/cereal/variant_with_name.hpp>
 
-#include <variant>
 #include <functional>
+#include <variant>
 
 namespace lager {
 
-template <typename Action, typename Model>
+template <typename Action, typename Model, typename Deps>
 struct debugger
 {
     using base_action = Action;
     using base_model  = Model;
+    using deps_t      = Deps;
 
     using cursor_t = std::size_t;
 
-    struct goto_action { cursor_t cursor; };
-    struct undo_action {};
-    struct redo_action {};
-    struct pause_action {};
-    struct resume_action {};
+    struct goto_action
+    {
+        cursor_t cursor;
+    };
+    struct undo_action
+    {};
+    struct redo_action
+    {};
+    struct pause_action
+    {};
+    struct resume_action
+    {};
 
-    using action = std::variant<
-        Action,
-        goto_action,
-        undo_action,
-        redo_action,
-        pause_action,
-        resume_action>;
+    using action = std::variant<Action,
+                                goto_action,
+                                undo_action,
+                                redo_action,
+                                pause_action,
+                                resume_action>;
 
     struct step
     {
@@ -58,13 +65,15 @@ struct debugger
     struct model
     {
         cursor_t cursor = {};
-        bool paused = {};
+        bool paused     = {};
         Model init;
-        immer::vector<step> history = {};
+        immer::vector<step> history   = {};
         immer::vector<Action> pending = {};
 
         model() = default;
-        model(Model i) : init{i} {}
+        model(Model i)
+            : init{i}
+        {}
 
         using lookup_result = std::pair<std::optional<Action>, const Model&>;
 
@@ -72,77 +81,70 @@ struct debugger
         {
             if (cursor > history.size())
                 throw std::runtime_error{"bad cursor"};
-            return cursor == 0
-                ? lookup_result{{}, init}
-                : [&] {
-                    auto& step = history[cursor - 1];
-                    return lookup_result{step.action, step.model};
-                }();
+            return cursor == 0 ? lookup_result{{}, init} : [&] {
+                auto& step = history[cursor - 1];
+                return lookup_result{step.action, step.model};
+            }();
         }
 
-        std::size_t summary() const
-        {
-            return history.size();
-        }
+        std::size_t summary() const { return history.size(); }
 
-        operator const Model& () const {
-            return lookup(cursor).second;
-        }
+        operator const Model&() const { return lookup(cursor).second; }
     };
 
+    using result_t = std::pair<model, effect<action, deps_t>>;
+
     template <typename ReducerFn>
-    static std::pair<model, effect<action>>
-    update(ReducerFn&& reducer, model m, action act)
+    static result_t update(ReducerFn&& reducer, model m, action act)
     {
-        using result_t = std::pair<model, effect<action>>;
-        return std::visit(visitor{
-                [&] (Action act) -> result_t {
+        return std::visit(
+            visitor{
+                [&](Action act) -> result_t {
                     if (m.paused) {
                         m.pending = m.pending.push_back(act);
                         return {m, noop};
                     } else {
-                        auto eff = effect<action>{noop};
-                        auto state = invoke_reducer(
-                            reducer, m, act,
-                            [&] (auto&& e) { eff = LAGER_FWD(e); });
-                        m.history = m.history
-                            .take(m.cursor)
-                            .push_back({act, state});
+                        auto eff   = effect<action, deps_t>{noop};
+                        auto state = invoke_reducer<deps_t>(
+                            reducer, m, act, [&](auto&& e) {
+                                eff = LAGER_FWD(e);
+                            });
+                        m.history =
+                            m.history.take(m.cursor).push_back({act, state});
                         m.cursor = m.history.size();
                         return {m, eff};
                     }
                 },
-                [&] (goto_action act) -> result_t {
+                [&](goto_action act) -> result_t {
                     if (act.cursor <= m.history.size())
                         m.cursor = act.cursor;
                     return {m, noop};
                 },
-                [&] (undo_action) -> result_t {
+                [&](undo_action) -> result_t {
                     if (m.cursor > 0)
                         --m.cursor;
                     return {m, noop};
                 },
-                [&] (redo_action) -> result_t {
+                [&](redo_action) -> result_t {
                     if (m.cursor < m.history.size())
                         ++m.cursor;
                     return {m, noop};
                 },
-                [&] (pause_action) -> result_t {
+                [&](pause_action) -> result_t {
                     m.paused = true;
-                    return {m, [] (auto&& ctx) { ctx.pause(); }};
+                    return {m, [](auto&& ctx) { ctx.pause(); }};
                 },
-                [&] (resume_action) -> result_t {
-                    auto resume_eff = effect<action>{[] (auto&& ctx) {
-                        ctx.resume();
-                    }};
-                    auto eff = effect<action>{noop};
-                    auto pending = m.pending;
-                    m.paused = false;
-                    m.pending = {};
+                [&](resume_action) -> result_t {
+                    auto resume_eff =
+                        effect<action>{[](auto&& ctx) { ctx.resume(); }};
+                    auto eff         = effect<action, deps_t>{noop};
+                    auto pending     = m.pending;
+                    m.paused         = false;
+                    m.pending        = {};
                     std::tie(m, eff) = immer::accumulate(
                         pending,
                         std::pair{m, eff},
-                        [&] (result_t acc, auto&& act) -> result_t {
+                        [&](result_t acc, auto&& act) -> result_t {
                             auto [m, eff] = LAGER_FWD(acc);
                             auto [new_m, new_eff] =
                                 update(reducer, std::move(m), LAGER_FWD(act));
@@ -150,7 +152,8 @@ struct debugger
                         });
                     return {m, sequence(resume_eff, eff)};
                 },
-            }, act);
+            },
+            act);
     }
 
     template <typename Server, typename ViewFn>
@@ -167,6 +170,40 @@ struct debugger
     LAGER_CEREAL_NESTED_STRUCT(goto_action, (cursor));
     LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(paused)(init)(history));
     LAGER_CEREAL_NESTED_STRUCT(step, (action)(model));
+};
+
+template <template <class, class, class> class Debugger = debugger,
+          typename Server>
+auto with_debugger(Server& serv)
+{
+    return [&](auto next) {
+        return [&serv, next](auto action,
+                             auto&& model,
+                             auto&& reducer,
+                             auto&& view,
+                             auto&& loop,
+                             auto&& deps) {
+            using action_t   = typename decltype(action)::type;
+            using model_t    = std::decay_t<decltype(model)>;
+            using deps_t     = std::decay_t<decltype(deps)>;
+            using debugger_t = Debugger<action_t, model_t, deps_t>;
+            auto& handle     = serv.enable(debugger_t{});
+            auto store       = next(
+                type_<typename debugger_t::action>{},
+                typename debugger_t::model{LAGER_FWD(model)},
+                [reducer = LAGER_FWD(reducer)](auto&& model, auto&& action) {
+                    return debugger_t::update(
+                        reducer, LAGER_FWD(model), LAGER_FWD(action));
+                },
+                [&handle, view = LAGER_FWD(view)](auto&& model) mutable {
+                    return debugger_t::view(handle, view, LAGER_FWD(model));
+                },
+                LAGER_FWD(loop),
+                LAGER_FWD(deps));
+            handle.set_context(store.get_context());
+            return store;
+        };
+    };
 };
 
 } // namespace lager

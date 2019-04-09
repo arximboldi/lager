@@ -22,8 +22,9 @@ add_dependencies(check tests)
 
 file(GLOB_RECURSE lager_unit_tests "*.cpp")
 set(lager_unit_tests
-  core.cpp)
-  
+  core.cpp
+  deps.cpp)
+
 if(lager_BUILD_DEBUGGER)
   list(APPEND lager_unit_tests
     debug.cpp
