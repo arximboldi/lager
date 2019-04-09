@@ -162,7 +162,7 @@ public:
     deps& operator=(deps&&) = default;
 
     template <typename Key>
-    decltype(auto) get()
+    decltype(auto) get() const
     {
         using key_t  = dep::key_t<Key>;
         using spec_t = std::decay_t<decltype(spec_map_t{}[key_t{}])>;
@@ -208,6 +208,12 @@ private:
 
     storage_t storage_;
 };
+
+template <typename Key, typename... Ts>
+decltype(auto) get(const deps<Ts...>& d)
+{
+    return d.template get<Key>();
+}
 
 template <typename... Ts>
 auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>

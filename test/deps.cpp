@@ -39,7 +39,7 @@ TEST_CASE("basic")
 {
     auto x = lager::deps<foo, bar>{foo{}, bar{}};
     CHECK(x.get<foo>().x == 0);
-    CHECK(x.get<bar>().s == std::string{"lol"});
+    CHECK(lager::get<bar>(x).s == std::string{"lol"});
 }
 
 TEST_CASE("reference")
