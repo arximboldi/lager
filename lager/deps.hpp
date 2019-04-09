@@ -116,10 +116,6 @@ struct is_deps<deps<Ts...>> : std::true_type
 template <typename T>
 constexpr auto is_deps_v = is_deps<std::decay_t<T>>::value;
 
-BOOST_HANA_CONSTEXPR_LAMBDA auto deps_from = [](auto... ts) {
-    return boost::hana::type_c<deps<typename decltype(ts)::type...>>;
-};
-
 } // namespace detail
 
 template <typename... Deps>
@@ -173,9 +169,12 @@ public:
     template <typename... Ds>
     auto merge(deps<Ds...> other)
     {
+        constexpr auto deps_from = [](auto... ts) {
+            return boost::hana::type_c<deps<typename decltype(ts)::type...>>;
+        };
         using result_t = typename decltype(boost::hana::unpack(
             boost::hana::union_(spec_set, deps<Ds...>::spec_set),
-            detail::deps_from))::type;
+            deps_from))::type;
         return result_t{*this, std::move(other)};
     }
 
