@@ -30,11 +30,12 @@
 
 namespace lager {
 
-template <typename Action, typename Model>
+template <typename Action, typename Model, typename Deps>
 struct tree_debugger
 {
     using base_action = Action;
     using base_model  = Model;
+    using deps_t      = Deps;
 
     struct pos_t
     {
@@ -208,11 +209,11 @@ struct tree_debugger
         operator const Model&() const { return lookup(cursor).second; }
     };
 
+    using result_t = std::pair<model, effect<action, deps_t>>;
+
     template <typename ReducerFn>
-    static std::pair<model, effect<action>>
-    update(ReducerFn&& reducer, model m, action act)
+    static result_t update(ReducerFn&& reducer, model m, action act)
     {
-        using result_t = std::pair<model, effect<action>>;
         return std::visit(
             visitor{
                 [&](Action act) -> result_t {
@@ -220,9 +221,9 @@ struct tree_debugger
                         m.pending = m.pending.push_back(act);
                         return {m, noop};
                     } else {
-                        auto eff = effect<action>{noop};
-                        auto state =
-                            invoke_reducer(reducer, m, act, [&](auto&& e) {
+                        auto eff   = effect<action, deps_t>{noop};
+                        auto state = invoke_reducer<deps_t>(
+                            reducer, m, act, [&](auto&& e) {
                                 eff = LAGER_FWD(e);
                             });
                         m.append(act, state);

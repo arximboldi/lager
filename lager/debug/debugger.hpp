@@ -27,11 +27,12 @@
 
 namespace lager {
 
-template <typename Action, typename Model>
+template <typename Action, typename Model, typename Deps>
 struct debugger
 {
     using base_action = Action;
     using base_model  = Model;
+    using deps_t      = Deps;
 
     using cursor_t = std::size_t;
 
@@ -91,11 +92,11 @@ struct debugger
         operator const Model&() const { return lookup(cursor).second; }
     };
 
+    using result_t = std::pair<model, effect<action, deps_t>>;
+
     template <typename ReducerFn>
-    static std::pair<model, effect<action>>
-    update(ReducerFn&& reducer, model m, action act)
+    static result_t update(ReducerFn&& reducer, model m, action act)
     {
-        using result_t = std::pair<model, effect<action>>;
         return std::visit(
             visitor{
                 [&](Action act) -> result_t {
@@ -103,9 +104,9 @@ struct debugger
                         m.pending = m.pending.push_back(act);
                         return {m, noop};
                     } else {
-                        auto eff = effect<action>{noop};
-                        auto state =
-                            invoke_reducer(reducer, m, act, [&](auto&& e) {
+                        auto eff   = effect<action, deps_t>{noop};
+                        auto state = invoke_reducer<deps_t>(
+                            reducer, m, act, [&](auto&& e) {
                                 eff = LAGER_FWD(e);
                             });
                         m.history =
@@ -136,7 +137,7 @@ struct debugger
                 [&](resume_action) -> result_t {
                     auto resume_eff =
                         effect<action>{[](auto&& ctx) { ctx.resume(); }};
-                    auto eff         = effect<action>{noop};
+                    auto eff         = effect<action, deps_t>{noop};
                     auto pending     = m.pending;
                     m.paused         = false;
                     m.pending        = {};
@@ -171,7 +172,8 @@ struct debugger
     LAGER_CEREAL_NESTED_STRUCT(step, (action)(model));
 };
 
-template <template <class, class> class Debugger = debugger, typename Server>
+template <template <class, class, class> class Debugger = debugger,
+          typename Server>
 auto with_debugger(Server& serv)
 {
     return [&](auto next) {
@@ -183,7 +185,8 @@ auto with_debugger(Server& serv)
                              auto&& deps) {
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
-            using debugger_t = Debugger<action_t, model_t>;
+            using deps_t     = std::decay_t<decltype(deps)>;
+            using debugger_t = Debugger<action_t, model_t, deps_t>;
             auto& handle     = serv.enable(debugger_t{});
             auto store       = next(
                 type_<typename debugger_t::action>{},

@@ -79,3 +79,37 @@ TEST_CASE("effect as a result")
     CHECK(*viewed == 2);
     CHECK(called == 1);
 }
+
+namespace services {
+
+struct foo
+{
+    int x = 0;
+};
+
+} // namespace services
+
+TEST_CASE("effect with dependencies")
+{
+    auto debugger = dummy_debugger{};
+    auto called   = 0;
+    auto f        = services::foo{};
+    auto effect   = [&](auto ctx) {
+        CHECK(lager::get<services::foo>(ctx).x == 42);
+        ++called;
+    };
+    auto store =
+        lager::make_store<int>(0,
+                               [=](int model, int action) {
+                                   return std::pair{model + action, effect};
+                               },
+                               [](auto) {},
+                               lager::with_manual_event_loop{},
+                               lager::with_deps(std::ref(f)),
+                               // important: debugger must be last so it can
+                               // forward the deps properly
+                               lager::with_debugger(debugger));
+    f.x = 42;
+    store.dispatch(2);
+    CHECK(called == 1);
+}
