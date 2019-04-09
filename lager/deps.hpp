@@ -169,13 +169,12 @@ public:
     template <typename... Ds>
     auto merge(deps<Ds...> other)
     {
-        constexpr auto deps_from = [](auto... ts) {
-            return boost::hana::type_c<deps<typename decltype(ts)::type...>>;
-        };
-        using result_t = typename decltype(boost::hana::unpack(
+        return boost::hana::unpack(
             boost::hana::union_(spec_set, deps<Ds...>::spec_set),
-            deps_from))::type;
-        return result_t{*this, std::move(other)};
+            [&](auto... ts) {
+                using deps_t = deps<typename decltype(ts)::type...>;
+                return deps_t{*this, std::move(other)};
+            });
     }
 
 private:
