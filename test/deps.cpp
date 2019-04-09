@@ -123,3 +123,28 @@ TEST_CASE("keys")
     CHECK(d.get<foo1>().x == 42);
     CHECK(d.get<foo2>().x == 13);
 }
+
+TEST_CASE("optionals")
+{
+    auto f1 = foo{};
+    auto d1 = lager::deps<lager::dep::key<foo1, foo&>,
+                          lager::dep::key<foo2, foo>,
+                          bar>::with(f1, foo{13}, bar{"lol"});
+    auto d2 = lager::deps<lager::dep::key<foo2, foo>,
+                          lager::dep::opt<lager::dep::key<foo1, foo&>>,
+                          lager::dep::opt<yas>>{d1};
+
+    f1.x = 42;
+    CHECK(d2.has<foo1>());
+    CHECK(d2.get<foo1>().x == 42);
+    CHECK(!d2.has<yas>());
+    CHECK_THROWS_AS(d2.get<yas>(), lager::missing_dependency_error);
+
+    auto d3 = lager::deps<lager::dep::opt<lager::dep::key<foo1, foo>>,
+                          lager::dep::opt<yas>>{d2};
+    f1.x    = 13;
+    CHECK(d3.has<foo1>());
+    CHECK(d3.get<foo1>().x == 42);
+    CHECK(!d3.has<yas>());
+    CHECK_THROWS_AS(d3.get<yas>(), lager::missing_dependency_error);
+}
