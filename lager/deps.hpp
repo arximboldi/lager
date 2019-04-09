@@ -53,9 +53,9 @@ constexpr auto is_spec_v = is_spec<T>::value;
 template <typename T>
 struct val : spec
 {
-    using type    = val;
-    using key     = boost::hana::type<T>;
-    using storage = T;
+    using type     = val;
+    using key_type = T;
+    using storage  = T;
 
     template <typename Storage>
     static decltype(auto) get(Storage&& x)
@@ -67,9 +67,9 @@ struct val : spec
 template <typename T>
 struct ref : spec
 {
-    using type    = ref;
-    using key     = boost::hana::type<T>;
-    using storage = std::reference_wrapper<T>;
+    using type     = ref;
+    using key_type = T;
+    using storage  = std::reference_wrapper<T>;
 
     template <typename Storage>
     static decltype(auto) get(Storage&& x)
@@ -91,14 +91,12 @@ using to_spec = typename std::conditional_t<
                        ref<std::remove_reference_t<T>>,
                        val<T>>>::type;
 
-template <typename T>
-using key_t = typename dep::to_spec<T>::key;
-
-template <typename T>
-constexpr auto key_c = key_t<T>{};
-
-template <typename T>
-using storage_t = typename dep::to_spec<T>::storage;
+template <typename K, typename T>
+struct key : to_spec<T>
+{
+    using type     = key;
+    using key_type = K;
+};
 
 } // namespace dep
 
@@ -123,6 +121,12 @@ class deps
 {
     static constexpr auto spec_set =
         boost::hana::make_set(boost::hana::type_c<dep::to_spec<Deps>>...);
+
+    template <typename T>
+    using get_key_t = boost::hana::type<typename dep::to_spec<T>::key_type>;
+
+    template <typename T>
+    using get_storage_t = typename dep::to_spec<T>::storage;
 
 public:
     template <typename T,
@@ -164,9 +168,8 @@ public:
     template <typename Key>
     decltype(auto) get() const
     {
-        using key_t  = dep::key_t<Key>;
-        using spec_t = std::decay_t<decltype(spec_map_t{}[key_t{}])>;
-        return spec_t::get(storage_[key_t{}]);
+        using spec_t = std::decay_t<decltype(spec_map_t{}[get_key_t<Key>{}])>;
+        return spec_t::get(storage_[get_key_t<Key>{}]);
     }
 
     template <typename... Ds>
@@ -185,25 +188,25 @@ private:
     friend struct deps;
 
     using spec_map_t = boost::hana::map<
-        boost::hana::pair<dep::key_t<Deps>, dep::to_spec<Deps>>...>;
+        boost::hana::pair<get_key_t<Deps>, dep::to_spec<Deps>>...>;
 
     using storage_t = boost::hana::map<
-        boost::hana::pair<dep::key_t<Deps>, dep::storage_t<Deps>>...>;
+        boost::hana::pair<get_key_t<Deps>, get_storage_t<Deps>>...>;
 
     template <typename... Ts>
     storage_t make_storage_(Ts&&... ts)
     {
         return storage_t{boost::hana::make_pair(
-            dep::key_c<Deps>, dep::storage_t<Deps>{std::forward<Ts>(ts)})...};
+            get_key_t<Deps>{}, get_storage_t<Deps>{std::forward<Ts>(ts)})...};
     }
 
     template <typename Storage>
     storage_t make_storage_from_(Storage&& other)
     {
         return storage_t{
-            boost::hana::make_pair(dep::key_c<Deps>,
-                                   dep::storage_t<Deps>{std::forward<Storage>(
-                                       other)[dep::key_t<Deps>{}]})...};
+            boost::hana::make_pair(get_key_t<Deps>{},
+                                   get_storage_t<Deps>{std::forward<Storage>(
+                                       other)[get_key_t<Deps>{}]})...};
     }
 
     storage_t storage_;

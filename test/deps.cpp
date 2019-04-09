@@ -107,3 +107,20 @@ TEST_CASE("type deduction and references")
     CHECK(d2.get<foo>().x == 42);
     CHECK(d2.get<bar>().s == std::string{"lol"});
 }
+
+struct foo1
+{};
+struct foo2
+{};
+
+TEST_CASE("keys")
+{
+    auto f1 = foo{};
+    auto d =
+        lager::deps<lager::dep::key<foo1, foo&>, lager::dep::key<foo2, foo>>{
+            f1, foo{13}};
+
+    f1.x = 42;
+    CHECK(d.get<foo1>().x == 42);
+    CHECK(d.get<foo2>().x == 13);
+}
