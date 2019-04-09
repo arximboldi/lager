@@ -249,13 +249,14 @@ template <typename Action,
           typename ReducerFn,
           typename ViewFn,
           typename EventLoop,
-          typename Enhancer>
+          typename... Enhancers>
 auto make_store(Model&& init,
                 ReducerFn&& reducer,
                 ViewFn&& view,
                 EventLoop&& loop,
-                Enhancer&& enhancer)
+                Enhancers&&... enhancers)
 {
+    auto enhancer      = comp(std::forward<Enhancers>(enhancers)...);
     auto store_creator = enhancer([&](auto action,
                                       auto&& model,
                                       auto&& reducer,
