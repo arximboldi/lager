@@ -9,10 +9,10 @@ genrule(
 
 cc_library(
     name = "lager",
-    include_prefix = "lager",
-    strip_include_prefix = "lager",
     hdrs = glob([
         "lager/**/*.hpp",
     ]) + [":lager-config"],
     deps = ["@boost//:hana"],
+    includes = [".", "lager/"],
+    visibility = ["//visibility:public"],
 )
