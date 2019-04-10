@@ -14,4 +14,5 @@ cc_library(
     hdrs = glob([
         "lager/**/*.hpp",
     ]) + [":lager-config"],
+    deps = ["@boost//:hana"],
 )
