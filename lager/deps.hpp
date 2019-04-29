@@ -22,6 +22,7 @@
 #include <boost/hana/union.hpp>
 #include <boost/hana/unpack.hpp>
 
+#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -61,12 +62,6 @@ struct spec
     using is_required = std::true_type;
 
     template <typename Storage>
-    static decltype(auto) get(Storage&& x)
-    {
-        return std::forward<Storage>(x);
-    }
-
-    template <typename Storage>
     static bool has(Storage&& x)
     {
         return true;
@@ -89,7 +84,22 @@ struct val : spec
 
     using type     = val;
     using key_type = T;
-    using storage  = T;
+
+    struct storage
+    {
+        T value;
+
+        storage() = default;
+        storage(T x)
+            : value{std::move(x)}
+        {}
+    };
+
+    template <typename Storage>
+    static decltype(auto) get(Storage&& x)
+    {
+        return std::forward<Storage>(x).value;
+    }
 };
 
 //!
@@ -157,6 +167,23 @@ struct opt : to_spec<T>
 };
 
 //!
+// Modifies specification or type `T` to make it indirectly provided via a
+// function.
+//
+template <typename T>
+struct fn : to_spec<T>
+{
+    using type    = fn;
+    using storage = std::function<typename to_spec<T>::storage()>;
+
+    template <typename Storage>
+    static decltype(auto) get(Storage&& fn)
+    {
+        return to_spec<T>::get(std::forward<Storage>(fn)());
+    }
+};
+
+//!
 // Modifies specification or type `T` to associate it with type tag `K`.
 //
 template <typename K, typename T>
@@ -165,6 +192,29 @@ struct key : to_spec<T>
     using type     = key;
     using key_type = K;
 };
+
+namespace detail {
+
+template <typename Spec>
+struct spec_value
+    : Spec
+    , Spec::storage
+{
+    spec_value(typename Spec::storage v)
+        : Spec::storage{std::move(v)}
+    {}
+};
+
+} // namespace detail
+
+//!
+// Pairs value of type T with specificatio Spec
+//
+template <typename Spec>
+detail::spec_value<Spec> as(typename Spec::storage v)
+{
+    return {std::move(v)};
+}
 
 } // namespace dep
 
