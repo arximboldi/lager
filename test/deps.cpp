@@ -140,11 +140,37 @@ TEST_CASE("optionals")
     CHECK(!d2.has<yas>());
     CHECK_THROWS_AS(d2.get<yas>(), lager::missing_dependency_error);
 
-    auto d3 = lager::deps<lager::dep::opt<lager::dep::key<foo1, foo>>,
+    auto d3 = lager::deps<lager::dep::opt<lager::dep::key<foo1, foo&>>,
                           lager::dep::opt<yas>>{d2};
     f1.x    = 13;
     CHECK(d3.has<foo1>());
-    CHECK(d3.get<foo1>().x == 42);
+    CHECK(d3.get<foo1>().x == 13);
     CHECK(!d3.has<yas>());
     CHECK_THROWS_AS(d3.get<yas>(), lager::missing_dependency_error);
+}
+
+TEST_CASE("specs in factories")
+{
+    auto d1 = lager::make_deps(lager::dep::as<lager::dep::key<foo1, int>>(42));
+    auto d2 = lager::deps<lager::dep::key<foo1, int>>{d1};
+    CHECK(d1.get<foo1>() == 42);
+    CHECK(d2.get<foo1>() == 42);
+}
+
+TEST_CASE("function to reference")
+{
+    auto f1 = foo{};
+    auto d1 = lager::make_deps(
+        lager::dep::as<lager::dep::fn<foo&>>([&]() -> foo& { return f1; }));
+    auto& rf = d1.get<foo>();
+    f1.x     = 13;
+    CHECK(rf.x == 13);
+}
+
+TEST_CASE("keyed function")
+{
+    auto d1 = lager::make_deps(
+        lager::dep::as<lager::dep::key<foo1, lager::dep::fn<int>>>(
+            [&] { return 42; }));
+    CHECK(d1.get<foo1>() == 42);
 }
