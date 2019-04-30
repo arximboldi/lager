@@ -100,6 +100,9 @@ struct val : spec
     {
         return std::forward<Storage>(x).value;
     }
+
+    static storage extract(storage st) { return std::move(st); }
+    static storage extract(std::function<T()> st) { return st(); }
 };
 
 //!
@@ -119,6 +122,9 @@ struct ref : spec
     {
         return std::forward<Storage>(x).get();
     }
+
+    static storage extract(storage st) { return std::move(st); }
+    static storage extract(std::function<T&()> st) { return st(); }
 };
 
 template <typename T>
@@ -164,6 +170,8 @@ struct opt : to_spec<T>
     {
         return bool{x};
     }
+
+    static storage extract(storage st) { return std::move(st); }
 };
 
 //!
@@ -181,6 +189,8 @@ struct fn : to_spec<T>
     {
         return to_spec<T>::get(std::forward<Storage>(fn)());
     }
+
+    static storage extract(storage st) { return std::move(st); }
 };
 
 //!
@@ -426,7 +436,7 @@ private:
     static get_storage_t<Spec>
     extract_from_storage_(Storage&& other, std::true_type /* is_required */)
     {
-        return std::forward<Storage>(other)[get_key_t<Spec>{}];
+        return Spec::extract(std::forward<Storage>(other)[get_key_t<Spec>{}]);
     }
 
     template <typename Spec, typename Storage>

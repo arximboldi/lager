@@ -174,3 +174,14 @@ TEST_CASE("keyed function")
             [&] { return 42; }));
     CHECK(d1.get<foo1>() == 42);
 }
+
+TEST_CASE("extracting from function")
+{
+    auto f1 = foo{};
+    auto d1 = lager::make_deps(
+        lager::dep::as<lager::dep::fn<foo&>>([&]() -> foo& { return f1; }));
+    auto d2 = lager::deps<foo&>{d1};
+
+    f1.x = 13;
+    CHECK(d2.get<foo>().x == 13);
+}
