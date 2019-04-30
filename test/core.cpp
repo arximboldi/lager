@@ -30,10 +30,12 @@ TEST_CASE("basic")
 
     CHECK(viewed);
     CHECK(viewed->value == 0);
+    CHECK(store.current().value == 0);
 
     store.dispatch(counter::increment_action{});
     CHECK(viewed);
     CHECK(viewed->value == 1);
+    CHECK(store.current().value == 1);
 }
 
 TEST_CASE("effect as a result")

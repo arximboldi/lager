@@ -93,6 +93,7 @@ struct store
     void dispatch(action_t action) { impl_->dispatch(action); }
     void update() { return impl_->update(); }
     context_t get_context() { return context_; }
+    const model_t& current() { return impl_->model; }
 
 private:
     template <typename A, typename M, typename D>
