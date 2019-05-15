@@ -192,3 +192,21 @@ TEST_CASE("sequencing multiple effects with deps")
     CHECK(called2 == 1);
     CHECK(called3 == 1);
 }
+
+struct child1_action
+{};
+struct child2_action
+{};
+using parent_action = std::variant<child1_action, child2_action>;
+
+TEST_CASE("sequencing hierarchical actions")
+{
+    auto eff1called = 0;
+    auto eff2called = 0;
+    auto eff1 = lager::effect<child1_action>{[&](auto&&) { ++eff1called; }};
+    auto eff2 = lager::effect<child2_action>{[&](auto&&) { ++eff2called; }};
+    auto eff3 = lager::effect<parent_action>{lager::sequence(eff1, eff2)};
+    eff3(lager::context<parent_action>{});
+    CHECK(eff1called == 1);
+    CHECK(eff2called == 1);
+}

@@ -165,13 +165,28 @@ auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
                              }};
 }
 
-template <typename Action, typename Deps1, typename Deps2, typename... Effects>
-auto sequence(effect<Action, Deps1> a,
-              effect<Action, Deps2> b,
-              Effects&&... effects)
+template <typename Action1, typename Deps1, typename Action2, typename Deps2>
+auto sequence(effect<Action1, Deps1> a, effect<Action2, Deps2> b)
+{
+    // When the actions are disimilar we can not deduce a sensible effect type,
+    // so we can only just return a generic function and rely on the context
+    // conversions working when the function is instantiated.  This can be
+    // improved when/if we provide our own variant type for actions that is
+    // tailored towards our use-cases and provides subset cherry-picking
+    // conversions.
+    return [a, b](auto&& ctx) {
+        if (a)
+            a(ctx);
+        if (b)
+            b(ctx);
+    };
+}
+
+template <typename A1, typename D1, typename A2, typename D2, typename... Effs>
+auto sequence(effect<A1, D1> a, effect<A2, D2> b, Effs&&... effects)
 {
     return sequence(sequence(std::move(a), std::move(b)),
-                    std::forward<Effects>(effects)...);
+                    std::forward<Effs>(effects)...);
 }
 
 } // namespace lager
