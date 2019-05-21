@@ -222,8 +222,9 @@ struct tree_debugger
                         return {m, noop};
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
-                        auto state = invoke_reducer<deps_t>(
-                            reducer, m, act, [&](auto&& e) {
+                        auto state = static_cast<base_model>(m);
+                        invoke_reducer<deps_t>(
+                            reducer, state, act, [&](auto&& e) {
                                 eff = LAGER_FWD(e);
                             });
                         m.append(act, state);

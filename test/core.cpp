@@ -58,6 +58,25 @@ TEST_CASE("effect as a result")
     CHECK(called == 1);
 }
 
+TEST_CASE("effects see updated world")
+{
+    auto called = 0;
+    auto store  = std::optional<lager::store<int, int>>{};
+    auto effect = [&](lager::context<int> ctx) {
+        CHECK(store->current() == 2);
+        ++called;
+    };
+    store = lager::make_store<int>(0,
+                                   [=](int model, int action) {
+                                       return std::pair{model + action, effect};
+                                   },
+                                   [&](auto model) {},
+                                   lager::with_manual_event_loop{});
+
+    store->dispatch(2);
+    CHECK(called == 1);
+}
+
 TEST_CASE("store type erasure")
 {
     auto viewed = std::optional<counter::model>{std::nullopt};

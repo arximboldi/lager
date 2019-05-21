@@ -145,7 +145,7 @@ private:
         void dispatch(action_t action) override
         {
             loop.post([=] {
-                this->model = invoke_reducer<deps_t>(
+                invoke_reducer<deps_t>(
                     reducer, this->model, action, [&](auto&& effect) {
                         LAGER_FWD(effect)(this->ctx);
                     });
