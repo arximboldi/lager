@@ -113,10 +113,10 @@ private:
         using deps_t             = Deps;
         using concrete_context_t = context<Action, Deps>;
 
-        concrete_context_t ctx;
         event_loop_t loop;
         reducer_t reducer;
         view_t view;
+        concrete_context_t ctx;
 
         impl(model_t init_,
              reducer_t reducer_,
@@ -124,18 +124,15 @@ private:
              event_loop_t loop_,
              deps_t deps_)
             : impl_base{std::move(init_)}
-            , ctx{[this](auto ev) { dispatch(ev); },
-                  [this](auto fn) { loop.async(fn); },
-                  [this] { loop.finish(); },
-                  [this] { loop.pause(); },
-                  [this] { loop.resume(); },
-                  std::move(deps_)}
             , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
             , view{std::move(view_)}
+            , ctx{[this](auto&& act) { dispatch(LAGER_FWD(act)); },
+                  loop,
+                  std::move(deps_)}
         {
             update();
-        };
+        }
 
         void update() override
         {
