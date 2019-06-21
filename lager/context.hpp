@@ -15,7 +15,11 @@
 #include <lager/deps.hpp>
 #include <lager/util.hpp>
 
+#include <boost/hana/append.hpp>
 #include <boost/hana/find_if.hpp>
+#include <boost/hana/fold.hpp>
+#include <boost/hana/length.hpp>
+#include <boost/hana/remove_if.hpp>
 #include <boost/hana/type.hpp>
 
 #include <functional>
@@ -30,7 +34,9 @@ namespace lager {
 //
 template <typename... Actions>
 struct actions
-{};
+{
+    constexpr static auto as_hana_ = boost::hana::tuple_t<Actions...>;
+};
 
 //!
 // Metafunction that wraps the parameter in `actions<T>` if it is not wrapped
@@ -67,6 +73,47 @@ auto find_convertible_action_aux(Action act, Candidates candidates)
 template <typename Action, typename... Actions>
 using find_convertible_action_t = typename decltype(find_convertible_action_aux(
     boost::hana::type_c<Action>, boost::hana::tuple_t<Actions...>))::type;
+
+template <typename Actions1, typename Actions2>
+auto merge_actions_aux(Actions1 a1, Actions2 a2)
+{
+    static_assert(decltype(boost::hana::length(a1))::value > 0, "");
+    static_assert(decltype(boost::hana::length(a2))::value > 0, "");
+    auto has_convertible = [](auto seq, auto x) {
+        return boost::hana::is_just(boost::hana::find_if(seq, [](auto t) {
+            return std::is_convertible<typename decltype(x)::type,
+                                       typename decltype(t)::type>{};
+        }));
+    };
+    auto remove_convertibles = [](auto seq, auto x) {
+        return boost::hana::remove_if(seq, [](auto t) {
+            return std::is_convertible<typename decltype(x)::type,
+                                       typename decltype(t)::type>{};
+        });
+    };
+    auto result = boost::hana::fold(a1, a2, [&](auto acc, auto x) {
+        return boost::hana::if_(has_convertible(acc, x),
+                                [&] { return acc; },
+                                [&] {
+                                    auto xs = remove_convertibles(acc, x);
+                                    return boost::hana::append(xs, x);
+                                })();
+    });
+    static_assert(decltype(boost::hana::length(result))::value > 0, "");
+    return boost::hana::if_(
+        boost::hana::length(result) == boost::hana::size_c<1>,
+        [&] { return result[boost::hana::size_c<0>]; },
+        [&] {
+            return boost::hana::unpack(result, [](auto... xs) {
+                return boost::hana::type_c<
+                    actions<typename decltype(xs)::type...>>;
+            });
+        })();
+}
+
+template <typename Actions1, typename Actions2>
+using merge_actions_t = typename decltype(merge_actions_aux(
+    as_actions_t<Actions1>::as_hana_, as_actions_t<Actions2>::as_hana_))::type;
 
 template <typename... Actions>
 struct dispatcher;
@@ -272,11 +319,12 @@ void invoke_reducer(Reducer&& reducer,
 //!
 // Returns an effects that evalates the effects @a a and @a b in order.
 //
-template <typename Action, typename Deps1, typename Deps2>
-auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
+template <typename Actions1, typename Deps1, typename Actions2, typename Deps2>
+auto sequence(effect<Actions1, Deps1> a, effect<Actions2, Deps2> b)
 {
     using deps_t = decltype(std::declval<Deps1>().merge(std::declval<Deps2>()));
-    using result_t = effect<Action, deps_t>;
+    using actions_t = detail::merge_actions_t<Actions1, Actions2>;
+    using result_t  = effect<actions_t, deps_t>;
 
     return (!a || a.template target<decltype(noop)>() == &noop) &&
                    (!b || b.template target<decltype(noop)>() == &noop)
@@ -289,23 +337,6 @@ auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
                                  a(ctx);
                                  b(ctx);
                              }};
-}
-
-template <typename Action1, typename Deps1, typename Action2, typename Deps2>
-auto sequence(effect<Action1, Deps1> a, effect<Action2, Deps2> b)
-{
-    // When the actions are disimilar we can not deduce a sensible effect type,
-    // so we can only just return a generic function and rely on the context
-    // conversions working when the function is instantiated.  This can be
-    // improved when/if we provide our own variant type for actions that is
-    // tailored towards our use-cases and provides subset cherry-picking
-    // conversions.
-    return [a, b](auto&& ctx) {
-        if (a)
-            a(ctx);
-        if (b)
-            b(ctx);
-    };
 }
 
 template <typename A1, typename D1, typename A2, typename D2, typename... Effs>
