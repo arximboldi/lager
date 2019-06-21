@@ -15,13 +15,184 @@
 #include <lager/deps.hpp>
 #include <lager/util.hpp>
 
+#include <boost/hana/append.hpp>
+#include <boost/hana/find_if.hpp>
+#include <boost/hana/fold.hpp>
+#include <boost/hana/length.hpp>
+#include <boost/hana/remove_if.hpp>
+#include <boost/hana/type.hpp>
+
 #include <functional>
+#include <type_traits>
 
 namespace lager {
 
 //!
+// Type used to declare contexes suporting multiple action types.
+//
+// @see context
+//
+template <typename... Actions>
+struct actions
+{
+    constexpr static auto as_hana_ = boost::hana::tuple_t<Actions...>;
+};
+
+//!
+// Metafunction that wraps the parameter in `actions<T>` if it is not wrapped
+// already, this is, it returns @a ActionOrActions if it is a type of the form
+// `actions<Ts...>` or `actions<ActionOrActions>` otherwise.
+//
+template <typename ActionOrActions>
+struct as_actions
+{
+    using type = actions<ActionOrActions>;
+};
+
+template <typename... Actions>
+struct as_actions<actions<Actions...>>
+{
+    using type = actions<Actions...>;
+};
+
+template <typename ActionOrActions>
+using as_actions_t = typename as_actions<ActionOrActions>::type;
+
+namespace detail {
+
+template <typename Action, typename Candidates>
+auto find_convertible_action_aux(Action act, Candidates candidates)
+{
+    auto is_convertible = [](auto t) {
+        return std::is_convertible<typename Action::type,
+                                   typename decltype(t)::type>{};
+    };
+    return boost::hana::find_if(candidates, is_convertible).value();
+}
+
+template <typename Action, typename... Actions>
+using find_convertible_action_t = typename decltype(find_convertible_action_aux(
+    boost::hana::type_c<Action>, boost::hana::tuple_t<Actions...>))::type;
+
+template <typename Actions1, typename Actions2>
+auto merge_actions_aux(Actions1 a1, Actions2 a2)
+{
+    static_assert(decltype(boost::hana::length(a1))::value > 0, "");
+    static_assert(decltype(boost::hana::length(a2))::value > 0, "");
+    auto has_convertible = [](auto seq, auto x) {
+        return boost::hana::is_just(boost::hana::find_if(seq, [](auto t) {
+            return std::is_convertible<typename decltype(x)::type,
+                                       typename decltype(t)::type>{};
+        }));
+    };
+    auto remove_convertibles = [](auto seq, auto x) {
+        return boost::hana::remove_if(seq, [](auto t) {
+            return std::is_convertible<typename decltype(x)::type,
+                                       typename decltype(t)::type>{};
+        });
+    };
+    auto result = boost::hana::fold(a1, a2, [&](auto acc, auto x) {
+        return boost::hana::if_(has_convertible(acc, x),
+                                [&] { return acc; },
+                                [&] {
+                                    auto xs = remove_convertibles(acc, x);
+                                    return boost::hana::append(xs, x);
+                                })();
+    });
+    static_assert(decltype(boost::hana::length(result))::value > 0, "");
+    return boost::hana::if_(
+        boost::hana::length(result) == boost::hana::size_c<1>,
+        [&] { return result[boost::hana::size_c<0>]; },
+        [&] {
+            return boost::hana::unpack(result, [](auto... xs) {
+                return boost::hana::type_c<
+                    actions<typename decltype(xs)::type...>>;
+            });
+        })();
+}
+
+template <typename Actions1, typename Actions2>
+using merge_actions_t = typename decltype(merge_actions_aux(
+    as_actions_t<Actions1>::as_hana_, as_actions_t<Actions2>::as_hana_))::type;
+
+template <typename... Actions>
+struct dispatcher;
+
+template <typename... Actions>
+struct dispatcher<actions<Actions...>> : std::function<void(Actions)>...
+{
+    using std::function<void(Actions)>::operator()...;
+
+    dispatcher() = default;
+
+    template <typename... As>
+    dispatcher(dispatcher<actions<As...>> other)
+        : std::function<void(Actions)>{static_cast<
+              std::function<void(find_convertible_action_t<Actions, As...>)>&>(
+              other)}...
+    {}
+
+    template <typename Fn>
+    dispatcher(Fn other)
+        : std::function<void(Actions)>{std::move(other)}...
+    {}
+};
+
+struct event_loop_iface
+{
+    virtual ~event_loop_iface()               = default;
+    virtual void async(std::function<void()>) = 0;
+    virtual void finish()                     = 0;
+    virtual void pause()                      = 0;
+    virtual void resume()                     = 0;
+};
+
+template <typename EventLoop>
+struct event_loop_impl final : event_loop_iface
+{
+    EventLoop& loop;
+
+    event_loop_impl(EventLoop& loop_)
+        : loop{loop_}
+    {}
+    void async(std::function<void()> fn) override { loop.async(std::move(fn)); }
+    void finish() override { loop.finish(); }
+    void pause() override { loop.pause(); }
+    void resume() override { loop.resume(); }
+};
+
+} // namespace detail
+
+//!
 // Provide some _context_ for effectful functions, allowing them to control the
 // event loop and dispatch new actions into the store.
+//
+// A context is convertible to support "more restricted" actions.  This is, if
+// action `B` is convertible to action `A`, `context<A>` is convertible to
+// `context<B>`, in this sense, contexes are contravariant to the action type.
+// One can also specify multiple action types by using `action<>` tag. This is
+// useful to subset actions from a variant, here is an example:
+//
+// @code
+//      struct action_A {};
+//      struct action_B {};
+//      struct action_C {};
+//      using any_action = std::variant<action_A, action_B, action_C>>;
+//
+//      void some_effect(context<actions<action_A, action_B>> ctx)
+//      {
+//          if (...)
+//              ctx.dispatch(action_A{});
+//          else
+//              ctx.dispatch(action_B{});
+//      }
+//
+//     void other_effect(context<any_action> ctx)
+//     {
+//         some_effect(ctx);
+//         ...
+//     }
+// @endcode
 //
 // @note This is a reference type and it's life-time is bound to the associated
 //       store.  It is invalid to use it after the store has been destructed.
@@ -29,46 +200,45 @@ namespace lager {
 //
 // @todo Make constructors private.
 //
-template <typename Action, typename Deps = lager::deps<>>
+template <typename Actions, typename Deps = lager::deps<>>
 struct context : Deps
 {
-    using deps_t     = Deps;
-    using action_t   = Action;
-    using command_t  = std::function<void()>;
-    using dispatch_t = std::function<void(action_t)>;
-    using async_t    = std::function<void(std::function<void()>)>;
-
-    dispatch_t dispatch;
-    async_t async;
-    command_t finish;
-    command_t pause;
-    command_t resume;
+    using deps_t    = Deps;
+    using actions_t = as_actions_t<Actions>;
 
     context() = default;
 
-    template <typename Action_, typename Deps_>
-    context(const context<Action_, Deps_>& ctx)
+    template <typename Actions_, typename Deps_>
+    context(const context<Actions_, Deps_>& ctx)
         : deps_t{ctx}
-        , dispatch{ctx.dispatch}
-        , async{ctx.async}
-        , finish{ctx.finish}
-        , pause{ctx.pause}
-        , resume{ctx.resume}
+        , dispatcher_{ctx.dispatcher_}
+        , loop_{ctx.loop_}
     {}
 
-    context(dispatch_t dispatch_,
-            async_t async_,
-            command_t finish_,
-            command_t pause_,
-            command_t resume_,
-            deps_t deps_)
-        : deps_t{std::move(deps_)}
-        , dispatch{std::move(dispatch_)}
-        , async{std::move(async_)}
-        , finish{std::move(finish_)}
-        , pause{std::move(pause_)}
-        , resume{std::move(resume_)}
+    template <typename Dispatcher, typename EventLoop>
+    context(Dispatcher dispatcher, EventLoop& loop, deps_t deps)
+        : deps_t{std::move(deps)}
+        , dispatcher_{std::move(dispatcher)}
+        , loop_{std::make_shared<detail::event_loop_impl<EventLoop>>(loop)}
     {}
+
+    template <typename Action>
+    void dispatch(Action&& act) const
+    {
+        dispatcher_(std::forward<Action>(act));
+    }
+
+    void async(std::function<void()> fn) const { loop_->async(std::move(fn)); }
+    void finish() const { loop_->finish(); }
+    void pause() const { loop_->pause(); }
+    void resume() const { loop_->resume(); }
+
+private:
+    template <typename A, typename Ds>
+    friend struct context;
+
+    detail::dispatcher<actions_t> dispatcher_;
+    std::shared_ptr<detail::event_loop_iface> loop_;
 };
 
 //!
@@ -149,11 +319,12 @@ void invoke_reducer(Reducer&& reducer,
 //!
 // Returns an effects that evalates the effects @a a and @a b in order.
 //
-template <typename Action, typename Deps1, typename Deps2>
-auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
+template <typename Actions1, typename Deps1, typename Actions2, typename Deps2>
+auto sequence(effect<Actions1, Deps1> a, effect<Actions2, Deps2> b)
 {
     using deps_t = decltype(std::declval<Deps1>().merge(std::declval<Deps2>()));
-    using result_t = effect<Action, deps_t>;
+    using actions_t = detail::merge_actions_t<Actions1, Actions2>;
+    using result_t  = effect<actions_t, deps_t>;
 
     return (!a || a.template target<decltype(noop)>() == &noop) &&
                    (!b || b.template target<decltype(noop)>() == &noop)
@@ -166,23 +337,6 @@ auto sequence(effect<Action, Deps1> a, effect<Action, Deps2> b)
                                  a(ctx);
                                  b(ctx);
                              }};
-}
-
-template <typename Action1, typename Deps1, typename Action2, typename Deps2>
-auto sequence(effect<Action1, Deps1> a, effect<Action2, Deps2> b)
-{
-    // When the actions are disimilar we can not deduce a sensible effect type,
-    // so we can only just return a generic function and rely on the context
-    // conversions working when the function is instantiated.  This can be
-    // improved when/if we provide our own variant type for actions that is
-    // tailored towards our use-cases and provides subset cherry-picking
-    // conversions.
-    return [a, b](auto&& ctx) {
-        if (a)
-            a(ctx);
-        if (b)
-            b(ctx);
-    };
 }
 
 template <typename A1, typename D1, typename A2, typename D2, typename... Effs>

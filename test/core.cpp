@@ -212,11 +212,17 @@ TEST_CASE("sequencing multiple effects with deps")
     CHECK(called3 == 1);
 }
 
+namespace {
+
 struct child1_action
 {};
 struct child2_action
 {};
-using parent_action = std::variant<child1_action, child2_action>;
+struct child3_action
+{};
+using parent_action = std::variant<child1_action, child2_action, child3_action>;
+
+} // namespace
 
 TEST_CASE("sequencing hierarchical actions")
 {
@@ -228,4 +234,30 @@ TEST_CASE("sequencing hierarchical actions")
     eff3(lager::context<parent_action>{});
     CHECK(eff1called == 1);
     CHECK(eff2called == 1);
+}
+
+TEST_CASE("subsetting context actions")
+{
+    auto eff1 = lager::effect<lager::actions<child1_action, child3_action>>{
+        [](auto&& ctx) {
+            ctx.dispatch(child1_action{});
+            ctx.dispatch(child3_action{});
+        }};
+    auto eff2 = lager::effect<
+        lager::actions<child1_action, child2_action, child3_action>>{eff1};
+    auto eff3 = lager::effect<parent_action>{eff2};
+
+    auto dispatch_count = 0;
+    auto dispatcher     = [&](auto) { ++dispatch_count; };
+    auto loop           = lager::with_manual_event_loop{};
+    auto ctx            = lager::context<parent_action>{dispatcher, loop, {}};
+
+    eff3(ctx);
+    CHECK(dispatch_count == 2);
+
+    eff2(ctx);
+    CHECK(dispatch_count == 4);
+
+    eff1(ctx);
+    CHECK(dispatch_count == 6);
 }
