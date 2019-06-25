@@ -44,8 +44,8 @@ struct store_impl_base
 
 /*!
  * Stores the data model for and glues together the components to observe and
- * update it.  @see make_store for details about the different initialization
- * components.
+ * update it.  @see `lager::make_store` for details about the different
+ * initialization components.
  */
 template <typename Action,
           typename Model,
@@ -84,15 +84,38 @@ struct store
         , impl_{std::move(other.impl_)}
     {}
 
+    /*
+     * The type can be moved.
+     */
     store(store&&) = default;
     store& operator=(store&&) = default;
 
+    /*!
+     * Deleted copies, this is a move-only type.
+     */
     store(const store&) = delete;
     store& operator=(const store&) = delete;
 
+    /*!
+     * Dispatch @a action into the store.
+     */
     void dispatch(action_t action) { impl_->dispatch(action); }
+
+    /*!
+     * Trigger a re-evaluation of the `draw()` function.  This should normally
+     * not be necessary.
+     */
     void update() { return impl_->update(); }
+
+    /*!
+     * Return the @a context associated to the store, like the one passed to the
+     * effects returned to by the store reducer.
+     */
     context_t get_context() { return context_; }
+
+    /*!
+     * Return the current state of the world.
+     */
     const model_t& current() const { return impl_->model; }
 
 private:
@@ -190,10 +213,13 @@ auto with_deps(Args&&... args)
     };
 }
 
+//! @defgroup make_store
+//! @{
+
 /*!
  *
- * Builds a @a store that glues together the core components of an interactive
- * application following an _unidirectional data flow architecture_.
+ * Builds a `lager::store` that glues together the core components of an
+ * interactive application following an _unidirectional data flow architecture_.
  *
  * @tparam Action Value type that represents an event (an interaction) happening
  *         in the application.
@@ -204,23 +230,8 @@ auto with_deps(Args&&... args)
  *        Pure function that, given the current state of the data-model, and an
  *        action, returns an updated data-model.  It can have one  one of these
  *        two signatures:
- *
- *            1. (Model, Action) -> Model
- *            2. (Model, Action) -> pair<Model, effect<Model, Action>>
- *
- *        The term reducer is due to the fact that, if we consider the sequence
- *        of actions over time, this function "reduces" the sequence to a single
- *        model value.  This is a pure function and it should have no
- *        side-effects---it takes a model value with the current state of the
- *        world, and it should return a new model value with the updated state
- *        of the world.  If we evaluate the function with the same arguments, it
- *        should always return exactly the same arguments.  If, given the
- *        current action, it decides that some side-effects are required
- *        (reading or writing files, generating random numbers, making network
- *        requests, etc.) it should use the second signature, which allows to
- *        schedule side-effects.
- *
- *        @see effect for details.
+ *          1. `(Model, Action) -> Model`
+ *          2. `(Model, Action) -> pair<Model, effect<Model, Action>>`
  *
  * @param view
  *        A procedure with the signature `(Model) -> void`.  It is invoked in
@@ -234,13 +245,27 @@ auto with_deps(Args&&... args)
  *        UI framework at hand (it does not need to be the event-loop of a UI
  *        framework.)
  *
- *        @todo Document EventLoop concept.
- *
  * @param enhancer
  *        _Optional_ middleware that _enhances_ or modified the applications
  *        behavior in a general way.
  *
  *        @todo Document Enhancer concept.
+ *
+ * @rst
+ *
+ * .. note:: The term *reducer* is due to the fact that, if we consider the
+ *      sequence of actions over time, this function "reduces" the sequence to a
+ *      single model value.  This is a pure function and it should have no
+ *      side-effects---it takes a model value with the current state of the
+ *      world, and it should return a new model value with the updated state of
+ *      the world.  If we evaluate the function with the same arguments, it
+ *      should always return exactly the same arguments.  If, given the current
+ *      action, it decides that some side-effects are required (reading or
+ *      writing files, generating random numbers, making network requests, etc.)
+ *      it should use the second signature, which allows to schedule
+ *      side-effects.
+ *
+ * @endrst
  */
 template <typename Action,
           typename Model,
@@ -294,5 +319,7 @@ auto make_store(Model&& init,
                               std::forward<EventLoop>(loop),
                               identity);
 }
+
+//! @} group: make_store
 
 } // namespace lager
