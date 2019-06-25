@@ -10,3 +10,5 @@ resources/gui/*.css.map
 resources/gui/elm-stuff
 .sass-cache
 lager/config.hpp
+doc/_build
+doc/_doxygen
