@@ -16,6 +16,7 @@ endif()
 option(lager_BUILD_DEBUGGER "Build the time-traveling debugger" ON)
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
+option(lager_BUILD_DOCS "Build docs" ON)
 
 #  Targets
 #  =======
@@ -88,6 +89,10 @@ if(lager_BUILD_EXAMPLES)
     message(FATAL_ERROR "Examples require the debugger")
   endif()
   add_subdirectory(example)
+endif()
+
+if (lager_BUILD_DOCS)
+  add_subdirectory(doc)
 endif()
 
 configure_file(lager/config.hpp.in

@@ -48,15 +48,15 @@ constexpr auto is_reference_wrapper_v =
 
 } // namespace detail
 
-//!
-//  Contains various types used to specify dependencies inside the
-// `lager::deps` type.
-//
+/*!
+ *  Contains various types used to specify dependencies inside the
+ * `lager::deps` type.
+ */
 namespace dep {
 
-//!
-// Base class that marks specification types.
-//
+/*!
+ * Base class that marks specification types.
+ */
 struct spec
 {
     using is_required = std::true_type;
@@ -74,9 +74,9 @@ using is_spec = std::is_base_of<spec, T>;
 template <typename T>
 constexpr auto is_spec_v = is_spec<T>::value;
 
-//!
-// Specify a dependency of value T and key T
-//
+/*!
+ * Specify a dependency of value T and key T
+ */
 template <typename T>
 struct val : spec
 {
@@ -105,9 +105,9 @@ struct val : spec
     static storage extract(std::function<T()> st) { return st(); }
 };
 
-//!
-// Specify a dependency of references to T and key T
-//
+/*!
+ * Specify a dependency of references to T and key T
+ */
 template <typename T>
 struct ref : spec
 {
@@ -131,12 +131,12 @@ template <typename T>
 struct ref<std::reference_wrapper<T>> : ref<T>
 {};
 
-//!
-// Convert `T` to a dependency specification.  If `T` is a dependency
-// specification it just returns `T`.  If `T` is a reference type or a
-// `std::reference_wrapper`, it results in a `ref<[dereferenced T]>`. Otherwise
-// it is just a `val<T>`.
-//
+/*!
+ * Convert `T` to a dependency specification.  If `T` is a dependency
+ * specification it just returns `T`.  If `T` is a reference type or a
+ * `std::reference_wrapper`, it results in a `ref<[dereferenced T]>`. Otherwise
+ * it is just a `val<T>`.
+ */
 template <typename T>
 using to_spec = typename std::conditional_t<
     is_spec_v<T>,
@@ -146,9 +146,9 @@ using to_spec = typename std::conditional_t<
                        ref<std::remove_reference_t<T>>,
                        val<T>>>::type;
 
-//!
-// Modifies specification or type `T` to make it optional.
-//
+/*!
+ * Modifies specification or type `T` to make it optional.
+ */
 template <typename T>
 struct opt : to_spec<T>
 {
@@ -174,10 +174,10 @@ struct opt : to_spec<T>
     static storage extract(storage st) { return std::move(st); }
 };
 
-//!
-// Modifies specification or type `T` to make it indirectly provided via a
-// function.
-//
+/*!
+ * Modifies specification or type `T` to make it indirectly provided via a
+ * function.
+ */
 template <typename T>
 struct fn : to_spec<T>
 {
@@ -193,9 +193,9 @@ struct fn : to_spec<T>
     static storage extract(storage st) { return std::move(st); }
 };
 
-//!
-// Modifies specification or type `T` to associate it with type tag `K`.
-//
+/*!
+ * Modifies specification or type `T` to associate it with type tag `K`.
+ */
 template <typename K, typename T>
 struct key : to_spec<T>
 {
@@ -217,9 +217,9 @@ struct spec_value
 
 } // namespace detail
 
-//!
-// Pairs value of type T with specificatio Spec
-//
+/*!
+ * Pairs value of type T with specificatio Spec
+ */
 template <typename Spec>
 detail::spec_value<Spec> as(typename Spec::storage v)
 {
@@ -228,63 +228,64 @@ detail::spec_value<Spec> as(typename Spec::storage v)
 
 } // namespace dep
 
-//!
-// Dependency passing type.
-//
-// This type helps passing contextual dependencies arround.  Effectively, it is
-// a bag of statically keyed values (dependencies).  You can convert between
-// bags of dependencies, as long as the required dependencies of the target bag
-// is a strict subset of the required dependencies of the argument bag.  They
-// idea is that a the root of your application you hold a bag with all the
-// context you need.  You pass this context around to various components, each
-// extracting a subset of it.  Components can further down pass these extracting
-// further subsets.
-//
-// Another way to look at it is that `deps` is basically like a struct where
-// naming members is optional, and where you can automatically convert between
-// structs that have attributes with the same name.  In type theortical terms,
-// this way of converting between types is called *structural typing*.
-//
-// Here is one example of how this type might be used.
-//
-// ```cpp
-//     struct user_db_t {};
-//     struct post_db_t {};
-//
-//     void foo(deps<dep::key<user_db, database&>, dep::opt<logger&>> d)
-//     {
-//         database& db = d.get<user_db>();
-//         db.write(...);
-//         if (d.has<logger>()) d.get<logger>().debug("...");
-//     }
-//
-//     void bar(deps<logger&, dep::opt<dep::key<post_db, database&>> d)
-//     {
-//        try {
-//            d.get<logger>().info("", d.get<post_db>().query(...));
-//        } catch (missing_dependency const&)
-//        { /* d.get<post_db>() may throw cuz it's optional */ }
-//     }
-//
-//     int main()
-//     {
-//        database udb;
-//        database pdb;
-//        logger log;
-//        auto dependencies = deps<dep::key<user_db, database&>,
-//                                 dep::key<post_db, database&>
-//                                 logger&>::from(udb, pdb, log);
-//        foo(dependencies);
-//        bar(dependencies);
-//     }
-// ```
-//
-// @tparams Deps dependency specifications for each attribute of `deps`.
-//
-// @note See the contents of the namespace @dep to see how to specify
-//       dependencies. Note that if a normal type or reference is used, a
-//       specification is generated with `dep::to_spec`.
-//
+/*!
+ * Dependency passing type.
+ *
+ * This type helps passing contextual dependencies arround.  Effectively, it is
+ * a bag of statically keyed values (dependencies).  You can convert between
+ * bags of dependencies, as long as the required dependencies of the target bag
+ * is a strict subset of the required dependencies of the argument bag.  They
+ * idea is that a the root of your application you hold a bag with all the
+ * context you need.  You pass this context around to various components, each
+ * extracting a subset of it.  Components can further down pass these extracting
+ * further subsets.
+ *
+ * Another way to look at it is that `deps` is basically like a struct where
+ * naming members is optional, and where you can automatically convert between
+ * structs that have attributes with the same name.  In type theortical terms,
+ * this way of converting between types is called *structural typing*.
+ *
+ * Here is one example of how this type might be used.
+ *
+ * ```cpp
+ *     struct user_db_t {};
+ *     struct post_db_t {};
+ *
+ *     void foo(deps<dep::key<user_db, database&>, dep::opt<logger&>> d)
+ *     {
+ *         database& db = d.get<user_db>();
+ *         db.write(...);
+ *         if (d.has<logger>()) d.get<logger>().debug("...");
+ *     }
+ *
+ *     void bar(deps<logger&, dep::opt<dep::key<post_db, database&>> d)
+ *     {
+ *        try {
+ *            d.get<logger>().info("", d.get<post_db>().query(...));
+ *        } catch (missing_dependency const&) {
+ *          // d.get<post_db>() may throw cuz it's optional
+ *        }
+ *     }
+ *
+ *     int main()
+ *     {
+ *        database udb;
+ *        database pdb;
+ *        logger log;
+ *        auto dependencies = deps<dep::key<user_db, database&>,
+ *                                 dep::key<post_db, database&>
+ *                                 logger&>::from(udb, pdb, log);
+ *        foo(dependencies);
+ *        bar(dependencies);
+ *     }
+ * ```
+ *
+ * @tparams Deps dependency specifications for each attribute of `deps`.
+ *
+ * @note See the contents of the namespace @dep to see how to specify
+ *       dependencies. Note that if a normal type or reference is used, a
+ *       specification is generated with `dep::to_spec`.
+ */
 template <typename... Deps>
 class deps
 {
@@ -315,11 +316,11 @@ class deps
                   "lager::dep::key<> to disambiguate them.");
 
 public:
-    //!
-    // Returns an instance of the depdency type, which each attribute
-    // associated, by each `ts`.  Attributes must be passed in order of
-    // declaration in the `deps` type.
-    //
+    /*!
+     * Returns an instance of the depdency type, which each attribute
+     * associated, by each `ts`.  Attributes must be passed in order of
+     * declaration in the `deps` type.
+     */
     template <typename... Ts>
     static deps with(Ts&&... ts)
     {
@@ -328,9 +329,9 @@ public:
         return {make_storage_(std::forward<Ts>(ts)...)};
     }
 
-    //!
-    // Creates a `deps` object picking the dependencies from `other`.
-    //
+    /*!
+     * Creates a `deps` object picking the dependencies from `other`.
+     */
     template <
         typename... Ds,
         std::enable_if_t<required_key_set == boost::hana::intersection(
@@ -341,11 +342,11 @@ public:
         : storage_{make_storage_from_(std::move(other.storage_))}
     {}
 
-    //!
-    // Creates a `deps` object picking the dependencies from `other1` and
-    // `other2`.  If both `other1` and `other2` provide a dependency, it is
-    // picked from `other2`.
-    //
+    /*!
+     * Creates a `deps` object picking the dependencies from `other1` and
+     * `other2`.  If both `other1` and `other2` provide a dependency, it is
+     * picked from `other2`.
+     */
     template <typename... D1s,
               typename... D2s,
               std::enable_if_t<
@@ -366,9 +367,9 @@ public:
     deps& operator=(const deps&) = default;
     deps& operator=(deps&&) = default;
 
-    //!
-    // Get the dependency with key `Key`.
-    //
+    /*!
+     * Get the dependency with key `Key`.
+     */
     template <typename Key>
     decltype(auto) get() const
     {
@@ -376,11 +377,11 @@ public:
         return spec_t::get(storage_[get_key_t<Key>{}]);
     }
 
-    //!
-    // Returns whether the dependency with `Key` is satisfied.  This returns
-    // always `true` for required dependencies, but it may return `false` when
-    // an optional dependency is not provided.
-    //
+    /*!
+     * Returns whether the dependency with `Key` is satisfied.  This returns
+     * always `true` for required dependencies, but it may return `false` when
+     * an optional dependency is not provided.
+     */
     template <typename Key>
     bool has() const
     {
@@ -388,11 +389,11 @@ public:
         return spec_t::has(storage_[get_key_t<Key>{}]);
     }
 
-    //!
-    // Returns a new dependencies object that contains all dependencies in this
-    // object and `other`.  If the two objects provide a dependency with the
-    // same key, it will have the type and value as specified in `other`.
-    //
+    /*!
+     * Returns a new dependencies object that contains all dependencies in this
+     * object and `other`.  If the two objects provide a dependency with the
+     * same key, it will have the type and value as specified in `other`.
+     */
     template <typename... Ds>
     auto merge(deps<Ds...> other)
     {
@@ -451,31 +452,31 @@ private:
     storage_t storage_;
 };
 
-//!
-// Free standing alias for `deps::get()`
-//
+/*!
+ * Free standing alias for `deps::get()`
+ */
 template <typename Key, typename... Ts>
 decltype(auto) get(const deps<Ts...>& d)
 {
     return d.template get<Key>();
 }
 
-//!
-// Free standing alias for `deps::has()`
-//
+/*!
+ * Free standing alias for `deps::has()`
+ */
 template <typename Key, typename... Ts>
 bool has(const deps<Ts...>& d)
 {
     return d.template has<Key>();
 }
 
-//!
-// Returns a deps object containing everything passed in `args`.  Dependencies
-// will be stored as references only if wrapped in a `std::reference_wrapper`
-// (see `std::ref`).
-//
-// @todo Add mechanism to specify keys here.
-//
+/*!
+ * Returns a deps object containing everything passed in `args`.  Dependencies
+ * will be stored as references only if wrapped in a `std::reference_wrapper`
+ * (see `std::ref`).
+ *
+ * @todo Add mechanism to specify keys here.
+ */
 template <typename... Ts>
 auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>
 {

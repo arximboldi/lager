@@ -8,7 +8,18 @@
 with import nixpkgs {};
 
 let
-  deps = import ./nix/deps.nix { inherit nixpkgs; };
+  # For the documentation tools we use an older Nixpkgs since the
+  # newer versions seem to be not working great...
+  old-nixpkgs-src = fetchFromGitHub {
+                      owner  = "NixOS";
+                      repo   = "nixpkgs";
+                      rev    = "d0d905668c010b65795b57afdf7f0360aac6245b";
+                      sha256 = "1kqxfmsik1s1jsmim20n5l4kq6wq8743h5h17igfxxbbwwqry88l";
+                    };
+  old-nixpkgs     = import old-nixpkgs-src {};
+  docs            = import ./nix/docs.nix { nixpkgs = old-nixpkgs-src; };
+  deps            = import ./nix/deps.nix { inherit nixpkgs; };
+
 in
 stdenv.mkDerivation rec {
   name = "lager-env";
@@ -31,12 +42,18 @@ stdenv.mkDerivation rec {
       click
       requests
     ]))
+    old-nixpkgs.doxygen
+    (old-nixpkgs.python.withPackages (ps: [
+      ps.sphinx
+      docs.breathe
+      docs.recommonmark
+    ]))
   ];
   shellHook = ''
     export LAGER_ROOT=`dirname ${toString ./shell.nix}`
     export LAGER_RESOURCES_PATH="$LAGER_ROOT"/resources
-    export PATH=$PATH:"$LAGER_ROOT/build"
-    export PATH=$PATH:"$LAGER_ROOT/build/example"
-    export PATH=$PATH:"$LAGER_ROOT/build/test"
+    addToSearchPath PATH "$LAGER_ROOT/build"
+    addToSearchPath PATH "$LAGER_ROOT/build/example"
+    addToSearchPath PATH "$LAGER_ROOT/build/test"
   '';
 }
