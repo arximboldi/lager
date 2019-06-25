@@ -12,4 +12,4 @@ resources/gui/elm-stuff
 lager/config.hpp
 doc/_build
 doc/_doxygen
-toosl/travis/ssh-key
+tools/travis/ssh-key

@@ -20,7 +20,7 @@ before_install:
            "${TRAVIS_BRANCH}" == "master" ]]
     }
     function upload-p {
-        [[ -n "$encrypted_158188634a82_key && \
+        [[ -n "$encrypted_158188634a82_key" && \
            -n "$encrypted_158188634a82_iv" ]]
     }
     function decrypt-ssh-key {
