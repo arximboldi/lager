@@ -42,11 +42,11 @@ struct store_impl_base
 
 } // namespace detail
 
-//!
-// Stores the data model for and glues together the components to observe and
-// update it.  @see make_store for details about the different initialization
-// components.
-//
+/*!
+ * Stores the data model for and glues together the components to observe and
+ * update it.  @see make_store for details about the different initialization
+ * components.
+ */
 template <typename Action,
           typename Model,
           typename Dependencies = lager::deps<>>
@@ -164,11 +164,11 @@ private:
     std::unique_ptr<impl_base> impl_;
 };
 
-//!
-// Store enhancer that adds dependencies to the store.
-//
-// @note The dependencies are constructed as by `make_deps()`.
-//
+/*!
+ * Store enhancer that adds dependencies to the store.
+ *
+ * @note The dependencies are constructed as by `make_deps()`.
+ */
 template <typename... Args>
 auto with_deps(Args&&... args)
 {
@@ -190,58 +190,58 @@ auto with_deps(Args&&... args)
     };
 }
 
-//!
-//
-// Builds a @a store that glues together the core components of an interactive
-// application following an _unidirectional data flow architecture_.
-//
-// @tparam Action Value type that represents an event (an interaction) happening
-//         in the application.
-//
-// @param init Initial value of the data-model.  It should be a value-type.
-//
-// @param reducer
-//        Pure function that, given the current state of the data-model, and an
-//        action, returns an updated data-model.  It can have one  one of these
-//        two signatures:
-//
-//            1. (Model, Action) -> Model
-//            2. (Model, Action) -> pair<Model, effect<Model, Action>>
-//
-//        The term reducer is due to the fact that, if we consider the sequence
-//        of actions over time, this function "reduces" the sequence to a single
-//        model value.  This is a pure function and it should have no
-//        side-effects---it takes a model value with the current state of the
-//        world, and it should return a new model value with the updated state
-//        of the world.  If we evaluate the function with the same arguments, it
-//        should always return exactly the same arguments.  If, given the
-//        current action, it decides that some side-effects are required
-//        (reading or writing files, generating random numbers, making network
-//        requests, etc.) it should use the second signature, which allows to
-//        schedule side-effects.
-//
-//        @see effect for details.
-//
-// @param view
-//        A procedure with the signature `(Model) -> void`.  It is invoked in
-//        the event-loop whenever the data-model changes, and it can perform
-//        side-effects to, for example, update the screen the present the
-//        current state to the user.
-//
-// @param loop
-//        Event loop in which operations can be scheduled.  This allows
-//        thread-safe action dispatching reusing the technology provided by the
-//        UI framework at hand (it does not need to be the event-loop of a UI
-//        framework.)
-//
-//        @todo Document EventLoop concept.
-//
-// @param enhancer
-//        _Optional_ middleware that _enhances_ or modified the applications
-//        behavior in a general way.
-//
-//        @todo Document Enhancer concept.
-//
+/*!
+ *
+ * Builds a @a store that glues together the core components of an interactive
+ * application following an _unidirectional data flow architecture_.
+ *
+ * @tparam Action Value type that represents an event (an interaction) happening
+ *         in the application.
+ *
+ * @param init Initial value of the data-model.  It should be a value-type.
+ *
+ * @param reducer
+ *        Pure function that, given the current state of the data-model, and an
+ *        action, returns an updated data-model.  It can have one  one of these
+ *        two signatures:
+ *
+ *            1. (Model, Action) -> Model
+ *            2. (Model, Action) -> pair<Model, effect<Model, Action>>
+ *
+ *        The term reducer is due to the fact that, if we consider the sequence
+ *        of actions over time, this function "reduces" the sequence to a single
+ *        model value.  This is a pure function and it should have no
+ *        side-effects---it takes a model value with the current state of the
+ *        world, and it should return a new model value with the updated state
+ *        of the world.  If we evaluate the function with the same arguments, it
+ *        should always return exactly the same arguments.  If, given the
+ *        current action, it decides that some side-effects are required
+ *        (reading or writing files, generating random numbers, making network
+ *        requests, etc.) it should use the second signature, which allows to
+ *        schedule side-effects.
+ *
+ *        @see effect for details.
+ *
+ * @param view
+ *        A procedure with the signature `(Model) -> void`.  It is invoked in
+ *        the event-loop whenever the data-model changes, and it can perform
+ *        side-effects to, for example, update the screen the present the
+ *        current state to the user.
+ *
+ * @param loop
+ *        Event loop in which operations can be scheduled.  This allows
+ *        thread-safe action dispatching reusing the technology provided by the
+ *        UI framework at hand (it does not need to be the event-loop of a UI
+ *        framework.)
+ *
+ *        @todo Document EventLoop concept.
+ *
+ * @param enhancer
+ *        _Optional_ middleware that _enhances_ or modified the applications
+ *        behavior in a general way.
+ *
+ *        @todo Document Enhancer concept.
+ */
 template <typename Action,
           typename Model,
           typename ReducerFn,

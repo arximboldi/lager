@@ -27,22 +27,22 @@
 
 namespace lager {
 
-//!
-// Type used to declare contexes suporting multiple action types.
-//
-// @see context
-//
+/*!
+ * Type used to declare contexes suporting multiple action types.
+ *
+ * @see context
+ */
 template <typename... Actions>
 struct actions
 {
     constexpr static auto as_hana_ = boost::hana::tuple_t<Actions...>;
 };
 
-//!
-// Metafunction that wraps the parameter in `actions<T>` if it is not wrapped
-// already, this is, it returns @a ActionOrActions if it is a type of the form
-// `actions<Ts...>` or `actions<ActionOrActions>` otherwise.
-//
+/*!
+ * Metafunction that wraps the parameter in `actions<T>` if it is not wrapped
+ * already, this is, it returns @a ActionOrActions if it is a type of the form
+ * `actions<Ts...>` or `actions<ActionOrActions>` otherwise.
+ */
 template <typename ActionOrActions>
 struct as_actions
 {
@@ -163,43 +163,43 @@ struct event_loop_impl final : event_loop_iface
 
 } // namespace detail
 
-//!
-// Provide some _context_ for effectful functions, allowing them to control the
-// event loop and dispatch new actions into the store.
-//
-// A context is convertible to support "more restricted" actions.  This is, if
-// action `B` is convertible to action `A`, `context<A>` is convertible to
-// `context<B>`, in this sense, contexes are contravariant to the action type.
-// One can also specify multiple action types by using `action<>` tag. This is
-// useful to subset actions from a variant, here is an example:
-//
-// @code
-//      struct action_A {};
-//      struct action_B {};
-//      struct action_C {};
-//      using any_action = std::variant<action_A, action_B, action_C>>;
-//
-//      void some_effect(context<actions<action_A, action_B>> ctx)
-//      {
-//          if (...)
-//              ctx.dispatch(action_A{});
-//          else
-//              ctx.dispatch(action_B{});
-//      }
-//
-//     void other_effect(context<any_action> ctx)
-//     {
-//         some_effect(ctx);
-//         ...
-//     }
-// @endcode
-//
-// @note This is a reference type and it's life-time is bound to the associated
-//       store.  It is invalid to use it after the store has been destructed.
-//       Its methods may modify the store's underlying state.
-//
-// @todo Make constructors private.
-//
+/*!
+ * Provide some _context_ for effectful functions, allowing them to control the
+ * event loop and dispatch new actions into the store.
+ *
+ * A context is convertible to support "more restricted" actions.  This is, if
+ * action `B` is convertible to action `A`, `context<A>` is convertible to
+ * `context<B>`, in this sense, contexes are contravariant to the action type.
+ * One can also specify multiple action types by using `action<>` tag. This is
+ * useful to subset actions from a variant, here is an example:
+ *
+ * @code
+ *   struct action_A {};
+ *   struct action_B {};
+ *   struct action_C {};
+ *   using any_action = std::variant<action_A, action_B, action_C>>;
+ *
+ *   void some_effect(context<actions<action_A, action_B>> ctx)
+ *   {
+ *       if (...)
+ *           ctx.dispatch(action_A{});
+ *       else
+ *           ctx.dispatch(action_B{});
+ *   }
+ *
+ *   void other_effect(context<any_action> ctx)
+ *   {
+ *       some_effect(ctx);
+ *       ...
+ *   }
+ * @endcode
+ *
+ * @note This is a reference type and it's life-time is bound to the associated
+ *       store.  It is invalid to use it after the store has been destructed.
+ *       Its methods may modify the store's underlying state.
+ *
+ * @todo Make constructors private.
+ */
 template <typename Actions, typename Deps = lager::deps<>>
 struct context : Deps
 {
@@ -241,16 +241,16 @@ private:
     std::shared_ptr<detail::event_loop_iface> loop_;
 };
 
-//!
-// Effectful procedure that uses the store context.
-//
+/*!
+ * Effectful procedure that uses the store context.
+ */
 template <typename Action, typename Deps = lager::deps<>>
 using effect = std::function<void(const context<Action, Deps>&)>;
 
-//!
-// Metafunction that returns whether the @a Reducer returns an effect when
-// invoked with a given @a Model and @a Action types
-//
+/*!
+ * Metafunction that returns whether the @a Reducer returns an effect when
+ * invoked with a given @a Model and @a Action types
+ */
 template <typename Reducer,
           typename Model,
           typename Action,
@@ -275,14 +275,14 @@ struct has_effect<
 template <typename Reducer, typename Model, typename Action, typename Deps>
 constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
 
-//!
-// Invokes the @a reducer with the @a model and @a action and stores the result
-// in the given model. If the reducer returns an effect, it evaluates the @a
-// handler passing the effect to it. This function can be used to generically
-// handle both reducers with or without side-effects.
-//
-// @note When effects do exist, they are evaluated after updating the model.
-//
+/*!
+ * Invokes the @a reducer with the @a model and @a action and stores the result
+ * in the given model. If the reducer returns an effect, it evaluates the @a
+ * handler passing the effect to it. This function can be used to generically
+ * handle both reducers with or without side-effects.
+ *
+ * @note When effects do exist, they are evaluated after updating the model.
+ */
 template <typename Deps = lager::deps<>,
           typename Reducer,
           typename Model,
@@ -316,9 +316,9 @@ void invoke_reducer(Reducer&& reducer,
         std::invoke(LAGER_FWD(reducer), std::move(model), LAGER_FWD(action));
 }
 
-//!
-// Returns an effects that evalates the effects @a a and @a b in order.
-//
+/*!
+ * Returns an effects that evalates the effects @a a and @a b in order.
+ */
 template <typename Actions1, typename Deps1, typename Actions2, typename Deps2>
 auto sequence(effect<Actions1, Deps1> a, effect<Actions2, Deps2> b)
 {
