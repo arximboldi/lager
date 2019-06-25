@@ -99,3 +99,11 @@ fix-remove-inherits-from()
     sed -i "s@$src@$dst@g" $location/_build/html/*.html
 }
 fix-remove-inherits-from
+
+fix-remove-include()
+{
+    src='<em>#include [^/]*</em>'
+    dst=''
+    sed -i "s@$src@$dst@g" $location/_build/html/*.html
+}
+fix-remove-include
