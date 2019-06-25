@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/arximboldi/immer.svg?branch=master
-   :target: https://travis-ci.org/arximboldi/immer
+.. image:: https://travis-ci.org/arximboldi/lager.svg?branch=master
+   :target: https://travis-ci.org/arximboldi/lager
    :alt: Travis Badge
 
 .. image:: https://codecov.io/gh/arximboldi/lager/branch/master/graph/badge.svg
