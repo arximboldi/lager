@@ -2,6 +2,15 @@
    :target: https://travis-ci.org/arximboldi/immer
    :alt: Travis Badge
 
+.. image:: https://codecov.io/gh/arximboldi/lager/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/arximboldi/lager
+   :alt: CodeCov Badge
+
+.. image:: https://cdn.jsdelivr.net/gh/arximboldi/lager/doc/_static/sinusoidal-badge.svg
+   :target: https://sinusoid.al
+   :alt: Sinusoidal Engineering badge
+   :align: right
+
 .. raw:: html
 
   <img width="100%"
