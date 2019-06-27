@@ -1,0 +1,5 @@
+
+.. _effects:
+
+Effects
+=======

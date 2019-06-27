@@ -10,6 +10,13 @@ Contents
    :maxdepth: 3
 
    introduction
+   architecture
+   model
+   actions
+   reducers
+   views
+   effects
+   modularity
 
 .. toctree::
    :caption: Reference
