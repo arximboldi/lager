@@ -1,4 +1,6 @@
 
+.. _action:
+
 Actions
 =======
 

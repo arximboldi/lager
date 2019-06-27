@@ -17,6 +17,7 @@ Contents
    views
    effects
    modularity
+   time-travel
 
 .. toctree::
    :caption: Reference
@@ -24,6 +25,7 @@ Contents
 
    context
    debug
+   deps
    event_loop
    store
    util

@@ -1,0 +1,5 @@
+
+.. _reducers:
+
+Reducers
+========
