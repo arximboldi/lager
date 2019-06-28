@@ -9,6 +9,8 @@ is: changing the design and shape of the data-model in a
 value-oriented world tends to be easy.  However, for this to be the
 case, it is important that we follow some principles strictly.
 
+.. _value-semantics:
+.. _independence-principle:
 Value semantics
 ---------------
 
@@ -285,8 +287,80 @@ vector might suffice.
 Normalization
 -------------
 
-hola la la
+After applying the principle of explicit identity to your program, you
+might realise this insight: *the data-model of the application starts
+too look like a data-base!*
+
+And you are correct: the model of our application is an in-memory
+data-base, and the Lager store, combined with reducers and actions,
+provide a reproducible, logic aware, `event sourced`_ way of updating
+it.  The good news is that you can start applying the wisdom in
+data-base design to your application, accrued over decades by
+academics and practitioners.  In particular, you may find interesting
+the notion of `database normalization`_, both the Redux documentation
+and the Data-Oriented Design book do indeed talk about it:
+
+* `Normalizing State Shape`_ section, from the Redux documentation.
+  It discusses normalization in the context the unidirectional
+  data-flow architecture.
+
+* `Relational Databases`_ section, from the *Data-Oriented Design*
+  book by Richard Fabian. It discusses normalization of the in memory
+  model of C++ programs, with special focus on performance.
+
+.. _event sourced: https://martinfowler.com/eaaDev/EventSourcing.html
+.. _database normalization: https://en.wikipedia.org/wiki/Database_normalization
+.. _normalizing state shape: https://redux.js.org/recipes/structuring-reducers/normalizing-state-shape
+.. _relational databases: http://www.dataorienteddesign.com/dodbook/node3.html
 
 .. _performance:
 Performance
 -----------
+
+One strong concern when applying value-semantics for the data-model of
+big applications, is performance.  We encourage passing by value
+around lightly, and storing copies of the model values as needed
+without much concern.  For non trivial data-models, isn't that gonna
+be slow, and even explode the memory usage?  Not necessarily.
+
+In C++, we associate value-semantics, and in particular the
+:ref:`independence principle<independence-principle>`, with deep
+copying.  For types like ``std::vector``, it is the case that whenever
+we pass by value, a new memory object is created where the whole
+representation of the value is copied into.  This is however not a
+consequence of value-semantics, but a consequence of mutability!  If
+the object that stores the value can mutate arbitrarily, when passed
+by value, all of its contents must be copied to ensure that the new
+object does not change when the source changes.  However, if the
+source object is in some way **immutable**, the immutable parts of the
+representation can be internally shared accross all the "copies" of
+the value. This property is called *structural sharing*.
+
+In the field of `persistent data-structures`_ we can find many
+examples of containers designed with the *structural sharing* in mind.
+Today, we have good implementations of some of these data-structures
+in C++:
+
+* Immer_, **immutable data-structures for C++**.
+* `Postmodern immutable data-structures`_, CppCon'18 talk about Immer.
+* `Persistence for the masses`_, ICFP'17 paper on immutable
+  data-structures in C++.
+
+.. _immer: https://github.com/arximboldi/immer
+.. _postmodern immutable data-structures: https://www.youtube.com/watch?v=sPhpelUfu8Q
+.. _persistence for the masses: https://public.sinusoid.es/misc/immer/immer-icfp17.pdf
+.. _persistent data-structures: https://en.wikipedia.org/wiki/Persistent_data_structure
+
+Also, in modern C++ one may often avoid copies altogether by
+leveraging `copy ellision`_ and `move semantics`_.  It is important to
+familiarize yourself these concepts.
+
+.. _copy ellision: https://en.cppreference.com/w/cpp/language/copy_elision
+.. _move semantics: https://stackoverflow.com/questions/3106110/what-is-move-semantics
+
+In practice, when combining value-oriented design with immutable
+data-structures, you will find that not only is performance not a
+problem, but that **your programs are faster**!  This is due to the
+fact that our data-model becomes more compact, with less pointer
+chasing and better cache locality, and with flatter call stacks and no
+traversal of forests of listeners, signals and slots.
