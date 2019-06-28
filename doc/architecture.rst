@@ -135,6 +135,7 @@ look like this:
 
 .. _pure function: https://en.wikipedia.org/wiki/Pure_function
 
+.. _pattern-match-example:
 .. code-block:: c++
 
    model update(model c, action action)
@@ -220,6 +221,7 @@ look like this::
    .
    current value: 0
 
+.. _intent:
 Intent
 ~~~~~~
 
