@@ -58,6 +58,11 @@ via pure functions.  And yes, you get time-travel for free.
 Examples
 --------
 
+For a guided introductory tour with **code samples**, please read the
+`architecture overview`_ section. Other examples:
+
+.. _architecture overview: https://sinusoid.es/lager/architecture.html
+
 * **Counter**, a minimalistic example with multiple UIs (`link
   <https://github.com/arximboldi/lager/tree/master/example/counter>`_).
 * **Autopong**, a basic game using SDL2 (`link
