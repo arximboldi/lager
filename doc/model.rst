@@ -68,7 +68,6 @@ their local "copy" of the data.
 .. _functional programming: https://en.wikipedia.org/wiki/Functional_programming
 
 .. admonition:: Spotting reference types
-   :class: warning
 
    In order to avoid them, it is important to be able to cleary
    identify *reference types*.  They are sneaky.  I said that an
@@ -99,7 +98,7 @@ their local "copy" of the data.
    * *Function objects* that capture references, particularly lambdas
      with ``&``-captures.
 
-.. admonition:: Are pointers always bad?
+   **Are pointers always bad?**
 
    Not always. For instance, the *implementation* of ``std::vector``
    uses pointers internally.  But it defines ``operator=`` to ensure
@@ -119,11 +118,167 @@ their local "copy" of the data.
 .. _"Inheritance is the base class of evil": https://www.youtube.com/watch?v=bIhUE5uUFOA
 .. _immer: https://github.com/arximboldi/immer
 
+.. admonition:: Further reading
+   :class: note
+
+   Value-semantic thinking is a vast topic.  Here are some resources
+   that can help you adopt this design mindset:
+
+   * The book `Elements of Programming`_, by `Alexander Stepanov`_, author of
+     the STL and great thinker on the intersection between programming
+     and math.
+
+   * The talk `Better Code: Data Structures`_ by `Sean Parent`_,
+     author of the Adobe Source Libraries, famous for popularizing
+     `type erasure`_ for value based runtime polymorphism.
+
+   * The talk `The most valuable values`_, by `Juan Pedro Bolívar
+     Puente`_, author of this library.
+
+   In the functional programming realm, these ideas are taken much
+   further:
+
+   * The talk `The value of values`_, and the supporting essay `Values
+     and Change`_, by `Rich Hickey`_, author of the programming
+     language Clojure.
+
+   * The talk `Denotational Design: from meanings to programs`_, where
+     `Conal Elliott`_, inventor of `functional reactive programming`_
+     among many other other things, talks about applying mathematical
+     thinking to the design of programs.
+
+   * The book `Functional Programming in C++`_ by `Ivan Čukić`_, which
+     shows how C++ not only supports value semantics, but the
+     functional programming paradigm as a whole.
+
+     .. _elements of programming: http://elementsofprogramming.com
+     .. _alexander stepanov: https://en.wikipedia.org/wiki/Alexander_Stepanov
+     .. _better code\: data structures: https://www.youtube.com/watch?v=sWgDk-o-6ZE
+     .. _sean parent: https://sean-parent.stlab.cc/
+     .. _the most valuable values: https://www.youtube.com/watch?v=_oBx_NbLghY
+     .. _the value of values: https://www.youtube.com/watch?v=-6BsiVyC1kM
+     .. _values and change: https://clojure.org/about/state
+     .. _juan pedro bolívar puente: http://sinusoid.al
+     .. _denotational design\: from meanings to programs: https://www.youtube.com/watch?v=bmKYiUOEo2A
+     .. _functional programming in c++: https://www.manning.com/books/functional-programming-in-c-plus-plus
+     .. _Ivan Čukić: https://cukic.co/
+     .. _conal elliott: http://conal.net/
+     .. _functional reactive programming: https://en.wikipedia.org/wiki/Functional_reactive_programming
+     .. _type erasure: https://www.youtube.com/watch?v=QGcVXgEVMJg
+     .. _rich hickey: https://twitter.com/richhickey
+
 .. _identity:
 Identity
 --------
 
-whaaat
+.. image:: _static/identity.png
+   :align: center
+
+When writing the model as value types, we soon encounter the problem
+of dealing with **identity**. Consider our interactive application
+shows a moving person. This person *changes*, it moves around.  Our
+model is a *snapshot* of the *state* of this person.  But clearly, the
+*state* of the *person* is different than the person itself:
+
+* The **same** person can be in different states, this is, these state
+  values
+  are ``!=``.
+
+* Two **different** people can be in the same state, this is, their
+  state values are ``==``.
+
+In Object Oriented programming, we normally *identify* a language
+object with the entity it represents, in this case, the person.  The
+*identity* of the thing is the memory location of the storage for its
+state. This means that we need to use mutation to deal with the state,
+that there is only one state, that times only progresses in one
+direction, that change is an implicit construction, that entities can
+not be dealt with concurrently.  Identity becomes an implicit and
+flaky construction.
+
+However, in real life, we deal with identity explicit way.  That is
+why people have *names* or *passport numbers*.  These are special
+values, **identity values**, that help us identify people. Identity as
+such serves a double purpose, solving the forementioned state/identity
+problems:
+
+* To recognise different states as belonging to the same entity. For
+  example, when you show up in different offices, you show your id
+  card to show that these belong to the same person.
+
+* To refer to differentiatinly to a specific entity, that might have
+  some otherwise similar states.  In a room full of people, you can
+  call someone by their full name to refer to and distinguish a
+  particular person.
+
+Considering this duality, when your program deals with changing
+entities, you will have to think about the domain of entities as a
+whole, and give those entities an explicit identity
+value. `Universally Unique Identifiers`_ are a powerful tool to
+identify entities not only in the running programm, but also across
+files and machines. Often though, context will allow us to have more
+lightweight identity values.  In some cases, maybe the index in a
+vector might suffice.
+
+.. _universally unique identifiers: https://en.wikipedia.org/wiki/Universally_unique_identifier
+
+.. admonition:: References in a value world
+
+   Consider this data-structure designed in an agenda of people with
+   friends in an object based way:
+
+   .. code-block:: c++
+
+      struct person
+      {
+          std::string name;
+          std::string phone_number;
+          std::vector<std::weak_ptr<person>> friends;
+      };
+
+      struct agenda
+      {
+          std::unordered_set<std::shared_ptr<person>> people;
+      };
+
+   This is not a valid model to use in Lager, because ``person`` and
+   ``agenda`` are reference semantic types.  Not only is the
+   identification of memory objects with entities problematic from a
+   conceptual programming sense: there is some extra hassle involved,
+   like having to allocate each person in a separate memory block (instead of
+   having a flat ``std::vector``), and then dealing with the lifetime
+   of those blocks with ``shared_ptr``, ``weak_ptr``, and so on.
+
+   How do we do references with out pointers then? We use
+   explicit identity values:
+
+   .. code-block:: c++
+      :emphasize-lines: 1,7,12
+
+      using person_id = std::string;
+
+      struct person
+      {
+          std::string name;
+          std::string phone_number;
+          std::vector<person_id> friends;
+      };
+
+      struct agenda
+      {
+          std::unordered_map<person_id, person> people;
+      };
+
+   Now we have decoupled the *identity* (``person_id``) from the
+   *state* (``person``). Whenever we want to know the state for a
+   given person, we can access it through the ``people`` map in the
+   agenda.  Whenever we want to refer to a person, like in the list of
+   friends, we use a ``person_id``.  We can now have distinct copies
+   of the whole agenda, to explicitly compare how a particular person
+   changes.  People are not tied to their representation in memory
+   anymore, so we can be more playful with the data-structures and
+   apply :ref:`data-oriented design` to reach better cache locality
+   and and overall performance!
 
 .. _normalization:
 

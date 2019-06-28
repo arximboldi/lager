@@ -56,6 +56,8 @@ We follow a `value-oriented design`_.  we will start by looking at the
 data we need, in the form of value types. Then we will look at the
 transformations required.
 
+.. _data-oriented design:
+
 .. admonition:: Differences with Data-Oriented Design.
 
    Over the last years, we have seen `Data-Oriented Design`_ as a new
