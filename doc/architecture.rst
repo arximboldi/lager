@@ -165,8 +165,8 @@ We focus on the purity of our function interface, but in the
 implementation, you may choose a more functional or procedural style
 at your convenience to keep an idiomatic style.
 
-Also, don't be intimidated by that :ref:`lager::visitor`, you can just
-mentally parse it as a ``switch/case`` on `std::variant`_.
+Also, don't be intimidated by that :cpp:class:`lager::visitor`, you
+can just mentally parse it as a ``switch``/``case`` on `std::variant`_.
 
 Wrapping things up
 ------------------

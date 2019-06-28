@@ -152,8 +152,8 @@ Stringly typed actions
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Instead of using types and variants, you could use ``enum`` and
-``switch/case`` to identify the different kinds of actions.  You still
-need to somehow access the different kinds of arguments to the
+``switch``/``case`` to identify the different kinds of actions.  You
+still need to somehow access the different kinds of arguments to the
 actions, for which you may need to resort to ``union`` or mechanism,
 which is unsafe while bringing no additional advantages.
 
