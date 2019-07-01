@@ -8,6 +8,7 @@ visitation.
 
 ----
 
+.. _noop:
 .. doxygengroup:: util
    :project: lager
    :content-only:

@@ -233,10 +233,10 @@ to model operations.
 
 There are several ways to do this.  Later, we will learn how to
 :ref:`use effects to dispatch actions as a response to other
-actions<ui-actions>`. However, in our current scenario, a function
-suffices.  We call this function ``intent()``, because it captures the
-intention of the user, this is, given something that happened in the
-user interface, it tells what the user wants to do:
+actions<intent-effect-example>`. However, in our current scenario, a
+function suffices.  We call this function ``intent()``, because it
+captures the intention of the user, this is, given something that
+happened in the user interface, it tells what the user wants to do:
 
 .. code-block:: c++
 

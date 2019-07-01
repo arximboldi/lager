@@ -7,6 +7,7 @@ Reducers
 Reducers are the functions that implement the update logic.  Given the
 model and an action, it returns an updated view of the world.
 
+.. _purity:
 Purity
 ------
 

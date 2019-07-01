@@ -15,10 +15,8 @@ Actions are values
 
 It is important to note that **actions are values**.  They are a
 declarative description of what you happen, not the happening in
-itself.
-
-In the :ref:`Model` section we discuss value-semantic design in
-detail.  All those concerns also apply to the design of actions.
+itself. In the :ref:`Model` section we discuss value-semantic design
+in detail.  All those concerns also apply to the design of actions.
 
 Type-safe actions
 -----------------
@@ -62,7 +60,7 @@ Given a :ref:`model` like the following:
 
 .. _immer: https://github.com/arximboldi/immer
 
-We can now implement a :ref:`reducer` for each of the operations as
+We can now implement a :ref:`reducer<reducers>` for each of the operations as
 overloads of an ``update_todos()`` function:
 
 .. code-block:: c++
@@ -169,6 +167,7 @@ and a corresponding reducer:
 .. _redux: https://redux.js.org/basics/actions
 .. _stringly typed: http://wiki.c2.com/?StringlyTyped
 
+.. _intent-example:
 .. code-block:: c++
 
    struct todos_command
@@ -180,10 +179,10 @@ and a corresponding reducer:
    todos_model update(todos_model m, todos_command c)
    {
        static const auto command_actions =
-         std::unordered_map<std::string, std::function<todos_action(std::string)>>{
-           "add-todo",    [] (auto arg) { return add_todo{arg}; },
-           "remove-todo", [] (auto arg) { return remove_todo{std::stoi(arg)}; },
-           "toggle-todo", [] (auto arg) { return toggle_todo{std::stoi(arg)}; },
+         std::map<std::string, std::function<todos_action(std::string)>>{
+           "add",    [] (auto arg) { return add_todo{arg}; },
+           "remove", [] (auto arg) { return remove_todo{std::stoi(arg)}; },
+           "toggle", [] (auto arg) { return toggle_todo{std::stoi(arg)}; },
        };
        auto it = command_actions.find(c.command);
        if (it == command_actions.end())

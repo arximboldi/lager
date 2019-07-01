@@ -11,6 +11,7 @@ context
     :members:
     :undoc-members:
 
+.. _effect-type:
 effect
 ------
 
