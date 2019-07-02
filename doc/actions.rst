@@ -1,6 +1,6 @@
 
 .. _action:
-
+.. _actions:
 Actions
 =======
 

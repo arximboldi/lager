@@ -453,6 +453,22 @@ private:
 };
 
 /*!
+ * Returns a deps object containing everything passed in `args`.  Dependencies
+ * will be stored as references only if wrapped in a `std::reference_wrapper`
+ * (see `std::ref`).
+ *
+ * @todo Add mechanism to specify keys here.
+ */
+template <typename... Ts>
+auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>
+{
+    return deps<std::decay_t<Ts>...>::with(std::forward<Ts>(args)...);
+}
+
+//! @defgroup deps-access
+//! @{
+
+/*!
  * Free standing alias for `deps::get()`
  */
 template <typename Key, typename... Ts>
@@ -470,17 +486,6 @@ bool has(const deps<Ts...>& d)
     return d.template has<Key>();
 }
 
-/*!
- * Returns a deps object containing everything passed in `args`.  Dependencies
- * will be stored as references only if wrapped in a `std::reference_wrapper`
- * (see `std::ref`).
- *
- * @todo Add mechanism to specify keys here.
- */
-template <typename... Ts>
-auto make_deps(Ts&&... args) -> deps<std::decay_t<Ts>...>
-{
-    return deps<std::decay_t<Ts>...>::with(std::forward<Ts>(args)...);
-}
+//! @}
 
 } // namespace lager

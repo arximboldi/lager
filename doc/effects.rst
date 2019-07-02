@@ -128,5 +128,126 @@ and if so, we deliver it via an effect.
    effect.
 
 .. _dependency-injection:
-Dependency injection
---------------------
+Dependency passing
+------------------
+
+Oftentimes, the effect will need to access some *service* in order to
+do its deed.  For example, if you are doing asynchronous IO, it will
+need to access some `boost::asio::io_context`_, or maybe you have some
+types of your own that encapsulate the I/O logic.  By definition,
+these types are referential, so you can not put them in the model or
+the action that is passed to the reducer that generates the effect.
+
+.. _boost\:\:asio\:\:io_context: https://www.boost.org/doc/libs/1_70_0/doc/html/boost_asio/reference/io_context.html
+
+Instead, the framework can deliver these services for you by declaring
+the dependency in the effect signature using the
+:cpp:class:`lager::deps` type.  For example, we an effect that wants a
+reference to a ``boost::asio::io_context`` can be declared like this:
+
+.. code-block:: c++
+
+   lager::effect<action, lager::deps<boost::asio::io_context&>> eff =
+       [] (auto&& ctx) {
+           auto& io = get<boost::asio::io_context>(ctx);
+           io.post([] {
+              // ...
+           });
+       };
+
+If the *reducer* returns such an effect, the store will pass the
+dependencies to the effects when evaluating them, embeded in the
+context.  The ``get()`` is used to access the dependencies in the
+effect.  For this to work, we need to provide the dependencies to the
+store by using :cpp:func:`lager::with_deps` as an extra argument to
+the :cpp:func:`lager::make_store` factory:
+
+.. code-block:: c++
+
+   auto io    = boost::asio::io_context{};
+   auto store = lager::make_store(
+       // ...
+       lager::with_deps(std::ref(io)));
+
+.. warning:: Dependencies are passed by value by default. Use
+             ``std::ref`` to mark the dependencies that need to be
+             passed by reference.
+
+Identifying dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the previous example, there is ony one instance of
+``boost::asio::io_context`` that is passed to all the effects that are
+evaluated within the Lager context.  This is a good replacement the
+`singleton design pattern`_: there is a single instance, but there is
+low phisical coupling and you can still replace the instance in
+various contexes, particularly in tests.
+
+.. _singleton design pattern: https://en.wikipedia.org/wiki/Singleton_pattern
+
+However, we often will need to have multiple instances of a type
+provided to different subsystems.  We can declare type tags to
+differentiate these instances using these types as keys:
+
+.. code-block:: c++
+
+   struct foo_dep {};
+   struct bar_dep {};
+
+   lager::effect<foo_action,
+                 lager::deps<lager::dep::key<foo_dep,
+                                             boost::asio::io_context&>>
+       foo_effect = [] (auto&& ctx) {
+           auto& io = get<foo_dep>(ctx);
+           // ...
+       };
+
+   lager::effect<bar_action,
+                 lager::deps<lager::dep::key<bar_dep,
+                                             boost::asio::io_context&>>
+       bar_effect = [] (auto&& ctx) {
+           auto& io = get<bar_dep>(ctx);
+           // ...
+       };
+
+Now we can provide two separate ``io_context`` instances for the two
+subsystems:
+
+.. code-block:: c++
+
+   using boost::asio::io_context;
+   auto foo_io = io_context{};
+   auto bar_io = io_context{};
+   auto store  = lager::make_store(
+       // ...
+       lager::with_deps(
+           lager::dep::as<lager::dep::key<foo_dep, io_context&>>(foo_io),
+           lager::dep::as<lager::dep::key<bar_dep, io_context&>>(bar_io)));
+
+Using this technique, the names of the dependencies are still static.
+This makes the mechanism very efficient and ensures that dependency
+mismatches are cought at compile time.
+
+If the number of instances of a dependency is determined dynamically,
+you will need to define a kind of *manager* for these instances and
+provide this manager as a service instead.  This naturally involves
+defining a :ref:`identity` scheme for these dependencies, such that
+the effects that required them, which are derived from the actions and
+the model, can refer to them.
+
+Other dependency specs
+~~~~~~~~~~~~~~~~~~~~~~
+
+The type :cpp:type:`lager::dep::key` is a *dependency specification*,
+used to describe how the dependency is required.  There are other
+specifications, and they can be combined:
+
+- :cpp:type:`lager::dep::opt` is used to mark optional specifications.
+  There won't be a compilation error if a depedency is missing when a
+  module requests it as optional.  Instead, get may throw an
+  exception.  You can check if the dependency is provided using
+  :cpp:func:`lager::has`.
+
+- :cpp:type:`lager::dep::fn` for dependencies that are not available
+  directly when describing the provider, but are instead to be
+  requested lazily through a provided function.

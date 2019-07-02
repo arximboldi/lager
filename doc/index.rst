@@ -14,8 +14,8 @@ Contents
    model
    actions
    reducers
-   views
    effects
+   views
    modularity
    time-travel
 
