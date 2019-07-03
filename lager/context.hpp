@@ -359,5 +359,5 @@ auto sequence(effect<A1, D1> a, effect<A2, D2> b, Effs&&... effects)
 }
 
 //! @} group: effects
-x
+
 } // namespace lager
