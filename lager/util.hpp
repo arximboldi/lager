@@ -18,18 +18,40 @@
 
 namespace lager {
 
-// copied from cppreference, in practice, use scelta::visit,
-// atria::match, mpark::match, etc.
+//! @defgroup util
+//! @{
+
+/*!
+ * Utility to make a variant visitor out of lambdas, using the *overloaded
+ * pattern* as [describped in
+ * cppreference](https://en.cppreference.com/w/cpp/utility/variant/visit).
+ *
+ * For alternative mechanisms for nice variant visitation, consider
+ * [Scelta](https://github.com/SuperV1234/scelta),
+ * [Atria](https://github.com/Ableton/atria), or
+ * [Boost.Hof](https://www.boost.org/doc/libs/release/libs/hof/doc/html/doc/index.html).
+ */
 template <class... Ts>
 struct visitor : Ts...
 {
     using Ts::operator()...;
 };
+
+//! @} group: util
+
 template <class... Ts>
 visitor(Ts...)->visitor<Ts...>;
 
-constexpr auto noop     = [](auto&&...) {};
+//! @defgroup util
+//! @{
+
+//! Function that takes any argument and does nothing
+constexpr auto noop = [](auto&&...) {};
+
+//! Function that returns its first arguemnt
 constexpr auto identity = [](auto&& x) { return std::forward<decltype(x)>(x); };
+
+//! @} group: util
 
 template <typename Type>
 struct type_
@@ -74,6 +96,14 @@ struct get_composed<F, Fs...>
 
 } // namespace detail
 
+//! @defgroup util
+//! @{
+
+/*!
+ * Returns a function that is function composition of the given arguments. For
+ * example, given `f` and `g`, returns a function that returns `f(g(...))` when
+ * invoked.
+ */
 template <typename F>
 auto comp(F&& f) -> F&&
 {
@@ -88,6 +118,8 @@ auto comp(Fn&& f, Fns&&... fns)
         detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>;
     return result_t{std::forward<Fn>(f), comp(std::forward<Fns>(fns)...)};
 }
+
+//! @} group: util
 
 inline const char* resources_path()
 {

@@ -173,26 +173,30 @@ struct event_loop_impl final : event_loop_iface
  * One can also specify multiple action types by using `action<>` tag. This is
  * useful to subset actions from a variant, here is an example:
  *
- * @code
- *   struct action_A {};
- *   struct action_B {};
- *   struct action_C {};
- *   using any_action = std::variant<action_A, action_B, action_C>>;
+ * @rst
  *
- *   void some_effect(context<actions<action_A, action_B>> ctx)
- *   {
- *       if (...)
- *           ctx.dispatch(action_A{});
- *       else
- *           ctx.dispatch(action_B{});
- *   }
+ * .. code-block:: c++
  *
- *   void other_effect(context<any_action> ctx)
- *   {
- *       some_effect(ctx);
- *       ...
- *   }
- * @endcode
+ *    struct action_A {};
+ *    struct action_B {};
+ *    struct action_C {};
+ *    using any_action = std::variant<action_A, action_B, action_C>>;
+ *
+ *    void some_effect(context<actions<action_A, action_B>> ctx)
+ *    {
+ *        if (...)
+ *            ctx.dispatch(action_A{});
+ *        else
+ *            ctx.dispatch(action_B{});
+ *    }
+ *
+ *    void other_effect(context<any_action> ctx)
+ *    {
+ *        some_effect(ctx);
+ *        ...
+ *    }
+ *
+ * @endrst
  *
  * @note This is a reference type and it's life-time is bound to the associated
  *       store.  It is invalid to use it after the store has been destructed.
@@ -241,11 +245,16 @@ private:
     std::shared_ptr<detail::event_loop_iface> loop_;
 };
 
+//! @defgroup effects
+//! @{
+
 /*!
  * Effectful procedure that uses the store context.
  */
 template <typename Action, typename Deps = lager::deps<>>
 using effect = std::function<void(const context<Action, Deps>&)>;
+
+//! @} group: effects
 
 /*!
  * Metafunction that returns whether the @a Reducer returns an effect when
@@ -274,6 +283,9 @@ struct has_effect<
 
 template <typename Reducer, typename Model, typename Action, typename Deps>
 constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
+
+//! @defgroup effects
+//! @{
 
 /*!
  * Invokes the @a reducer with the @a model and @a action and stores the result
@@ -345,5 +357,7 @@ auto sequence(effect<A1, D1> a, effect<A2, D2> b, Effs&&... effects)
     return sequence(sequence(std::move(a), std::move(b)),
                     std::forward<Effs>(effects)...);
 }
+
+//! @} group: effects
 
 } // namespace lager

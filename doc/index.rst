@@ -10,12 +10,25 @@ Contents
    :maxdepth: 3
 
    introduction
+   architecture
+   model
+   actions
+   reducers
+   effects
+   views
+   modularity
+   time-travel
 
 .. toctree::
    :caption: Reference
    :maxdepth: 3
 
+   context
+   debug
+   deps
+   event_loop
    store
+   util
 
 ----
 
