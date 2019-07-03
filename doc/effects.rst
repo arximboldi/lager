@@ -6,7 +6,8 @@ Effects
 
 Effects allow :ref:`reducers` to request the execution of code that
 would break the :ref:`purity<purity>` of the reducer .  In this way,
-we can describe I/O and other interactions directly from the reducer.
+we can describe I/O and other interactions directly from the reducer,
+without directly executing them.
 
 Writing effects
 ---------------
@@ -21,15 +22,15 @@ The type :ref:`lager::effect<effect-type>` is defined in the library as:
 This is, an *effect* is just a procedure that takes some
 :cpp:class:`lager::context` as an argument.
 
-The *context* is parametrized over an ``Action``.  This allows the
-effect to deliver new actions by using the
+The *context* is parametrized over an ``Action`` type.  This allows
+the effect to deliver new actions by using the
 :cpp:func:`lager::context::dispatch` method.  For example, if you
-tried to write a file in an effect, you probably want to inform the
-reducer back of whether this succeeded or failed by delivering
-actions.  It also has an optional ``Deps`` parameter, which allows the
-effect to use a :ref:`dependency injection<depenecy-injection>`
-mechanism to get access to *services* that it might need to perform
-the side effects.
+tried to write a file in an effect, you probably want to dispatch
+actions to inform the system about whether the operation succeeded or
+failed.  The context also has an optional ``Deps`` parameter, which
+allows the effect to use a :ref:`dependency
+injection<depenecy-injection>` mechanism to get access to *services*
+that it might need to perform the side effects.
 
 To produce an effect, you can just return it from the reducer.  In the
 previous section we learnt that :ref:`reducers` are functions with a
@@ -52,12 +53,12 @@ evaluation of the update function.
 
 .. note::
 
-   Technically the effect does not need return a ``std::pair``, but
-   anything that defines ``std::get`` and returns a model at index
-   ``0`` and an effect at index ``1``.  This means that you can use an
-   ``std::tuple`` instead, for example.  Also, the effect does not
-   need to match the type exactly, it just needs to be convertible to
-   it.
+   Technically the effectful reducer does not need return a
+   ``std::pair``, but anything that defines ``std::get`` and returns a
+   model at index ``0`` and an effect at index ``1``.  This means that
+   you can use an ``std::tuple`` instead, for example.  Also, the
+   effect does not need to match the type exactly, it just needs to be
+   convertible to it.
 
 .. _intent-effect-example:
 A minimalist example
@@ -79,7 +80,9 @@ inspected in the :ref:`time travelling debugger<time-travel>` and
 other tools.
 
 The :ref:`previous example <intent-example>` can thus be rewritten
-using effects:
+using a reducer that, when it receives a UI logic action, communicates
+intent by returning an effect that delivers an application logic
+cation.
 
 .. code-block:: c++
 
@@ -114,35 +117,36 @@ using effects:
    }
 
 Note how we use a ``std::variant`` to combine the *business logic*
-action type (``todo_action``) with the UI level action
+action type (``todo_action``) with the *UI logic* action
 (``todos_command``).  When we receive a business logic action, we just
 forward to its reducer.  When we receive a UI level action, we figure
-out if this action results should result in a business logic action,
+out whether this action should result in a business logic action,
 and if so, we deliver it via an effect.
 
 .. note::
 
    We used :ref:`lager::noop<noop>` as an *empty* effect in the paths
    that do not require one.  It can be more efficient than using ``[]
-   (auto&&) {}`` because it completely bypasses the evaluation of the
-   effect.
+   (auto&&) {}`` because Lager detects it, completely bypassing the
+   evaluation of the effect.
 
 .. _dependency-injection:
 Dependency passing
 ------------------
 
 Oftentimes, the effect will need to access some *service* in order to
-do its deed.  For example, if you are doing asynchronous IO, it will
-need to access some `boost::asio::io_context`_, or maybe you have some
-types of your own that encapsulate the I/O logic.  By definition,
-these types are referential, so you can not put them in the model or
-the action that is passed to the reducer that generates the effect.
+do its deed.  For example, when performing asynchronous IO it may need
+to access some `boost::asio::io_context`_. Or maybe the effect should
+forward to some other service of your own that encapsulate the I/O
+logic.  By definition, these types are referential, so you can not put
+them in the model or the action that is passed to the reducer that
+generates the effect.
 
 .. _boost\:\:asio\:\:io_context: https://www.boost.org/doc/libs/1_70_0/doc/html/boost_asio/reference/io_context.html
 
 Instead, the framework can deliver these services for you by declaring
 the dependency in the effect signature using the
-:cpp:class:`lager::deps` type.  For example, we an effect that wants a
+:cpp:class:`lager::deps` type.  For example, an effect that wants a
 reference to a ``boost::asio::io_context`` can be declared like this:
 
 .. code-block:: c++
@@ -150,17 +154,15 @@ reference to a ``boost::asio::io_context`` can be declared like this:
    lager::effect<action, lager::deps<boost::asio::io_context&>> eff =
        [] (auto&& ctx) {
            auto& io = get<boost::asio::io_context>(ctx);
-           io.post([] {
-              // ...
-           });
+           io.post([] { ... }); // for example
        };
 
 If the *reducer* returns such an effect, the store will pass the
-dependencies to the effects when evaluating them, embeded in the
-context.  The ``get()`` is used to access the dependencies in the
-effect.  For this to work, we need to provide the dependencies to the
-store by using :cpp:func:`lager::with_deps` as an extra argument to
-the :cpp:func:`lager::make_store` factory:
+dependencies to it, embeded in the context.  The ``get()`` function is
+used to access the dependencies inside the effect.  For this to work,
+we need to provide the dependencies to the store by using
+:cpp:func:`lager::with_deps` as an extra argument to the
+:cpp:func:`lager::make_store` factory:
 
 .. code-block:: c++
 
@@ -169,8 +171,11 @@ the :cpp:func:`lager::make_store` factory:
        // ...
        lager::with_deps(std::ref(io)));
 
+If you fail to provide all the dependencies required for the effects,
+there will be a compilation error.
+
 .. warning:: Dependencies are passed by value by default. Use
-             ``std::ref`` to mark the dependencies that need to be
+             ``std::ref`` to mark the dependencies that shall be
              passed by reference.
 
 Identifying dependencies
@@ -178,10 +183,10 @@ Identifying dependencies
 
 In the previous example, there is ony one instance of
 ``boost::asio::io_context`` that is passed to all the effects that are
-evaluated within the Lager context.  This is a good replacement the
+evaluated within the Lager context.  This is a good replacement of the
 `singleton design pattern`_: there is a single instance, but there is
-low phisical coupling and you can still replace the instance in
-various contexes, particularly in tests.
+low phisical coupling and you can still replace the instance in a
+different context, particularly in unit tests.
 
 .. _singleton design pattern: https://en.wikipedia.org/wiki/Singleton_pattern
 
@@ -232,8 +237,7 @@ If the number of instances of a dependency is determined dynamically,
 you will need to define a kind of *manager* for these instances and
 provide this manager as a service instead.  This naturally involves
 defining a :ref:`identity` scheme for these dependencies, such that
-the effects that required them, which are derived from the actions and
-the model, can refer to them.
+the effects that required them can refer to them.
 
 Other dependency specs
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -242,12 +246,12 @@ The type :cpp:type:`lager::dep::key` is a *dependency specification*,
 used to describe how the dependency is required.  There are other
 specifications, and they can be combined:
 
-- :cpp:type:`lager::dep::opt` is used to mark optional specifications.
+- :cpp:type:`lager::dep::opt` is used to notate **optional** dependencies.
   There won't be a compilation error if a depedency is missing when a
   module requests it as optional.  Instead, get may throw an
   exception.  You can check if the dependency is provided using
   :cpp:func:`lager::has`.
 
-- :cpp:type:`lager::dep::fn` for dependencies that are not available
-  directly when describing the provider, but are instead to be
-  requested lazily through a provided function.
+- :cpp:type:`lager::dep::fn` is used to notate **lazy** dependencies.
+  These may not be available directly when building the store, but are
+  instead to be requested lazily through a provided function.

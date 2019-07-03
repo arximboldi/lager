@@ -1,6 +1,7 @@
 
 .. _action:
 .. _actions:
+
 Actions
 =======
 
@@ -14,7 +15,7 @@ Actions are values
 ------------------
 
 It is important to note that **actions are values**.  They are a
-declarative description of what you happen, not the happening in
+declarative description of what may happen, not the happening in
 itself. In the :ref:`Model` section we discuss value-semantic design
 in detail.  All those concerns also apply to the design of actions.
 
@@ -24,9 +25,9 @@ Type-safe actions
 There are many ways you can define actions.  Normally, in an
 application there are different *kinds* of actions.  Consider a
 typical CRUD_ application, like the canonical `Todo List`_ example.
-To let the type system help you deal with the different actions, we
-may define the actions as different types whose instances carry all
-the information needed to perform the operation:
+To let the type system help us deal with the different actions, we may
+define the actions as different types whose instances carry all the
+information needed to perform the operation:
 
 .. _crud: https://en.wikipedia.org/wiki/Create%2C_read%2C_update_and_delete
 .. _todo list: http://todomvc.com/examples/elm/
@@ -38,7 +39,7 @@ the information needed to perform the operation:
    struct remove_todo { std::size_t index; };
    struct toggle_todo { std::size_t index; }
 
-Given a :ref:`model` like the following:
+These actions may act on a :ref:`model` like this:
 
 .. code-block:: c++
 
@@ -107,8 +108,8 @@ single type and function, that we can use when building the
        return std::visit([&] (auto a) { return update_todos(m, a); }, a);
    }
 
-This approach of using ``std::variant`` to combine typed actions has
-multiple advantages:
+This approach of using ``std::variant`` to combine strongly typed
+actions has multiple advantages:
 
 - Actions are simple :ref:`value types <value-semantics>`. It is easy
   to add serialization and other inspection mechanisms.
@@ -116,8 +117,8 @@ multiple advantages:
 - We can use `function overloading`_ to distinguish different types of
   actions.
 
-- When `pattern matching`_ the action type, the compiler will complain if
-  we fail to cover all the cases.
+- When `pattern matching`_ the combined action type the compiler will
+  complain if we fail to cover some cases.
 
 - It works well when composing components hierarchically. We
   will discuss this in the :ref:`modularity` section.
@@ -130,7 +131,7 @@ multiple advantages:
          :ref:`architecture` section we showed how to use
          :cpp:class:`lager::visitor` to :ref:`pattern match the action
          variant using lambdas<pattern-match-example>`.  This lowers
-         the amount of boiler-plate required for simple reducers.
+         the amount of boiler-plate required for small reducers.
          There are other libraries like Scelta_, Atria_ or
          `Boost.Hof`_ that are convenient when dealing with variants.
 
@@ -155,14 +156,14 @@ still need to somehow access the different kinds of arguments to the
 actions, for which you may need to resort to ``union`` or mechanism,
 which is unsafe while bringing no additional advantages.
 
-In Redux_, because of JavaScript, they often use `stringly typed`_
-actions.  This is rarely advantageous in C++, but there are situations
-where you may want to do so, for instance, when implementing a command
-line, or configurable shortcuts.  When doing so, it is still useful to
-have a type safe core set of actions, and to implement the stringly
-typed ones in terms of them.  For example, we can extend the
-:ref:`todos model<todo-actions>` by adding a string-based action type
-and a corresponding reducer:
+In Redux_, because of JavaScript, they often use instead `stringly
+typed`_ actions.  This is rarely advantageous in C++, but there are
+situations where you may want to do so, for instance, when
+implementing a command line or configurable shortcuts.  When doing so,
+it is still useful to have a type safe core set of actions, and to
+implement the stringly typed ones in terms of them.  For example, we
+can extend the :ref:`todo actions<todo-actions>` defined above by
+adding a string-based action type and a corresponding reducer:
 
 .. _redux: https://redux.js.org/basics/actions
 .. _stringly typed: http://wiki.c2.com/?StringlyTyped

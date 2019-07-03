@@ -5,7 +5,7 @@ Time travel
 ===========
 
 In the previous section we saw how we can generically augment a Lager
-application with :ref:`undo<undo> support`.  The library uses these
+application with :ref:`undo support<undo>`.  The library uses these
 principles to provide a *time travelling debugger*.
 
 .. _screenshot:
@@ -15,16 +15,17 @@ principles to provide a *time travelling debugger*.
 Time travelling debugger
 ------------------------
 
-The time travelling debugger tool allows you inspect the state and
+The time travelling debugger tool allows you to inspect the state and
 actions of a running Lager application.  Furthermore, you can use it
-to bring the application to a previous state and continue running it.
+to bring the application to a previous state and continue running it
+from there.
 
 The screenshot_ above shows the debugger in action.  At the bottom
 right corner we have a running Lager application, `an ncurses UI for
-our counter example`_.  On the top left we have the UI of the time
+our counter example`_.  On the top right we have the UI of the time
 travelling debugger inspecting the application.  On the right, we have
 a time-travelling debugger, debugging the former time-travelling
-debugger!
+debugger itself!
 
 .. _an ncurses ui for our counter example: https://github.com/arximboldi/lager/tree/master/example/counter/ncurses
 
@@ -41,11 +42,11 @@ You can enable the debugger by using the
        ...,
        lager::with_debugger(debugger));
 
-This enables the debugger, which you can access from
+This enables the debugger, which can be accessed from
 http://localhost:8080 in a web browser.
 
 Since *enhancers* are compossable, you can instantiate a second
-debugger, that allows you to inspect the state of the debugger itself:
+debugger, that allows the inspection the state of the debugger itself:
 
 .. code-block:: c++
 

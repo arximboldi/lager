@@ -4,22 +4,23 @@
 Reducers
 ========
 
-Reducers are the functions that implement the update logic.  Given the
-model and an action, it returns an updated view of the world.
+Reducers are functions given a :ref:`model` and :ref:`action`,
+implements the update logic of the application, returning a new model
+the world.
 
 .. _purity:
 Purity
 ------
 
 The reducer must be `referentially transparent`_ and a `pure
-function`_.  This is a mouthful to say that, wheneve you invoke the
-function with the same arguments, it returns produce same result.  This,
+function`_.  This is a mouthful to say that, whenever you invoke the
+function with the same arguments, it produce the same result.  This,
 in practice, means:
 
 - It must take all the arguments by value or const reference.
 - It must perform no side-effects, this is: no writing or reading to
-  disk, generating true random numbers, making connections to servers,
-  etc.
+  disk, generating non deterministic random numbers, making
+  connections to servers, etc.
 - And of course, no reading or writing mutable globals, statics,
   singletons, and other evils.
 
@@ -45,15 +46,16 @@ Given an ``action``, ``model`` types, and a ``update`` reducer
 function (in the :ref:`architecture` section we built a complete
 example), we can write a function that takes an initial model, a
 sequence of actions, and returns the current model after applying all
-the actions as this:
+the actions like this:
 
 .. code-block:: c++
 
    model update_all(model init, const std::vector<action>& actions)
    {
        return std::accumulate(
-           actions.begin(), actions.end(), init,
-           [] (model m, action a) { return update(m, a); });
+           actions.begin(), actions.end(),
+           init,
+           update);
    }
 
 The ``std::accumulate`` function is called ``reduce`` in many other
@@ -63,14 +65,14 @@ sequence to a single value, by succesively applying the binary
 operator to the last output and the next input.
 
 The **reducer** is the binary operation that we use to *reduce* a
-sequence of actions to a single model state.  It is last argument to
-``accumulate``.
+sequence of actions to a single model state---it is the last argument
+we passed to ``accumulate``.
 
 .. note:: *Reduce*, also known as *fold*, is one of the most important
-          `higher-order functions`_ in functional programming, since it provides a
-          general mechanism for performing sequential computations
-          over a state.  Transducers_ are a cool abstraction
-          based on the idea of *transforming reducers*.
+          `higher-order functions`_ in functional programming, because
+          it provides a general mechanism for performing iterative
+          sequential computations.  Transducers_ are a powerful
+          abstraction based on the idea of *transforming reducers*.
 
 .. _std::accumulate: https://en.cppreference.com/w/cpp/algorithm/accumulate
 .. _transducers: https://www.youtube.com/watch?v=vohGJjGxtJQ

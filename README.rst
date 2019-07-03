@@ -23,7 +23,7 @@
 implementing the `unidirectional data-flow architecture`_.  It is
 heavily inspired by Elm_ and Redux_, and enables composable designs by
 promoting the use of simple value types and testable application logic
-via pure functions.  And yes, you get time-travel for free.
+via pure functions.  And you get time-travel for free!
 
 .. _unidirectional data-flow architecture: https://www.exclamationlabs.com/blog/the-case-for-unidirectional-data-flow
 .. _Elm: https://guide.elm-lang.org/architecture
@@ -86,19 +86,19 @@ in subtle problems that are hard to debug.
 problems:
 
 * Thanks to immutability_ and value-types, it is very easy to add
-  **concurrency** threads can operate on their local copies of the
-  data without mutexes or other flaky synchronization.  They then and
-  communicate their results back by *dispatching* actions to the main
-  thread.
+  **concurrency** as threads can operate on their local copies of the
+  data without mutexes or other flaky synchronization mechanisms.
+  Instead, worker threads communicate their results back by *dispatching*
+  actions to the main thread.
 
-* The application logic is made of `pure functions`_, that can be easily
+* The application logic is made of `pure functions`_ that can be easily
   **tested** and are fully reproducible.  They interact with the world
   via special side-effects procedures loosely coupled to the services
   they need via  `dependency injection`_.
 
 * This also means that data and call-graphs are always trees or
-  `DAGs`_ (instead of cyclical graphs), where *explicit composition*
-  that are easy to trace and **debug**.  You can also always
+  `DAGs`_ (instead of cyclical graphs), with *explicit composition*
+  that is to trace and **debug**.  You can also always
   *snapshot* the state, making undo and time-travel easy peasy!
 
 .. _immutability: https://github.com/arximboldi/immer

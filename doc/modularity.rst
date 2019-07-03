@@ -6,15 +6,15 @@ Modularity
 
 Until now we have learnt how to build simple self-contained
 components.  However, in real world systems, you will have multiple
-module that interact with eachother in various ways, and are often
-developed by different people and teams.  In this section, we will
-learn how to scale up our Lager based application.
+modules that interact with eachother in various ways, and that are
+often developed by different people or teams.  In this section, we
+will learn how to scale up our Lager based application.
 
 Composability
 -------------
 
-We use the term **module** to refer to a set of :ref:`actions`,
-:ref:`model`, :ref:`reducers`, and optionally :ref:`effects` and
+We use the term **module** to refer to a set of :ref:`model`,
+:ref:`actions`, :ref:`reducers`, and optionally :ref:`effects` and
 :ref:`views`.  This will be the unit of composition in our system.
 
 As an example, we will describe a system with two modules, ``foo`` and
@@ -30,24 +30,24 @@ data members and function calls.
 .. admonition:: Horizontal vs vertical physical organization
 
    It might be tempting to organize your program in a *horizontal* or
-   *layered* manner.  This is, to have separate folders foll all your
-   actions, models, reducers and views.  If your model is reified in
-   different UI's, maybe belonging to different applications, it might
-   actually make sense to keep the views separate.  However, actions,
-   models and reducers are intimatelly tied to eachother, representing
-   different aspects of the same interface.  For this reason, it makes
-   sense to keep their definitions close, in the same folder or maybe
-   even in the same file.  This is what we call *vertical*
-   modularization.
+   *layered* manner.  This is, to have separate folders for all your
+   actions, models, reducers and views.  If your model is represented
+   in different UI's, maybe belonging to different applications, it
+   might actually make sense to keep the views separate.  However,
+   actions, models and reducers are intimatelly tied together,
+   representing different aspects of the same interface.  For this
+   reason, it makes sense to keep their definitions close, in the same
+   folder or maybe even in the same file.  This is what we call
+   *vertical* modularization.
 
    In this way, your code is organized not around arbitrary technical
-   definitions, but around the features and aspects of your
-   application.  As you scale up your development organization, this
-   will make it easier to work on various features as autonomous
-   cross-functional teams that integrate product management, design,
-   and full stack development. The unidirectional data-flow design
-   proposed by Lager helps building clear interfaces between these
-   modules that reduce friction at the component, cross-team boundary.
+   definitions, but around the features of your application.  As you
+   scale up your development organization, this will make it easier to
+   work on various features in autonomous cross-functional teams that
+   integrate product management, design, and full stack
+   development. The unidirectional data-flow design proposed by Lager
+   helps building clear interfaces between these modules that reduce
+   friction at the component, cross-team boundary.
 
    .. image:: _static/modules.svg
       :width: 100%
@@ -84,9 +84,9 @@ itself:
 Composing reducers
 ~~~~~~~~~~~~~~~~~~
 
-Now we need to implement a reducer for the app. This reducer needs to
-invoke the nested reducers and integrate their result into the parent
-state.  For example:
+Now we need to implement a reducer for the parent `app` module. This
+reducer needs to invoke the nested reducers and integrate their result
+into the parent state.  For example:
 
 .. code-block:: c++
 
@@ -104,39 +104,38 @@ state.  For example:
        }, act);
    }
 
-It is possible that the parent reducer also needs to do more work to
-integrate the result.
-
 Composing effects
 ~~~~~~~~~~~~~~~~~
 
-All the previous reducers do not produce side-effects.  But what if
-both the ``foo`` and ``bar`` modules did indeed produce
-:ref:`effects`, by having their reducers specified like this:
+All the previous reducers do not produce side-effects.  But both the
+``foo`` and ``bar`` modules could indeed produce :ref:`effects`, by
+having their reducers specified as follows:
 
 .. code-block:: c++
 
-   auto update(foo_model m, foo_action a)
+   auto update_foo(foo_model m, foo_action a)
        -> std::pair<foo_model,
                     lager::effect<foo_action, lager::deps<foo_service&>>>;
 
-   auto update(bar_model m, bar_action a)
+   auto update_bar(bar_model m, bar_action a)
        -> std::pair<bar_model,
                     lager::effect<bar_action, lager::deps<bar_service&>>>;
 
-Either function can return an effect.  However, what is the type of an
-effect that can be either of the two types?  We have to look at the
-two template parameters of the :cpp:type:`lager::effect` type:
+Either function can return an effect.  This effect would need to be
+returned back by the reducer of the `app`.  However, what is the type
+of an effect that can be either of the two submodule types?  We have
+to look at the two template parameters of the
+:cpp:type:`lager::effect` type:
 
 - To combine the actions, we use an action type that is a superset of
   the two action types.  In this case, ``app_action``.  If we had no
-  such superset type, we can use ``lager::actions<foo_action,
+  such superset type, we could use ``lager::actions<foo_action,
   bar_action>`` as a template parameter for the effect, to indicate
   that we want an effect that can deliver either of the two disjoint
   action types.
 
-- In the dependencies, we just have to make sure list all the
-  dependencies required by both effects. In our example:
+- To combine the dependencies, we just have to make sure to list all
+  the dependencies required by both effects. In our example:
   ``lager::deps<foo_service&, bar_service&>``.
 
 We can now write the app reducer as:
@@ -158,18 +157,18 @@ We can now write the app reducer as:
            [&] (bar_action a) -> app_result {
                auto [new_bar, eff] = update_bar(a);
                app.bar = new_bar;
-               return {appm, eff};
+               return {app, eff};
            },
        }, act);
    }
 
 .. note:: In this case, we had two different paths producing two
           different effects.  It might happen sometimes, that you end
-          up with two effects at hand that you need to combine.  You
-          can use the :cpp:func:`lager::sequence` function, which will
-          return the first non empty effect or a combined effect that
-          evaluates all in sequence.  It uses the rules above to
-          derive a correct action type.
+          up with two effects in the same path that you need to
+          combine.  You can use the :cpp:func:`lager::sequence`
+          function for this.  It will return the first non empty
+          effect or a combined effect that evaluates all in sequence.
+          It uses the rules above to derive the correct result type.
 
 .. _undo:
 .. _genericity:
@@ -207,7 +206,9 @@ define the actions:
        undo_action, redo_action, goto_action>
 
 Note how ``history_action`` is templatized over the underlying
-document action.
+document action, which is also included in the action variant.
+
+We can now define the model:
 
 .. code-block:: c++
 
@@ -217,17 +218,19 @@ document action.
        immer::array<DocumentModel> history;
        std::size_t position = 0;
 
+       // construct a history from a document
        history_model(DocumentModel init = {})
            : history{immer::array<DocumentModel>{{std::move(init)}}}
        {}
 
+       // get the current document
        operator const DocumentModel&() const { return history[position]; }
    };
 
-Here, we templatized the model over the underlying type.  We also
-implemented conversion from the underlying model, constructing a
-history with the initial state.  The history can also be converted to
-the underlying document model, obtaining the current state.  This
+Again, we templatized the model over the underlying type.  We also
+implemented conversion from the underlying model that constructs a
+history with an initial state.  The history can also be converted to
+the underlying document model to obtaining the current state.  This
 allows us to pass the history model directly to views that want to
 present the current document.
 
@@ -243,8 +246,8 @@ though.  We can later use a lambda to bind the particular reducer.
              typename DocumentModel,
              typename DocumentAction>
    auto update_history(DocumentReducer&& r,
-                        history_model<DocumentModel> m,
-                        history_action<DocumentAction> a)
+                       history_model<DocumentModel> m,
+                       history_action<DocumentAction> a)
        -> history_model<DocumentModel>
    {
       return std::visit(lager::visitor{
@@ -262,7 +265,7 @@ though.  We can later use a lambda to bind the particular reducer.
           [&] (DocumentAction a) {
               auto doc = r(m, a);
               if (doc != m) {
-                  m.position = m.history.size();
+                  m.position ++;
                   m.history = m.history.take(m.position).push_back(doc);
               }
               return m;
@@ -272,13 +275,13 @@ though.  We can later use a lambda to bind the particular reducer.
 
 The ``history`` specific actions just manipulate the current position.
 However, the ``DocumentAction`` handler is of particular interest.  We
-just update the document executing the underlying reducer and, if the
-document actually changed, whe put the new state in the history.  The
-``take()`` call discards entries happening after the current position.
-This is the standard behavior in an editor: after you do some *undos*,
-you loose the ability to *redo* as soon as you make a new edit.  There
-are other possible ways to handle this case, in our example text
-editor Ewig_ we use `Emacs style undo`_.
+obtain an updated document by evaluating the underlying reducer and,
+if the document actually changed, whe put the new state in the
+history.  The ``take()`` call discards entries happening after the
+current position.  This is the standard behavior in an editor: after
+you do some *undos*, you loose the ability to *redo* as soon as you
+make a new edit.  There are other possible ways to handle this case:
+in our example text editor Ewig_ we use `Emacs style undo`_.
 
 .. _Ewig: https://github.com/arximboldi/ewig
 .. _emacs style undo: https://www.gnu.org/software/emacs/manual/html_node/emacs/Undo.html
@@ -287,13 +290,13 @@ Dealing with underlying effects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The previous reducer did not deal with :ref:`effects`.  This might be
-a reasonable conslimitation in this case, since it is unclear how
+a reasonable constraint in this case, since it is unclear how
 meaningful are side-effects in an undoable document.  However, we can
 still change the reducer to deal with potential side effects.  We use
 the :cpp:func:`lager::invoke_reducer` function to invoke a reducer
 that may or may not have side effects in a generic way. Note that we
-know have to inform the generic reducer of potential dependencies the
-underlying reducer might have.
+now have to inform the generic reducer of potential dependencies that
+the effects returned by the underlying reducer might need.
 
 .. code-block:: c++
 
@@ -334,9 +337,10 @@ underlying reducer might have.
 
 .. tip:: In this implementation we always return an effect type,
          regardless of whether the underlying reducer uses effects at
-         all.  It is possible however to avoid that, by using the
-         :cpp:class:`lager::has_effect` metafunction in the function
-         signature.
+         all---if it doesn't, it will unconditionally be a
+         ``lager::noop``.  It is possible however to avoid that, by
+         using the :cpp:class:`lager::has_effect` metafunction to only
+         return an effect if needed.
 
 .. _enhancer:
 
@@ -354,7 +358,7 @@ that uses it, enhanced with the ``history`` functionality:
        [] (auto m, auto a) { return update_history(update_doc, m, a); },
        draw_doc);
 
-It would be nice, however, if we could write:
+It would be nice, however, if we could write instead:
 
 .. code-block:: c++
    :emphasize-lines: 5
@@ -413,29 +417,29 @@ Actors
 
 In this section, we have seen how to combine and decorate models to
 create more complex applications.  However, we are still using one
-central, big, single store.  That is the normal mode of operation of
+single big central store.  That is the normal mode of operation of
 Lager, which was designed to write interactive software using the
 unidirectional data-flow architecture.  Most of the application is
 agnostic to the store anyways.  Having a single store means we have a
 single place where mutation happens, which helps us avoid race
 conditions and eases testing and debugging the application.
 
-But there are indeed cases where it might be interesting to have
-multiple stores.  Since a store is associated to one event loop and a
-thread, you may want to use multiple stores to increase the
-parallelism of the app.
+But there are indeed cases where it might be useful to have multiple
+stores.  Since a store is associated to one event loop and a thread,
+you may want to use multiple stores to increase the parallelism of the
+app.
 
 The `Actors programming model`_ is a paradigm of concurrent computing
-that involves independenting entities communicating with eachother via
-messages, as opposed to using shared memory.  A Lager
-:cpp:class:`store<lager::store>` can be considered an Actor, to which
-you send messages using the
+that is based around independent entities, known as *actors*, that
+communicate with eachother via messages, as opposed to using shared
+memory.  A :cpp:class:`lager::store` can be considered an Actor, to
+which you send messages using the
 :cpp:func:`dispatch()<lager::store::dispatch>` method.  A store can
-communicate with other actors using effects or the view function.
+communicate with other actors using :ref:`effects` or :ref:`views`.
 
 Architecting your application around multiple actor stores that talk
-to eachother is a powerful to build distributed systems.  You can use
-the store event loop interface to flexibly configure the level of
+to eachother is a powerful tool to build distributed systems.  You can
+use the store event loop interface to flexibly configure the level of
 parallelism for these intercommunicating entities.  Furthermore, if
 you make your actions serializable, you can further scale up your
 application by having actors run seamlessly on different machines,

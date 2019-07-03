@@ -5,8 +5,8 @@ Architecture
 
 This section gives an overview of the architectural elements of a
 Lager based application.  It offers an introductory tutorial with
-plenty of pointers into the other sections that cover the various
-topics in more detail.
+plenty of pointers into other sections that cover the various topics
+in more detail.
 
 Unidirectional-data flow
 ------------------------
@@ -15,10 +15,10 @@ Unidirectional-data flow
    :width: 90%
    :align: center
 
-This diagram represents the architecture of a Lager based application.
-This is what is called the *unidirectional data flow architecture*.
-It is somewhat similar to common representations of the `Model View
-Controller`_, however, there are some fundamental differences:
+This diagram represents the architecture of a Lager based application,
+the so-called *unidirectional data flow architecture*.  It is somewhat
+similar to common representations of `Model View Controller`_,
+however, there are some fundamental differences:
 
 * The *boxes* do not represent stateful objects with their own identity,
   but **value-types** with deep-copy and logical equality semantics.
@@ -38,10 +38,9 @@ pure functions that sit at the core of a typical Lager application.
 .. note::
 
    The diagram above presents the unidirectional data-flow as
-   supported by Lager, but there are alternative design approaches.
-   André Staltz gives `a thorough overview`_ on the subtle differences
-   between various instances of the unidirectional data-flow
-   architecture.
+   supported by Lager, but there are proposals.  André Staltz gives `a
+   thorough overview`_ on the subtle differences between various
+   instances of the unidirectional data-flow architecture.
 
    .. _a thorough overview: https://staltz.com/unidirectional-user-interface-architectures.html
 
@@ -49,39 +48,39 @@ Basic example
 -------------
 
 Let's build a very basic example. For now, it is going to be an
-interactive application where you can use commands to manipulate the
+interactive application where you can use commands to manipulate a
 counter.
 
 We follow a `value-oriented design`_.  we will start by looking at the
 data we need, in the form of value types. Then we will look at the
 transformations required.
 
-.. _data-oriented design:
+.. _data-oriented-design:
 
 .. admonition:: Differences with Data-Oriented Design.
 
-   Over the last years, we have seen `Data-Oriented Design`_ as a new
-   trend in the C++ programming community looking to expand its
-   paradigms beyond object oriented programming.  Like DOD,
-   *value-oriented design* breaks encapsulation in order to separate
-   data and transformations, such that they can be analized
-   explicitly.  Often, we end up reaching similar conclusions: we
+   Over the last years, we have seen `data-oriented design`_ as a new
+   trend in the C++ programming community aiming to go beyond the
+   object oriented programming paradigm.  Like DOD, *value-oriented
+   design* breaks encapsulation in order to separate data and
+   transformations, such that they can be studied explicitly and
+   independently.  Often, we end up reaching similar conclusions: we
    decouple entities from their representation, we treat
-   :ref:`identity <identity>` explicitly, and prefer
-   :ref:`normalized <normalization>` data.
+   :ref:`identity <identity>` explicitly, and prefer :ref:`normalized
+   <normalization>` data.
 
    However DOD is very focused on game development.  As such it
-   focuses on performance above all, puting a special focus on cache
+   focuses on performance above all, puting special focus on cache
    locality and mutation.  Maintanibility is not that important is
-   games (at least outside of the engine code), since once a game is
-   released, you start with a blank page on the next one.  In
-   contrast, some of us in the VOD camp come from the development of
+   games (at least outside of the engine code) since once a game is
+   released, the next one is started on a blank slate.  In contrast,
+   some of us in the VOD camp come from the development of
    professional desktop software.  While performance is also important
-   here, these are decades-old codebases, there are intricate document
-   models that need persistance with backwards compatiblity and
+   in this domain, these are decades-old codebases, where intricate
+   document models need persistence with backwards compatiblity, and
    implement complicated workflows that need to reliably support undo
-   and feel responsive.  As such, we focus more on immutability, local
-   reasoning, and concurrency.
+   and feel responsive.  As such, we focus more on local reasoning,
+   reuse, maintainability and concurrency.
 
 .. _data-oriented design: http://www.dataorienteddesign.com/dodbook/
 .. _value-oriented design: https://www.youtube.com/watch?v=_oBx_NbLghY
@@ -110,7 +109,7 @@ Actions
 The :ref:`action <action>` is a value type that represents something that the
 user did in the application.  Normally, the user can do multiple
 things.  We can use different *structs* to represent the various
-things that the user can do, then bind them together using a
+things that the user can do, then group them together using a
 `std::variant`_
 
 .. code-block:: c++
@@ -129,9 +128,9 @@ Reducer
 
 Now that we have defined our data, we need to define the update logic,
 the :ref:`reducer <reducer>`.  This a `pure function`_ that takes the
-current state of the world (the model), the something that happened
-(an action), and returns the updated version of the world. This would
-look like this:
+current state of the world (the model), some external stimuli (an
+action), and returns the updated version of the world. This would look
+like this:
 
 .. _pure function: https://en.wikipedia.org/wiki/Pure_function
 
@@ -157,13 +156,13 @@ look like this:
        action);
    }
 
-Notice that we take and return everything **by value**.  This
-makes the function *pure*, even though we do use mutation inside the
+Notice that we take and return everything **by value**.  This makes
+the function *pure*, even though we do use mutation inside the
 function---these mutations are contrained to local variables.  This
 somewhat reconciles value-oriented design and procedural programming.
 We focus on the purity of our function interface, but in the
 implementation, you may choose a more functional or procedural style
-at your convenience to keep an idiomatic style.
+at your convenience in an idiomatic C++ style.
 
 Also, don't be intimidated by that :cpp:class:`lager::visitor`, you
 can just mentally parse it as a ``switch``/``case`` on `std::variant`_.
@@ -180,8 +179,8 @@ properties of such design:
   interfaces.
 
 * The core logic is very easy to test.  Purity makes this specially
-  true, since updates are not destructive, we can compare the inputs
-  and the outputs (the past and the present).  This is how a test
+  true, since updates are not destructive we can compare the inputs
+  with the outputs (the past and the present).  This is how a test
   could look like using the Catch_ framework:
 
   .. code-block:: c++
@@ -193,7 +192,7 @@ properties of such design:
          CHECK(new_model.value == old_model.value + 1);
      }
 
-  This ability to make explicit assertions what changes also makes
+  This ability to make explicit assertions about change also makes
   advanced testing technices like `property based testing`_ possible.
 
 * We can now generically implement :ref:`undo <undo>` and :ref:`time travel<time-travel>`.
@@ -226,8 +225,8 @@ Intent
 ~~~~~~
 
 The user interacts with the application by typing characters.  Each of
-these characters represents one command.  In a way, each character is
-can be considered *action*.  However these actions are specific to the
+these characters represents one command.  In a way, each character can
+be considered *action*.  However these actions are specific to the
 user interface, we need to transform them to the actions corresponding
 to model operations.
 
@@ -236,7 +235,7 @@ There are several ways to do this.  Later, we will learn how to
 actions<intent-effect-example>`. However, in our current scenario, a
 function suffices.  We call this function ``intent()``, because it
 captures the intention of the user, this is, given something that
-happened in the user interface, it tells what the user wants to do:
+happened in the user interface, it tells us what the user wants to do:
 
 .. code-block:: c++
 
@@ -294,10 +293,10 @@ Event loop
 
 An interactive application is composed of a main loop.  In many UI
 frameworks, this is under control of the library, following the
-`Hollywood principle`_. The library provides hooks such that one can
-teach the :ref:`store <store>` how to interact with the :ref:`event
-loop <event_loop>`.  In this case, we will write the main loop
-ourselves, so we can just use :cpp:class:`lager::with_manual_event_loop`.
+`Hollywood principle`_. Lager provides hooks such that one can teach
+the :ref:`store <store>` how to interact with the :ref:`event loop
+<event_loop>`.  In this case, we will write the main loop ourselves,
+so we can just use :cpp:class:`lager::with_manual_event_loop`.
 
 .. _hollywood principle: http://wiki.c2.com/?HollywoodPrinciple
 
@@ -306,17 +305,18 @@ The store
 
 The main component provided by the library is the
 :cpp:class:`lager::store`.  You make one by providing an action type,
-the initial model state, the reducer, and the draw function, and the
-event loop interface.  The *store* will then provide a thread-safe
+the initial model state, the reducer, the draw function, and the event
+loop interface.  The *store* will then provide a thread-safe
 :cpp:func:`dispatch() <lager::store::dispatch>` method that can be
-used to inject actions in the system.  It will then evaluate the
-*reducer* in the event-loop, and trigger a redraw.
+used to inject actions in the system.  Whenever it receives an action,
+it will evaluate the *reducer* in the event-loop to update the state,
+and trigger a redraw.
 
 Main loop
 ~~~~~~~~~
 
-With these components, we can finally implement the `main()` method of
-our application:
+With these components, we can finally implement the ``main()``
+procedure of our application:
 
 .. code-block:: c++
 
@@ -338,7 +338,7 @@ our application:
 Next steps
 ----------
 
-In this section we have learnt the basics about how to design an
+In this section we have learnt the basics on how to design an
 application using Lager and the *unidirection data-flow
 architecture*.  Now you can read further in this user guide:
 
@@ -355,5 +355,8 @@ architecture*.  Now you can read further in this user guide:
   applications out of smaller components, both concrete and
   :ref:`generic <genericity>`.
 
-* The :ref:`time travel <time-travel>` section finally how you can use
+* In the :ref:`views` section you can learn how to integrate different
+  UI technologies with your Lager application.
+
+* The :ref:`time travel <time-travel>` section shows how you can use
   Lager for time travelling debugging and introspection.
