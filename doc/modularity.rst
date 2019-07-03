@@ -338,6 +338,8 @@ underlying reducer might have.
          :cpp:class:`lager::has_effect` metafunction in the function
          signature.
 
+.. _enhancer:
+
 Enhancer interface
 ~~~~~~~~~~~~~~~~~~
 
@@ -439,4 +441,4 @@ you make your actions serializable, you can further scale up your
 application by having actors run seamlessly on different machines,
 sending eachother messages over network pipes.
 
-_actors programming model: https://en.wikipedia.org/wiki/Actor_model
+.. _actors programming model: https://en.wikipedia.org/wiki/Actor_model
