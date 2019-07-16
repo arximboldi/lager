@@ -23,6 +23,7 @@
 #include <boost/hana/unpack.hpp>
 
 #include <functional>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
