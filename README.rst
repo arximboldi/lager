@@ -125,13 +125,19 @@ may have other dependencies documented in their respective sections.
 Usage
 -----
 
-This is a **header only** library.  You can just copy the ``lager``
+This is a **header only** library but to be configured correctly you need
+to run `CMake`_ first::
+
+    mkdir -p build && cd build
+    cmake .. -D lager_BUILD_DEBUGGER=OFF -D lager_BUILD_TESTS=OFF -D lager_BUILD_EXAMPLES=OFF -D lager_BUILD_DOCS=OFF
+
+Now you can just copy the ``lager``
 subfolder somewhere in your *include path*.
 
 Some components, like the time-travelling debugger, also require the
 installation of extra files.
 
-Alternatively, you can use `CMake`_ to install the library in your
+You can use `CMake`_ to install the library in your
 system once you have manually cloned the repository::
 
     mkdir -p build && cd build
