@@ -32,6 +32,7 @@ stdenv.mkDerivation rec {
     deps.libhttpserver
     deps.cereal
     deps.immer
+    deps.zug
     sass
     SDL2
     SDL2_ttf
