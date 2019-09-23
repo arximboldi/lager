@@ -24,6 +24,7 @@ file(GLOB_RECURSE lager_unit_tests "*.cpp")
 set(lager_unit_tests
   core.cpp
   deps.cpp
+  state.cpp
   detail/signals.cpp)
 
 if(lager_BUILD_DEBUGGER)
