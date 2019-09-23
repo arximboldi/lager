@@ -46,7 +46,12 @@ visitor(Ts...)->visitor<Ts...>;
 //! @{
 
 //! Function that takes any argument and does nothing
-constexpr auto noop = [](auto&&...) {};
+constexpr struct noop_t
+{
+    template <typename... T>
+    void operator()(T&&...) const
+    {}
+} noop{};
 
 //! Function that returns its first arguemnt
 constexpr auto identity = [](auto&& x) { return std::forward<decltype(x)>(x); };
