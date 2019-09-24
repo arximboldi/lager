@@ -12,32 +12,59 @@
 
 #pragma once
 
+#include <lager/commit.hpp>
 #include <lager/cursor.hpp>
 #include <lager/detail/access.hpp>
-#include <lager/detail/root_signals.hpp>
-#include <lager/detail/watchable.hpp>
+#include <lager/detail/nodes.hpp>
 
 #include <lager/util.hpp>
 
 namespace lager {
 
+namespace detail {
+
 template <typename T>
-class state : public detail::cursor_impl<detail::state_up_down_signal<T>>
+class state_node : public cursor_node<T>
 {
-    using base_t = detail::cursor_impl<detail::state_up_down_signal<T>>;
+public:
+    using value_type = T;
+
+    using cursor_node<T>::cursor_node;
+
+    void send_up(const value_type& value) final { this->push_down(value); }
+
+    void send_up(value_type&& value) final
+    {
+        this->push_down(std::move(value));
+    }
+};
+
+template <typename T>
+auto make_state_node(T&& value)
+{
+    return std::make_shared<state_node<std::decay_t<T>>>(
+        std::forward<T>(value));
+}
+
+} // namespace detail
+
+template <typename T>
+class state : public cursor_base<detail::state_node<T>>
+{
+    using base_t = cursor_base<detail::state_node<T>>;
 
     friend class detail::access;
-    auto roots() const { return detail::access::signal(*this); }
+    auto roots() const { return detail::access::node(*this); }
 
 public:
     using value_type = T;
     using base_t::base_t;
 
     state()
-        : base_t{detail::make_state_signal(T())}
+        : base_t{detail::make_state_node(T())}
     {}
     state(T value)
-        : base_t{detail::make_state_signal(std::move(value))}
+        : base_t{detail::make_state_node(std::move(value))}
     {}
 
     state& operator=(const state&) = delete;
@@ -51,28 +78,6 @@ template <typename T>
 state<T> make_state(T value)
 {
     return value;
-}
-
-template <typename... RootValueTs>
-void commit(RootValueTs&&... roots)
-{
-    noop((detail::access::roots(std::forward<RootValueTs>(roots))->send_down(),
-          0)...);
-    noop((detail::access::roots(std::forward<RootValueTs>(roots))->notify(),
-          0)...);
-}
-
-template <typename InputValueT, typename CallbackT>
-auto watch(InputValueT&& value, CallbackT&& callback)
-{
-    auto& watchers = detail::access::watchers(std::forward<InputValueT>(value));
-    if (watchers.empty()) {
-        auto& observers =
-            detail::access::signal(std::forward<InputValueT>(value))
-                ->observers();
-        observers.connect(watchers);
-    }
-    return watchers.connect(std::forward<CallbackT>(callback));
 }
 
 } // namespace lager

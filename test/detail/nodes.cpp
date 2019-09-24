@@ -14,9 +14,11 @@
 
 #include "../spies.hpp"
 
-#include <lager/detail/root_signals.hpp>
-#include <lager/detail/signals.hpp>
-#include <lager/detail/xform_signals.hpp>
+#include <lager/sensor.hpp>
+#include <lager/state.hpp>
+
+#include <lager/detail/nodes.hpp>
+#include <lager/detail/xform_nodes.hpp>
 
 #include <zug/transducer/map.hpp>
 
@@ -25,25 +27,22 @@
 using namespace zug;
 using namespace lager::detail;
 
-TEST_CASE("signal, instantiate down signal")
-{
-    make_xform_down_signal(identity);
-}
+TEST_CASE("node, instantiate down node") { make_xform_reader_node(identity); }
 
-TEST_CASE("signal, instantiate state") { make_state_signal(0); }
+TEST_CASE("node, instantiate state") { make_state_node(0); }
 
-TEST_CASE("signal, last_value is not visible")
+TEST_CASE("node, last_value is not visible")
 {
-    auto x = make_state_signal(0);
+    auto x = make_state_node(0);
     x->send_up(12);
     CHECK(0 == x->last());
     x->send_up(42);
     CHECK(0 == x->last());
 }
 
-TEST_CASE("signal, last value becomes visible")
+TEST_CASE("node, last value becomes visible")
 {
-    auto x = make_state_signal(0);
+    auto x = make_state_node(0);
 
     x->send_up(12);
     x->send_down();
@@ -54,10 +53,10 @@ TEST_CASE("signal, last value becomes visible")
     CHECK(42 == x->last());
 }
 
-TEST_CASE("signal, sending down")
+TEST_CASE("node, sending down")
 {
-    auto x = make_state_signal(5);
-    auto y = make_xform_down_signal(identity, x);
+    auto x = make_state_node(5);
+    auto y = make_xform_reader_node(identity, x);
     CHECK(5 == y->last());
 
     x->send_up(12);
@@ -69,9 +68,9 @@ TEST_CASE("signal, sending down")
     CHECK(42 == y->last());
 }
 
-TEST_CASE("signal, notifies new and previous value after send down")
+TEST_CASE("node, notifies new and previous value after send down")
 {
-    auto x = make_state_signal(5);
+    auto x = make_state_node(5);
     auto s = testing::spy([](int last, int next) {
         CHECK(5 == last);
         CHECK(42 == next);
@@ -89,13 +88,13 @@ TEST_CASE("signal, notifies new and previous value after send down")
     CHECK(1 == s.count());
 }
 
-TEST_CASE("signal, lifetime of observer")
+TEST_CASE("node, lifetime of observer")
 {
-    auto x = make_state_signal(5);
+    auto x = make_state_node(5);
     auto s = testing::spy();
     auto c = boost::signals2::connection{};
     {
-        auto y = make_xform_down_signal(identity, x);
+        auto y = make_xform_reader_node(identity, x);
         c      = y->observe(s);
         CHECK(c.connected());
 
@@ -112,9 +111,9 @@ TEST_CASE("signal, lifetime of observer")
     CHECK(1 == s.count());
 }
 
-TEST_CASE("signal, notify idempotence")
+TEST_CASE("node, notify idempotence")
 {
-    auto x = make_state_signal(5);
+    auto x = make_state_node(5);
     auto s = testing::spy();
     x->observe(s);
 
@@ -133,12 +132,12 @@ TEST_CASE("signal, notify idempotence")
     CHECK(1 == s.count());
 }
 
-TEST_CASE("signal, observing is consistent")
+TEST_CASE("node, observing is consistent")
 {
-    auto x = make_state_signal(5);
-    auto y = make_xform_down_signal(identity, x);
-    auto z = make_xform_down_signal(identity, x);
-    auto w = make_xform_down_signal(identity, y);
+    auto x = make_state_node(5);
+    auto y = make_xform_reader_node(identity, x);
+    auto z = make_xform_reader_node(identity, x);
+    auto w = make_xform_reader_node(identity, y);
 
     auto s = testing::spy([&](int last_value, int new_value) {
         CHECK(5 == last_value);
@@ -162,10 +161,10 @@ TEST_CASE("signal, observing is consistent")
     CHECK(4 == s.count());
 }
 
-TEST_CASE("signal, bidirectional signal sends values up")
+TEST_CASE("node, bidirectional node sends values up")
 {
-    auto x = make_state_signal(5);
-    auto y = make_xform_up_down_signal(identity, identity, x);
+    auto x = make_state_node(5);
+    auto y = make_xform_cursor_node(identity, identity, x);
 
     y->send_up(42);
     CHECK(5 == x->last());
@@ -176,12 +175,12 @@ TEST_CASE("signal, bidirectional signal sends values up")
     CHECK(42 == y->last());
 }
 
-TEST_CASE("signal, bidirectional mapping")
+TEST_CASE("node, bidirectional mapping")
 {
     auto inc = [](int x) { return ++x; };
     auto dec = [](int x) { return --x; };
-    auto x   = make_state_signal(5);
-    auto y   = make_xform_up_down_signal(map(inc), map(dec), x);
+    auto x   = make_state_node(5);
+    auto y   = make_xform_cursor_node(map(inc), map(dec), x);
 
     CHECK(5 == x->last());
     CHECK(6 == y->last());
@@ -197,22 +196,22 @@ TEST_CASE("signal, bidirectional mapping")
     CHECK(43 == y->last());
 }
 
-TEST_CASE("signal, bidirectiona update is consistent")
+TEST_CASE("node, bidirectiona update is consistent")
 {
     using arr = std::array<int, 2>;
-    auto x    = make_state_signal(arr{{5, 13}});
-    auto y = make_xform_up_down_signal(map([](const arr& a) { return a[0]; }),
-                                       update([](arr a, int v) {
-                                           a[0] = v;
-                                           return a;
-                                       }),
-                                       x);
-    auto z = make_xform_up_down_signal(map([](const arr& a) { return a[1]; }),
-                                       update([](arr a, int v) {
-                                           a[1] = v;
-                                           return a;
-                                       }),
-                                       x);
+    auto x    = make_state_node(arr{{5, 13}});
+    auto y    = make_xform_cursor_node(map([](const arr& a) { return a[0]; }),
+                                    update([](arr a, int v) {
+                                        a[0] = v;
+                                        return a;
+                                    }),
+                                    x);
+    auto z    = make_xform_cursor_node(map([](const arr& a) { return a[1]; }),
+                                    update([](arr a, int v) {
+                                        a[1] = v;
+                                        return a;
+                                    }),
+                                    x);
 
     CHECK((arr{{5, 13}}) == x->last());
     CHECK(5 == y->last());
@@ -230,10 +229,10 @@ TEST_CASE("signal, bidirectiona update is consistent")
     CHECK(42 == z->last());
 }
 
-TEST_CASE("signal, sensors signals reevaluate on send down")
+TEST_CASE("node, sensors nodes reevaluate on send down")
 {
     int count = 0;
-    auto x    = make_sensor_signal([&count] { return count++; });
+    auto x    = make_sensor_node([&count] { return count++; });
     CHECK(0 == x->last());
     x->send_down();
     CHECK(1 == x->last());
@@ -241,13 +240,13 @@ TEST_CASE("signal, sensors signals reevaluate on send down")
     CHECK(2 == x->last());
 }
 
-TEST_CASE("signal, one signal two parents")
+TEST_CASE("node, one node two parents")
 {
     int count = 0;
-    auto x    = make_sensor_signal([&count] { return count++; });
-    auto y    = make_state_signal(12);
+    auto x    = make_sensor_node([&count] { return count++; });
+    auto y    = make_state_node(12);
     auto z =
-        make_xform_down_signal(map([](int a, int b) { return a + b; }), x, y);
+        make_xform_reader_node(map([](int a, int b) { return a + b; }), x, y);
     auto s =
         testing::spy([&](int, int r) { CHECK(r == x->last() + y->last()); });
     z->observe(s);

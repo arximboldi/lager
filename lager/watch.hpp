@@ -37,4 +37,19 @@ public:
 
 } // namespace detail
 
+/*!
+ * Watch changes through a reader using callback @callback.
+ */
+template <typename ReaderT, typename CallbackT>
+auto watch(ReaderT&& value, CallbackT&& callback)
+{
+    auto& watchers = detail::access::watchers(std::forward<ReaderT>(value));
+    if (watchers.empty()) {
+        detail::access::node(std::forward<ReaderT>(value))
+            ->observers()
+            .connect(watchers);
+    }
+    return watchers.connect(std::forward<CallbackT>(callback));
+}
+
 } // namespace lager

@@ -28,7 +28,7 @@ set(lager_unit_tests
   xformed.cpp
   cursor.cpp
   sensor.cpp
-  detail/signals.cpp)
+  detail/nodes.cpp)
 
 if(lager_BUILD_DEBUGGER)
   list(APPEND lager_unit_tests

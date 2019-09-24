@@ -13,60 +13,56 @@
 #pragma once
 
 #include <lager/detail/access.hpp>
-#include <lager/detail/signals.hpp>
-#include <lager/detail/watchable.hpp>
+#include <lager/detail/nodes.hpp>
+#include <lager/watch.hpp>
 
 #include <zug/meta/value_type.hpp>
 
 namespace lager {
 
-namespace detail {
+template <typename NodeT>
+class cursor_base;
 
-template <typename SignalT>
-class cursor_impl;
-
-template <typename SignalT>
-class reader_impl : private watchable<zug::meta::value_t<SignalT>>
+template <typename NodeT>
+class reader_base : private detail::watchable<zug::meta::value_t<NodeT>>
 {
     template <typename T>
-    friend class reader_impl;
+    friend class reader_base;
     friend class detail::access;
 
-    using base_t       = watchable<zug::meta::value_t<SignalT>>;
-    using signal_ptr_t = std::shared_ptr<SignalT>;
+    using base_t     = detail::watchable<zug::meta::value_t<NodeT>>;
+    using node_ptr_t = std::shared_ptr<NodeT>;
 
-    signal_ptr_t signal_;
-    const signal_ptr_t& signal() const { return signal_; }
+    node_ptr_t node_;
+    const node_ptr_t& node() const { return node_; }
 
 public:
-    using value_type = zug::meta::value_t<SignalT>;
+    using value_type = zug::meta::value_t<NodeT>;
 
-    reader_impl()              = default;
-    reader_impl(reader_impl&&) = default;
-    reader_impl& operator=(reader_impl&&) = default;
-    reader_impl(const reader_impl&)       = default;
-    reader_impl& operator=(const reader_impl&) = default;
+    reader_base()              = default;
+    reader_base(reader_base&&) = default;
+    reader_base& operator=(reader_base&&) = default;
+    reader_base(const reader_base&)       = default;
+    reader_base& operator=(const reader_base&) = default;
 
     template <typename T>
-    reader_impl(reader_impl<T> x)
+    reader_base(reader_base<T> x)
         : base_t(std::move(x))
-        , signal_(std::move(x.signal_))
+        , node_(std::move(x.node_))
     {}
 
     template <typename T>
-    reader_impl(cursor_impl<T> x)
-        : signal_(detail::access::signal(std::move(x)))
+    reader_base(cursor_base<T> x)
+        : node_(detail::access::node(std::move(x)))
     {}
 
-    template <typename SignalT2>
-    reader_impl(std::shared_ptr<SignalT2> sig)
-        : signal_(std::move(sig))
+    template <typename NodeT2>
+    reader_base(std::shared_ptr<NodeT2> sig)
+        : node_(std::move(sig))
     {}
 
-    decltype(auto) get() const { return signal_->last(); }
+    decltype(auto) get() const { return node_->last(); }
 };
-
-} // namespace detail
 
 /*!
  * Provides access to reading values of type `T`.
@@ -74,9 +70,9 @@ public:
  * @see `Reader_value`
  */
 template <typename T>
-class reader : public detail::reader_impl<detail::down_signal<T>>
+class reader : public reader_base<detail::reader_node<T>>
 {
-    using base_t = detail::reader_impl<detail::down_signal<T>>;
+    using base_t = reader_base<detail::reader_node<T>>;
 
 public:
     using base_t::base_t;

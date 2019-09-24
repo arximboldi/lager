@@ -128,11 +128,11 @@ TEST_CASE("state, watches always view consistent state")
 
 TEST_CASE("state, capsule carries its own watchers")
 {
-    auto sig = std::shared_ptr<detail::state_up_down_signal<int>>{};
+    auto sig = std::shared_ptr<detail::state_node<int>>{};
     auto s   = testing::spy();
     {
         auto st = make_state(42);
-        sig     = detail::access::signal(st);
+        sig     = detail::access::node(st);
         watch(st, s);
         sig->push_down(12);
         sig->send_down();

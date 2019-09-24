@@ -20,16 +20,16 @@ namespace lager {
 namespace detail {
 
 /*!
- * Provides access to the underlying signals of different
+ * Provides access to the underlying nodes of different
  * entities. This encapsulates acess to the implementation of
- * signal-based objects: don't make access to signals public, instead
+ * node-based objects: don't make access to nodes public, instead
  * friend this class.
  */
 class access
 {
 public:
     /*!
-     * Returns a smart pointer to the underlying root signal or signals
+     * Returns a smart pointer to the underlying root node or nodes
      * of an object, if exist.
      */
     template <typename T>
@@ -39,13 +39,13 @@ public:
     }
 
     /*!
-     * Returns a pointer to th underlying signal of an object, if
+     * Returns a pointer to th underlying node of an object, if
      * exists.
      */
     template <typename T>
-    static decltype(auto) signal(T&& object)
+    static decltype(auto) node(T&& object)
     {
-        return std::forward<T>(object).signal();
+        return std::forward<T>(object).node();
     }
 
     /*!
@@ -60,17 +60,17 @@ public:
 };
 
 /*!
- * Returns the signal type for an object
+ * Returns the node type for an object
  */
 template <typename ObjectT>
-struct signal_type
+struct node_type
 {
     using type = std::decay_t<typename std::decay_t<decltype(
-        access::signal(std::declval<ObjectT>()))>::element_type>;
+        access::node(std::declval<ObjectT>()))>::element_type>;
 };
 
 template <typename ObjectT>
-using signal_type_t = typename signal_type<ObjectT>::type;
+using node_type_t = typename node_type<ObjectT>::type;
 
 } // namespace detail
 

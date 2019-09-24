@@ -12,32 +12,14 @@
 
 #pragma once
 
+#include <lager/detail/xform_nodes.hpp>
+
 #include <lager/cursor.hpp>
-#include <lager/detail/xform_signals.hpp>
 #include <lager/reader.hpp>
 
 #include <zug/transducer/map.hpp>
 
 namespace lager {
-
-namespace detail {
-
-template <typename SignalT>
-struct xformed_reader : public reader_impl<SignalT>
-{
-    using base_t = reader_impl<SignalT>;
-    using base_t::base_t;
-};
-
-template <typename SignalT>
-struct xformed_cursor : public cursor_impl<SignalT>
-{
-    friend class access;
-    using base_t = cursor_impl<SignalT>;
-    using base_t::base_t;
-};
-
-} // namespace detail
 
 /*!
  * Returns a new in formed by applying a transducer `xform`
@@ -47,24 +29,23 @@ struct xformed_cursor : public cursor_impl<SignalT>
  */
 template <typename Xform, typename... ReaderTs>
 auto xformed(Xform&& xform, ReaderTs&&... ins)
-    -> detail::xformed_reader<typename decltype(detail::make_xform_down_signal(
-        xform, detail::access::signal(ins)...))::element_type>
+    -> reader_base<typename decltype(detail::make_xform_reader_node(
+        xform, detail::access::node(ins)...))::element_type>
 {
-    return detail::make_xform_down_signal(
+    return detail::make_xform_reader_node(
         std::forward<Xform>(xform),
-        detail::access::signal(std::forward<ReaderTs>(ins))...);
+        detail::access::node(std::forward<ReaderTs>(ins))...);
 }
 
 template <typename Xform, typename Xform2, typename... CursorTs>
 auto xformed2(Xform&& xform, Xform2&& xform2, CursorTs&&... ins)
-    -> detail::xformed_cursor<
-        typename decltype(detail::make_xform_up_down_signal(
-            xform, xform2, detail::access::signal(ins)...))::element_type>
+    -> cursor_base<typename decltype(detail::make_xform_cursor_node(
+        xform, xform2, detail::access::node(ins)...))::element_type>
 {
-    return detail::make_xform_up_down_signal(
+    return detail::make_xform_cursor_node(
         std::forward<Xform>(xform),
         std::forward<Xform2>(xform2),
-        detail::access::signal(std::forward<CursorTs>(ins))...);
+        detail::access::node(std::forward<CursorTs>(ins))...);
 }
 
 /*!

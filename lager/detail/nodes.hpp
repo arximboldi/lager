@@ -13,18 +13,18 @@
 /*!
  * @file
  *
- * This module implements the cursor signal flow in Lager.  Signals can be
+ * This module implements the cursor node flow in Lager.  Nodes can be
  * connected forming two superinposed directed acyclical graphs, where
- * signals flow *down* or *up*.  Signals are derived from eachother
+ * nodes flow *down* or *up*.  Nodes are derived from eachother
  * using transducers.
  *
  * The APIs for flowing up and down are asymmetric because of the way
  * the graph is constructed and the semantics of information flow.
  *
- *   - An up-down-signal can be constructed from a up-down-signal.
- *   - A down-signal can be constructed from a up-down-signa or
- *     a down-signal.
- *   - A signal can be appended children, but can not be appended
+ *   - An up-down-node can be constructed from a up-down-node.
+ *   - A down-node can be constructed from a up-down-signa or
+ *     a down-node.
+ *   - A node can be appended children, but can not be appended
  *     parents.
  *   - Information propagates upwardes immediately, but propagates
  *     upwards in two fases.
@@ -32,7 +32,7 @@
  * In general, sucessors know a lot about their predecessors, but
  * sucessors need to know very little or nothing from their sucessors.
  *
- * @todo We could eventually flatten signals when the sucessors knows
+ * @todo We could eventually flatten nodes when the sucessors knows
  * the transducer of its predecessor, this could be done heuristically.
  */
 
@@ -61,47 +61,47 @@ constexpr struct
 } owner_equals{};
 
 /*!
- * Interface for children of a signal and is used to propagate
+ * Interface for children of a node and is used to propagate
  * notifications.  The notifications are propagated in two steps,
- * `send_down()` and `notify()`, not ensure that the outside world sees a
+ * `propagate()` and `notify()`, not ensure that the outside world sees a
  * consistent state when it receives notifications.
  */
-struct down_signal_base
+struct reader_node_base
 {
-    virtual ~down_signal_base() = default;
+    virtual ~reader_node_base() = default;
     virtual void send_down()    = 0;
     virtual void notify()       = 0;
 };
 
 /*!
- * Interface for signals that can send values back to their parents.
+ * Interface for nodes that can send values back to their parents.
  */
 template <typename T>
-struct up_signal_base
+struct writer_node_base
 {
-    virtual ~up_signal_base()      = default;
+    virtual ~writer_node_base()    = default;
     virtual void send_up(const T&) = 0;
     virtual void send_up(T&&)      = 0;
 };
 
 /*!
- * Base class for the various signal types.  Provides basic
+ * Base class for the various node types.  Provides basic
  * functionality for setting values and propagating them to children.
  */
 template <typename T>
-class down_signal
-    : public std::enable_shared_from_this<down_signal<T>>
-    , public down_signal_base
+class reader_node
+    : public std::enable_shared_from_this<reader_node<T>>
+    , public reader_node_base
 {
 public:
     using value_type = T;
 
-    down_signal(down_signal&&)      = default;
-    down_signal(const down_signal&) = delete;
-    down_signal& operator=(down_signal&&) = default;
-    down_signal& operator=(const down_signal&) = delete;
+    reader_node(reader_node&&)      = default;
+    reader_node(const reader_node&) = delete;
+    reader_node& operator=(reader_node&&) = default;
+    reader_node& operator=(const reader_node&) = delete;
 
-    down_signal(T value)
+    reader_node(T value)
         : current_(std::move(value))
         , last_(current_)
         , last_notified_(current_)
@@ -113,14 +113,14 @@ public:
     const value_type& current() const { return current_; }
     const value_type& last() const { return last_; }
 
-    void link(std::weak_ptr<down_signal_base> child)
+    void link(std::weak_ptr<reader_node_base> child)
     {
         using namespace std;
         using std::placeholders::_1;
         assert(find_if(begin(children_),
                        end(children_),
                        bind(owner_equals, child, _1)) == end(children_) &&
-               "Child signal must not be linked twice");
+               "Child node must not be linked twice");
         children_.push_back(child);
     }
 
@@ -190,7 +190,7 @@ private:
         using namespace std;
         children_.erase(remove_if(begin(children_),
                                   end(children_),
-                                  mem_fn(&weak_ptr<down_signal_base>::expired)),
+                                  mem_fn(&weak_ptr<reader_node_base>::expired)),
                         end(children_));
     }
 
@@ -199,20 +199,20 @@ private:
     value_type current_;
     value_type last_;
     value_type last_notified_;
-    std::vector<std::weak_ptr<down_signal_base>> children_;
+    std::vector<std::weak_ptr<reader_node_base>> children_;
     boost::signals2::signal<void(const value_type&, const value_type&)>
         observers_;
 };
 
 /*!
- * Base class for signals that can send values up the signal chain.
+ * Base class for nodes that can send values up the node chain.
  */
 template <typename T>
-class up_down_signal
-    : public down_signal<T>
-    , public up_signal_base<T>
+class cursor_node
+    : public reader_node<T>
+    , public writer_node_base<T>
 {
-    using down_signal<T>::down_signal;
+    using reader_node<T>::reader_node;
 };
 
 } // namespace detail

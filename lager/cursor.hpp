@@ -13,58 +13,54 @@
 #pragma once
 
 #include <lager/detail/access.hpp>
-#include <lager/detail/signals.hpp>
-#include <lager/detail/watchable.hpp>
+#include <lager/detail/nodes.hpp>
+#include <lager/watch.hpp>
 
 #include <zug/meta/value_type.hpp>
 
 namespace lager {
 
-namespace detail {
-
-template <typename SignalT>
-class cursor_impl : private watchable<zug::meta::value_t<SignalT>>
+template <typename NodeT>
+class cursor_base : private detail::watchable<zug::meta::value_t<NodeT>>
 {
     template <typename T>
-    friend class cursor_impl;
+    friend class cursor_base;
     friend class detail::access;
 
-    using base_t = watchable<zug::meta::value_t<SignalT>>;
+    using base_t = detail::watchable<zug::meta::value_t<NodeT>>;
 
-    using signal_ptr_t = std::shared_ptr<SignalT>;
-    signal_ptr_t signal_;
-    const signal_ptr_t& signal() const { return signal_; }
+    using node_ptr_t = std::shared_ptr<NodeT>;
+    node_ptr_t node_;
+    const node_ptr_t& node() const { return node_; }
 
 public:
-    using value_type = zug::meta::value_t<SignalT>;
+    using value_type = zug::meta::value_t<NodeT>;
 
-    cursor_impl()              = default;
-    cursor_impl(cursor_impl&&) = default;
-    cursor_impl& operator=(cursor_impl&&) = default;
-    cursor_impl(const cursor_impl&)       = default;
-    cursor_impl& operator=(const cursor_impl&) = default;
+    cursor_base()              = default;
+    cursor_base(cursor_base&&) = default;
+    cursor_base& operator=(cursor_base&&) = default;
+    cursor_base(const cursor_base&)       = default;
+    cursor_base& operator=(const cursor_base&) = default;
 
     template <typename T>
-    cursor_impl(cursor_impl<T> x)
+    cursor_base(cursor_base<T> x)
         : base_t(std::move(x))
-        , signal_(std::move(x.signal_))
+        , node_(std::move(x.node_))
     {}
 
-    template <typename SignalT2>
-    cursor_impl(std::shared_ptr<SignalT2> sig)
-        : signal_(std::move(sig))
+    template <typename NodeT2>
+    cursor_base(std::shared_ptr<NodeT2> sig)
+        : node_(std::move(sig))
     {}
 
-    decltype(auto) get() const { return signal_->last(); }
+    decltype(auto) get() const { return node_->last(); }
 
     template <typename T>
     void set(T&& value)
     {
-        return signal_->send_up(std::forward<T>(value));
+        return node_->send_up(std::forward<T>(value));
     }
 };
-
-} // namespace detail
 
 /*!
  * Provides access to reading and writing values of type `T`.
@@ -72,9 +68,9 @@ public:
  * @see `cursor_value`
  */
 template <typename T>
-class cursor : public detail::cursor_impl<detail::up_down_signal<T>>
+class cursor : public cursor_base<detail::cursor_node<T>>
 {
-    using base_t = detail::cursor_impl<detail::up_down_signal<T>>;
+    using base_t = cursor_base<detail::cursor_node<T>>;
 
 public:
     using base_t::base_t;

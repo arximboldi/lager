@@ -13,58 +13,54 @@
 #pragma once
 
 #include <lager/detail/access.hpp>
-#include <lager/detail/signals.hpp>
-#include <lager/detail/watchable.hpp>
+#include <lager/detail/nodes.hpp>
+#include <lager/watch.hpp>
 
 namespace lager {
 
-namespace detail {
+template <typename NodeT>
+class cursor_base;
 
-template <typename SignalT>
-class cursor_impl;
-
-template <typename SignalT>
-class writer_impl
+template <typename NodeT>
+class writer_base
 {
     template <typename T>
-    friend class writer_impl;
+    friend class writer_base;
     friend class detail::access;
 
-    using signal_ptr_t = std::shared_ptr<SignalT>;
-    signal_ptr_t signal_;
-    const signal_ptr_t& signal() const { return signal_; }
+    using node_ptr_t = std::shared_ptr<NodeT>;
+    node_ptr_t node_;
+    const node_ptr_t& node() const { return node_; }
 
 public:
-    using value_type = zug::meta::value_t<SignalT>;
+    using value_type = zug::meta::value_t<NodeT>;
 
-    writer_impl()              = default;
-    writer_impl(writer_impl&&) = default;
-    writer_impl& operator=(writer_impl&&) = default;
-    writer_impl(const writer_impl&)       = default;
-    writer_impl& operator=(const writer_impl&) = default;
+    writer_base()              = default;
+    writer_base(writer_base&&) = default;
+    writer_base& operator=(writer_base&&) = default;
+    writer_base(const writer_base&)       = default;
+    writer_base& operator=(const writer_base&) = default;
 
     template <typename T>
-    writer_impl(writer_impl<T> x)
-        : signal_(std::move(x.signal_))
+    writer_base(writer_base<T> x)
+        : node_(std::move(x.node_))
     {}
 
     template <typename T>
-    writer_impl(cursor_impl<T> x)
-        : signal_(detail::access::signal(std::move(x)))
+    writer_base(cursor_base<T> x)
+        : node_(detail::access::node(std::move(x)))
     {}
 
-    writer_impl(signal_ptr_t sig)
-        : signal_(std::move(sig))
+    writer_base(node_ptr_t sig)
+        : node_(std::move(sig))
     {}
 
     template <typename T>
     void set(T&& value)
     {
-        return signal_->send_up(std::forward<T>(value));
+        return node_->send_up(std::forward<T>(value));
     }
 };
-
-} // namespace detail
 
 /*!
  * Provides access to writing values of type `T`.
@@ -72,9 +68,9 @@ public:
  * @see `Writer_value`
  */
 template <typename T>
-class writer : public detail::writer_impl<detail::up_down_signal<T>>
+class writer : public writer_base<detail::cursor_node<T>>
 {
-    using base_t = detail::writer_impl<detail::up_down_signal<T>>;
+    using base_t = writer_base<detail::cursor_node<T>>;
 
 public:
     using base_t::base_t;
