@@ -16,6 +16,8 @@
 #include <lager/detail/signals.hpp>
 #include <lager/detail/watchable.hpp>
 
+#include <zug/meta/value_type.hpp>
+
 namespace lager {
 
 namespace detail {
