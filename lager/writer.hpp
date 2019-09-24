@@ -21,6 +21,9 @@ namespace lager {
 namespace detail {
 
 template <typename SignalT>
+class cursor_impl;
+
+template <typename SignalT>
 class writer_impl
 {
     template <typename T>
@@ -32,7 +35,7 @@ class writer_impl
     const signal_ptr_t& signal() const { return signal_; }
 
 public:
-    using value_type = meta::value_t<SignalT>;
+    using value_type = zug::meta::value_t<SignalT>;
 
     writer_impl()              = default;
     writer_impl(writer_impl&&) = default;
@@ -43,6 +46,11 @@ public:
     template <typename T>
     writer_impl(writer_impl<T> x)
         : signal_(std::move(x.signal_))
+    {}
+
+    template <typename T>
+    writer_impl(cursor_impl<T> x)
+        : signal_(detail::access::signal(std::move(x)))
     {}
 
     writer_impl(signal_ptr_t sig)
@@ -70,7 +78,6 @@ class writer : public detail::writer_impl<detail::up_down_signal<T>>
 
 public:
     using base_t::base_t;
-    using base_t::operator=;
 };
 
 } // namespace lager

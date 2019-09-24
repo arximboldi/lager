@@ -75,6 +75,8 @@ template <typename T>
 class cursor : public detail::cursor_impl<detail::up_down_signal<T>>
 {
     using base_t = detail::cursor_impl<detail::up_down_signal<T>>;
+
+public:
     using base_t::base_t;
 };
 

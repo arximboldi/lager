@@ -21,6 +21,9 @@ namespace lager {
 namespace detail {
 
 template <typename SignalT>
+class cursor_impl;
+
+template <typename SignalT>
 class reader_impl : private watchable<zug::meta::value_t<SignalT>>
 {
     template <typename T>
@@ -48,6 +51,11 @@ public:
         , signal_(std::move(x.signal_))
     {}
 
+    template <typename T>
+    reader_impl(cursor_impl<T> x)
+        : signal_(detail::access::signal(std::move(x)))
+    {}
+
     template <typename SignalT2>
     reader_impl(std::shared_ptr<SignalT2> sig)
         : signal_(std::move(sig))
@@ -70,7 +78,6 @@ class reader : public detail::reader_impl<detail::down_signal<T>>
 
 public:
     using base_t::base_t;
-    using base_t::operator=;
 };
 
 } // namespace lager

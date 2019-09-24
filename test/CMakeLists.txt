@@ -26,6 +26,7 @@ set(lager_unit_tests
   deps.cpp
   state.cpp
   xformed.cpp
+  cursor.cpp
   detail/signals.cpp)
 
 if(lager_BUILD_DEBUGGER)
