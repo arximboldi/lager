@@ -27,12 +27,10 @@ class watchable
 
 public:
     watchable() = default;
-    watchable(watchable&& other) noexcept { watchers_.swap(other.watchers_); }
-    watchable& operator=(watchable&& other) noexcept
-    {
-        watchers_.swap(other.watchers_);
-        return *this;
-    }
+    watchable(const watchable& other) noexcept {}
+    watchable(watchable&& other) noexcept {}
+    watchable& operator=(const watchable& other) noexcept { return *this; }
+    watchable& operator=(watchable&& other) noexcept { return *this; }
 
     WatchersT& watchers() { return watchers_; }
 };

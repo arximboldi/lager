@@ -24,15 +24,15 @@ namespace lager {
  */
 struct no_value_error : std::exception
 {
-    const char* what() const noexcept override;
+    const char* what() const noexcept override { return "no_value_error"; };
 };
 
 namespace detail {
 
-struct no_value : zug::meta::bottom
+struct no_value
 {
     template <typename T>
-    operator T()
+    operator T() const
     {
         throw no_value_error{};
     }

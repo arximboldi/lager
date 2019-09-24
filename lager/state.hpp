@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/cursor.hpp>
 #include <lager/detail/access.hpp>
 #include <lager/detail/root_signals.hpp>
 #include <lager/detail/watchable.hpp>
@@ -21,39 +22,29 @@
 namespace lager {
 
 template <typename T>
-class state : private detail::watchable<T>
+class state : public detail::cursor_impl<detail::state_up_down_signal<T>>
 {
-    using signal_ptr_t = decltype(detail::make_state_signal(std::declval<T>()));
+    using base_t = detail::cursor_impl<detail::state_up_down_signal<T>>;
+
+    friend class detail::access;
+    auto roots() const { return detail::access::signal(*this); }
 
 public:
     using value_type = T;
+    using base_t::base_t;
 
     state()
-        : signal_(detail::make_state_signal(T()))
+        : base_t{detail::make_state_signal(T())}
     {}
     state(T value)
-        : signal_(detail::make_state_signal(std::move(value)))
+        : base_t{detail::make_state_signal(std::move(value))}
     {}
 
-    state(const state&) = delete;
-    state(state&&)      = default;
     state& operator=(const state&) = delete;
+    state(const state&)            = delete;
+
+    state(state&&) = default;
     state& operator=(state&&) = default;
-
-    template <typename T2>
-    void set(T2&& value)
-    {
-        signal_->push_down(std::forward<T2>(value));
-    }
-
-    const T& get() const { return signal_->last(); }
-
-private:
-    const signal_ptr_t& signal() { return signal_; }
-    const signal_ptr_t& roots() { return signal_; }
-
-    friend class detail::access;
-    signal_ptr_t signal_;
 };
 
 template <typename T>
