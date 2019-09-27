@@ -23,6 +23,7 @@
 #include <boost/hana/type.hpp>
 
 #include <functional>
+#include <memory>
 #include <type_traits>
 
 namespace lager {
@@ -92,12 +93,13 @@ auto merge_actions_aux(Actions1 a1, Actions2 a2)
         });
     };
     auto result = boost::hana::fold(a1, a2, [&](auto acc, auto x) {
-        return boost::hana::if_(has_convertible(acc, x),
-                                [&] { return acc; },
-                                [&] {
-                                    auto xs = remove_convertibles(acc, x);
-                                    return boost::hana::append(xs, x);
-                                })();
+        return boost::hana::if_(
+            has_convertible(acc, x),
+            [&] { return acc; },
+            [&] {
+                auto xs = remove_convertibles(acc, x);
+                return boost::hana::append(xs, x);
+            })();
     });
     static_assert(decltype(boost::hana::length(result))::value > 0, "");
     return boost::hana::if_(
