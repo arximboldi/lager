@@ -14,6 +14,7 @@
 
 #include <SDL.h>
 
+#include <algorithm>
 #include <atomic>
 #include <functional>
 
