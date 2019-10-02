@@ -16,9 +16,7 @@
 
 #include <lager/sensor.hpp>
 #include <lager/state.hpp>
-
-#include <lager/detail/nodes.hpp>
-#include <lager/detail/xform_nodes.hpp>
+#include <lager/xform.hpp>
 
 #include <zug/transducer/map.hpp>
 

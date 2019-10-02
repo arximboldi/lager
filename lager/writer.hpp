@@ -21,8 +21,27 @@ namespace lager {
 template <typename NodeT>
 class cursor_base;
 
+template <typename DerivT>
+class writer_mixin
+{
+public:
+    template <typename T>
+    void set(T&& value)
+    {
+        return node()->send_up(std::forward<T>(value));
+    }
+
+private:
+    friend class detail::access;
+
+    auto node() const
+    {
+        return detail::access::node(*static_cast<const DerivT*>(this));
+    }
+};
+
 template <typename NodeT>
-class writer_base
+class writer_base : public writer_mixin<writer_base<NodeT>>
 {
     template <typename T>
     friend class writer_base;
@@ -35,11 +54,7 @@ class writer_base
 public:
     using value_type = zug::meta::value_t<NodeT>;
 
-    writer_base()              = default;
-    writer_base(writer_base&&) = default;
-    writer_base& operator=(writer_base&&) = default;
-    writer_base(const writer_base&)       = default;
-    writer_base& operator=(const writer_base&) = default;
+    writer_base() = default;
 
     template <typename T>
     writer_base(writer_base<T> x)
@@ -54,12 +69,6 @@ public:
     writer_base(node_ptr_t sig)
         : node_(std::move(sig))
     {}
-
-    template <typename T>
-    void set(T&& value)
-    {
-        return node_->send_up(std::forward<T>(value));
-    }
 };
 
 /*!

@@ -13,7 +13,7 @@
 #include <catch.hpp>
 
 #include <lager/state.hpp>
-#include <lager/xformed.hpp>
+#include <lager/xform.hpp>
 
 #include <zug/transducer/filter.hpp>
 
@@ -29,15 +29,13 @@ using namespace boost::fusion::operators;
 
 TEST_CASE("xformed, to_in")
 {
-    reader<int> i = xformed(zug::identity, make_state(0));
-    // This is on the other hand explicitly forbidden
-    //   reader<int> in2 = xformed(zug::identity, make_state(0));
+    reader<int> i = xform(zug::identity)(make_state(0));
 }
 
 TEST_CASE("xformed, identity")
 {
     auto s = state<int>{42};
-    auto x = xformed(zug::identity, s);
+    auto x = xform(zug::identity)(s);
     CHECK(x.get() == 42);
 }
 
@@ -45,14 +43,14 @@ TEST_CASE("xformed, identity two args is zipping")
 {
     auto s1 = state<int>{42};
     auto s2 = state<int>{13};
-    auto x  = xformed(zug::identity, s1, s2);
+    auto x  = xform(zug::identity)(s1, s2);
     CHECK(x.get() == std::make_tuple(42, 13));
 }
 
 TEST_CASE("xformed, one arg mapping")
 {
     auto s = state<int>{42};
-    auto x = xformed(map([](int a) { return a + 1; }), s);
+    auto x = xform(map([](int a) { return a + 1; }))(s);
     CHECK(x.get() == 43);
 }
 
@@ -60,21 +58,21 @@ TEST_CASE("xformed, two arg mapping")
 {
     auto s1 = state<int>{42};
     auto s2 = state<int>{10};
-    auto x  = xformed(map(std::plus<int>{}), s1, s2);
+    auto x  = xform(map(std::plus<int>{}))(s1, s2);
     CHECK(x.get() == 52);
 }
 
 TEST_CASE("xformed, one arg filter with value")
 {
     auto s = state<int>{42};
-    auto x = xformed(filter([](int a) { return a % 2 == 0; }), s);
+    auto x = xform(filter([](int a) { return a % 2 == 0; }))(s);
     CHECK(x.get() == 42);
 }
 
 TEST_CASE("xformed, one arg filter without value")
 {
     auto s = state<int>{43};
-    auto x = xformed(filter([](int a) { return a % 2 == 0; }), s);
+    auto x = xform(filter([](int a) { return a % 2 == 0; }))(s);
     CHECK(x.get() == 0);
 }
 
@@ -93,7 +91,7 @@ TEST_CASE("xformed, one arg filter without value non default ctr")
 {
     auto s = state<non_default>{non_default{43}};
     CHECK_THROWS_AS(
-        xformed(filter([](non_default x) { return x.v % 2 == 0; }), s),
+        xform(filter([](non_default x) { return x.v % 2 == 0; }))(s),
         no_value_error);
 }
 
@@ -102,7 +100,7 @@ TEST_CASE(
     "one arg filter without value non default ctr ok if first value passes")
 {
     auto s = state<non_default>{42};
-    auto x = xformed(filter([](non_default a) { return a.v % 2 == 0; }), s);
+    auto x = xform(filter([](non_default a) { return a.v % 2 == 0; }))(s);
     s.set(non_default{43});
     commit(s);
     CHECK(x.get().v == 42); // old value still visible
@@ -115,7 +113,7 @@ TEST_CASE(
 TEST_CASE("xformed, identity setter")
 {
     auto s = state<int>{42};
-    auto x = xformed2(zug::identity, zug::identity, s);
+    auto x = xform(zug::identity, zug::identity)(s);
     CHECK(x.get() == 42);
 
     x.set(5);
@@ -132,7 +130,7 @@ TEST_CASE("xformed, identity setter two parents")
     auto s1 = state<int>{42};
     auto s2 = state<int>{12};
 
-    auto x = xformed2(zug::identity, zug::identity, s1, s2);
+    auto x = xform(zug::identity, zug::identity)(s1, s2);
     CHECK(x.get() == std::make_tuple(42, 12));
 
     x.set(std::make_tuple(5, 12));
@@ -149,7 +147,7 @@ TEST_CASE("xformed, identity setter two parents")
 TEST_CASE("xformed, mapping")
 {
     auto st = make_state(0);
-    auto x  = xformed(map([](int a) { return a + 2; }), st);
+    auto x  = xform(map([](int a) { return a + 2; }))(st);
     CHECK(2 == x.get());
 
     st.set(42);
@@ -160,8 +158,8 @@ TEST_CASE("xformed, mapping")
 TEST_CASE("xformed, bidirectional")
 {
     auto st = make_state(0);
-    auto x  = xformed2(
-        map([](int a) { return a + 2; }), map([](int a) { return a - 2; }), st);
+    auto x  = xform(map([](int a) { return a + 2; }),
+                   map([](int a) { return a - 2; }))(st);
     CHECK(2 == x.get());
 
     x.set(42);
@@ -174,7 +172,7 @@ TEST_CASE("atted, accessing keys of a container")
 {
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
-    auto x      = atted2("john", st);
+    auto x      = atted("john", st);
     CHECK(0 == x.get()); // not found => default constructed
 
     x.set(12);
@@ -200,7 +198,7 @@ TEST_CASE("atted, accessing keys of acontainer in version")
 {
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
-    auto x      = atted2("john", st);
+    auto x      = atted("john", st);
     CHECK(0 == x.get()); // not found => default constructed
 
     st.set(map_t{{"john", 42}});
@@ -239,12 +237,12 @@ struct person
 TEST_CASE("atted, updates dont overwrite new data in complex scenario")
 {
     auto st = make_state(std::array<person, 2>{{{"john", 42}, {"emil", 2}}});
-    auto x1 = atted2(0u, st);
-    auto x2 = atted2(1u, xformed2(zug::identity, zug::identity, st));
-    auto x3 = atted2(1u, st);
-    auto x4 = attred2(&person::name, x2);
-    auto x5 = attred2(&person::age, x3);
-    auto x6 = attred2(&person::age, x1);
+    auto x1 = atted(0u, st);
+    auto x2 = atted(1u, xform(zug::identity, zug::identity)(st));
+    auto x3 = atted(1u, st);
+    auto x4 = attred(&person::name, x2);
+    auto x5 = attred(&person::age, x3);
+    auto x6 = attred(&person::age, x1);
 
     x6.set(43u);
     x5.set(3u);
@@ -260,7 +258,7 @@ TEST_CASE("atted, updates dont overwrite new data in complex scenario")
 TEST_CASE("atted, accesing attributes")
 {
     auto st = make_state(person{"john", 42});
-    auto x  = attred2(&person::age, st);
+    auto x  = attred(&person::age, st);
     CHECK(42 == x.get());
 
     x.set(43u);
@@ -290,8 +288,8 @@ BOOST_FUSION_ADAPT_STRUCT(machine, name, wheels)
 TEST_CASE("atted, modifying attributes of immutable")
 {
     auto st = make_state(machine{"car", 4});
-    auto x  = attred2(&machine::name, st);
-    auto y  = attred2(&machine::wheels, st);
+    auto x  = attred(&machine::name, st);
+    auto y  = attred(&machine::wheels, st);
 
     y.set(3u);
     commit(st);

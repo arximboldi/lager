@@ -23,8 +23,25 @@ namespace lager {
 template <typename NodeT>
 class cursor_base;
 
+template <typename DerivT>
+class reader_mixin
+{
+public:
+    decltype(auto) get() const { return node()->last(); }
+
+private:
+    friend class detail::access;
+
+    auto node() const
+    {
+        return detail::access::node(*static_cast<const DerivT*>(this));
+    }
+};
+
 template <typename NodeT>
-class reader_base : private detail::watchable<zug::meta::value_t<NodeT>>
+class reader_base
+    : public reader_mixin<reader_base<NodeT>>
+    , private detail::watchable<zug::meta::value_t<NodeT>>
 {
     template <typename T>
     friend class reader_base;
@@ -39,11 +56,7 @@ class reader_base : private detail::watchable<zug::meta::value_t<NodeT>>
 public:
     using value_type = zug::meta::value_t<NodeT>;
 
-    reader_base()              = default;
-    reader_base(reader_base&&) = default;
-    reader_base& operator=(reader_base&&) = default;
-    reader_base(const reader_base&)       = default;
-    reader_base& operator=(const reader_base&) = default;
+    reader_base() = default;
 
     template <typename T>
     reader_base(reader_base<T> x)
@@ -60,8 +73,6 @@ public:
     reader_base(std::shared_ptr<NodeT2> sig)
         : node_(std::move(sig))
     {}
-
-    decltype(auto) get() const { return node_->last(); }
 };
 
 /*!

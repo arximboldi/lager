@@ -160,39 +160,6 @@ constexpr struct
 } send_up_rf{};
 
 /*!
- * @see update()
- */
-template <typename XformWriterNodePtr, std::size_t... Indices>
-decltype(auto) peek_parents(XformWriterNodePtr s,
-                            std::index_sequence<Indices...>)
-{
-    s->recompute_deep();
-    return zug::tuplify(std::get<Indices>(s->parents())->current()...);
-}
-
-/*!
- * Returns a transducer for updating the parent values via a
- * up-node. It processes the input with the function `mapping`,
- * passing to it a value or tuple containing the values of the parents
- * of the node as first parameter, and the input as second.  This
- * mapping can thus return an *updated* version of the values in the
- * parents with the new input.
- *
- * @note This transducer should only be used for the setter of output nodes.
- */
-template <typename UpdateT>
-auto update(UpdateT&& updater)
-{
-    return [=](auto&& step) {
-        return [=](auto s, auto&&... is) mutable {
-            auto indices = std::make_index_sequence<
-                std::tuple_size<std::decay_t<decltype(s->parents())>>::value>{};
-            return step(s, updater(peek_parents(s, indices), ZUG_FWD(is)...));
-        };
-    };
-}
-
-/*!
  * Implementation of a node with a transducer
  */
 template <typename XForm              = zug::identity_t,

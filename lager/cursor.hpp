@@ -14,14 +14,32 @@
 
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
+#include <lager/reader.hpp>
 #include <lager/watch.hpp>
+#include <lager/writer.hpp>
 
 #include <zug/meta/value_type.hpp>
 
 namespace lager {
 
+template <typename DerivT>
+class cursor_mixin
+    : public writer_mixin<DerivT>
+    , public reader_mixin<DerivT>
+{
+private:
+    friend class detail::access;
+
+    auto node() const
+    {
+        return detail::access::node(*static_cast<const DerivT*>(this));
+    }
+};
+
 template <typename NodeT>
-class cursor_base : private detail::watchable<zug::meta::value_t<NodeT>>
+class cursor_base
+    : public cursor_mixin<cursor_base<NodeT>>
+    , private detail::watchable<zug::meta::value_t<NodeT>>
 {
     template <typename T>
     friend class cursor_base;
@@ -36,11 +54,7 @@ class cursor_base : private detail::watchable<zug::meta::value_t<NodeT>>
 public:
     using value_type = zug::meta::value_t<NodeT>;
 
-    cursor_base()              = default;
-    cursor_base(cursor_base&&) = default;
-    cursor_base& operator=(cursor_base&&) = default;
-    cursor_base(const cursor_base&)       = default;
-    cursor_base& operator=(const cursor_base&) = default;
+    cursor_base() = default;
 
     template <typename T>
     cursor_base(cursor_base<T> x)
@@ -52,14 +66,6 @@ public:
     cursor_base(std::shared_ptr<NodeT2> sig)
         : node_(std::move(sig))
     {}
-
-    decltype(auto) get() const { return node_->last(); }
-
-    template <typename T>
-    void set(T&& value)
-    {
-        return node_->send_up(std::forward<T>(value));
-    }
 };
 
 /*!
