@@ -64,4 +64,22 @@ rec {
       license = licenses.lgpl3;
     };
   };
+
+  zug = stdenv.mkDerivation rec {
+    name = "zug-${version}";
+    version = "git-${commit}";
+    commit = "5b72389901844ddaca1fb63e44d41f77a6165c2a";
+    src = fetchFromGitHub {
+      owner = "arximboldi";
+      repo = "zug";
+      rev = commit;
+      sha256 = "1r62khc0fn5a10h138i2jvmf9qlbs1q7kqxvx380ilcqhl32z2jw";
+    };
+    nativeBuildInputs = [ cmake ];
+    meta = with stdenv.lib; {
+      homepage = "http://sinusoid.es/zug";
+      description = "Immutable data structures for C++";
+      license = licenses.lgpl3;
+    };
+  };
 }
