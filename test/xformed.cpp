@@ -303,3 +303,29 @@ TEST_CASE("atted, modifying attributes of immutable")
     CHECK(x.get() == "tricar");
     CHECK(y.get() == 3);
 }
+
+TEST_CASE("access member with square brackets")
+{
+    auto st = make_state(machine{"car", 4});
+    auto x  = st[&machine::name];
+    auto y  = reader<machine>{st}[&machine::name];
+
+    x.set("tricar");
+    commit(st);
+    CHECK(st.get() == (machine{"tricar", 4}));
+    CHECK(x.get() == "tricar");
+    CHECK(y.get() == "tricar");
+}
+
+TEST_CASE("accessing keys with square brackets")
+{
+    using map_t = std::map<std::string, int>;
+    auto st     = make_state(map_t{{"john", 12}});
+    auto x      = st["john"];
+    auto y      = reader<map_t>{st}["john"];
+
+    x.set(42);
+    commit(st);
+    CHECK(42 == x.get());
+    CHECK(42 == y.get());
+}

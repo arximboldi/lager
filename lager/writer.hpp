@@ -22,14 +22,28 @@ template <typename NodeT>
 class cursor_base;
 
 template <typename DerivT>
-class writer_mixin
+struct writer_mixin
 {
-public:
     template <typename T>
     void set(T&& value)
     {
         return node()->send_up(std::forward<T>(value));
     }
+
+    template <typename T>
+    auto operator[](T t) const
+    {
+        return atted(std::move(t), *this);
+    }
+
+    template <typename T, typename U>
+    auto operator[](T U::*member) const
+    {
+        return attred(member, *this);
+    }
+
+protected:
+    ~writer_mixin() = default;
 
 private:
     friend class detail::access;

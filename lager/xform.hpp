@@ -21,11 +21,14 @@ namespace lager {
 template <typename T>
 class cursor_base;
 template <typename T>
-class cursor_mixin;
-template <typename T>
 class reader_base;
+
 template <typename T>
-class reader_mixin;
+struct writer_mixin;
+template <typename T>
+struct cursor_mixin;
+template <typename T>
+struct reader_mixin;
 
 /*!
  * Returns a new in formed by applying a transducer `xform`
@@ -174,6 +177,12 @@ auto atted(KeyT&& k, const reader_mixin<ReaderTs>&... ins)
 }
 
 template <typename KeyT, typename... CursorTs>
+auto atted(KeyT&& k, const writer_mixin<CursorTs>&... ins)
+{
+    return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
+}
+
+template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& k, const cursor_mixin<CursorTs>&... ins)
 {
     return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
@@ -188,6 +197,13 @@ template <typename AttrPtrT, typename... ReaderTs>
 auto attred(AttrPtrT attr, const reader_mixin<ReaderTs>&... ins)
 {
     return xform(zug::map(detail::get_attr(attr)))(ins...);
+}
+
+template <typename AttrPtrT, typename... CursorTs>
+auto attred(AttrPtrT attr, const writer_mixin<CursorTs>&... ins)
+{
+    return xform(zug::map(detail::get_attr(attr)),
+                 detail::update(detail::set_attr(attr)))(ins...);
 }
 
 template <typename AttrPtrT, typename... CursorTs>

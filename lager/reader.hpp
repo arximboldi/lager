@@ -14,7 +14,9 @@
 
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
+
 #include <lager/watch.hpp>
+#include <lager/xform.hpp>
 
 #include <zug/meta/value_type.hpp>
 
@@ -24,10 +26,24 @@ template <typename NodeT>
 class cursor_base;
 
 template <typename DerivT>
-class reader_mixin
+struct reader_mixin
 {
-public:
     decltype(auto) get() const { return node()->last(); }
+
+    template <typename T>
+    auto operator[](T t) const
+    {
+        return atted(std::move(t), *this);
+    }
+
+    template <typename T, typename U>
+    auto operator[](T U::*member) const
+    {
+        return attred(member, *this);
+    }
+
+protected:
+    ~reader_mixin() = default;
 
 private:
     friend class detail::access;

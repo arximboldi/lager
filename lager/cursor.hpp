@@ -23,10 +23,15 @@
 namespace lager {
 
 template <typename DerivT>
-class cursor_mixin
-    : public writer_mixin<DerivT>
-    , public reader_mixin<DerivT>
+struct cursor_mixin
+    : writer_mixin<DerivT>
+    , reader_mixin<DerivT>
 {
+    using writer_mixin<DerivT>::operator[];
+
+protected:
+    ~cursor_mixin() = default;
+
 private:
     friend class detail::access;
 
