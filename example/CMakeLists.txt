@@ -87,3 +87,22 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
 else()
   message(STATUS "Disabling SDL based examples")
 endif()
+
+# qt examples
+# ===========
+
+find_package(Qt5Core)
+find_package(Qt5Qml)
+find_package(Qt5Gui)
+find_package(Qt5Widgets)
+
+if (Qt5Core_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND)
+  add_executable(todos-qml EXCLUDE_FROM_ALL
+    todo/qml/main.cpp)
+  target_link_libraries(todos-qml Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml)
+  target_compile_definitions(todos-qml PRIVATE
+    LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
+  add_dependencies(examples todos-qml)
+else()
+  message(STATUS "Disabling Qt based examples")
+endif()

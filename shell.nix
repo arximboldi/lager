@@ -36,6 +36,11 @@ stdenv.mkDerivation rec {
     sass
     SDL2
     SDL2_ttf
+    qt5.qtbase
+    qt5.qtdeclarative
+    qt5.qtquickcontrols
+    qt5.qtquickcontrols2
+    qt5.qtgraphicaleffects
     elmPackages.elm-reactor
     elmPackages.elm-make
     elmPackages.elm-package
@@ -56,5 +61,11 @@ stdenv.mkDerivation rec {
     addToSearchPath PATH "$LAGER_ROOT/build"
     addToSearchPath PATH "$LAGER_ROOT/build/example"
     addToSearchPath PATH "$LAGER_ROOT/build/test"
+    addToSearchPath QML2_IMPORT_PATH ${qt5.qtdeclarative.bin}/lib/qt-5.11/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols}/lib/qt-5.11/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols2.bin}/lib/qt-5.11/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt5.qtgraphicaleffects}/lib/qt-5.11/qml
+    addToSearchPath QT_PLUGIN_PATH ${qt5.qtsvg.bin}/lib/qt-5.11/plugins
+    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt5.qtbase}/lib/qt-5.11/plugins
   '';
 }
