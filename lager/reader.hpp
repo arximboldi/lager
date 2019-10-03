@@ -42,6 +42,12 @@ struct reader_mixin
         return attred(member, *this);
     }
 
+    template <typename Xform>
+    auto xf(Xform&& xf)
+    {
+        return xform(xf)(*this);
+    }
+
 protected:
     ~reader_mixin() = default;
 

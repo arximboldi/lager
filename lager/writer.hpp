@@ -42,6 +42,12 @@ struct writer_mixin
         return attred(member, *this);
     }
 
+    template <typename Xform, typename Xform2>
+    auto xf(Xform&& xf, Xform2&& xf2)
+    {
+        return xform(xf, xf2)(*this);
+    }
+
 protected:
     ~writer_mixin() = default;
 
