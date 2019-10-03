@@ -26,13 +26,6 @@ struct qt_helper
 } // namespace detail
 
 /*!
- * Use in a class declaration before any FunQ definition.
- */
-#define LAGER_QT_ENABLE(klass)                                                 \
-    using LAGER_QT_CURRENT_CLASS = klass;                                      \
-    /**/
-
-/*!
  * Return the name of the underlying value supporting a FunQ
  * property.
  */
@@ -53,7 +46,7 @@ struct qt_helper
     ::lager::detail::qt_helper funq__##name##__initHelper__ = [this] {         \
         ::lager::watch(LAGER_QT(name),                                         \
                        [this](const type& old, const type& curr) {             \
-                           LAGER_QT_CURRENT_CLASS::name##Changed(curr);        \
+                           this->name##Changed(curr);                          \
                        });                                                     \
         return ::lager::detail::qt_helper{};                                   \
     }();                                                                       \
@@ -64,7 +57,7 @@ struct qt_helper
  * by a lager::reader<> value.
  */
 #define LAGER_QT_READER(type, name)                                            \
-    ::lager::writer<type> LAGER_QT(name);                                      \
+    ::lager::reader<type> LAGER_QT(name);                                      \
     Q_PROPERTY(type name READ name NOTIFY name##Changed)                       \
     const type& name() const { return LAGER_QT(name).get(); }                  \
     LAGER_QT_SIGNAL_DETAIL(type, name)                                         \

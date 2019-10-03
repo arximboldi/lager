@@ -97,12 +97,13 @@ find_package(Qt5Gui)
 find_package(Qt5Widgets)
 
 if (Qt5Core_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND)
-  add_executable(todos-qml EXCLUDE_FROM_ALL
+  add_executable(todo-qml EXCLUDE_FROM_ALL
     todo/qml/main.cpp)
-  target_link_libraries(todos-qml Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml)
-  target_compile_definitions(todos-qml PRIVATE
+  set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
+  target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml)
+  target_compile_definitions(todo-qml PRIVATE
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
-  add_dependencies(examples todos-qml)
+  add_dependencies(examples todo-qml)
 else()
   message(STATUS "Disabling Qt based examples")
 endif()

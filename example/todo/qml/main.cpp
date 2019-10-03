@@ -1,14 +1,66 @@
+//
+// lager - library for functional interactive c++ programs
+// Copyright (C) 2017 Juan Pedro Bolivar Puente
+//
+// This file is part of lager.
+//
+// lager is free software: you can redistribute it and/or modify
+// it under the terms of the MIT License, as detailed in the LICENSE
+// file located at the root of this source code distribution,
+// or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
+//
 
 #include "../todo.hpp"
+
+#include <lager/cursor.hpp>
+#include <lager/extra/qt.hpp>
+#include <lager/state.hpp>
 
 #include <QApplication>
 #include <QObject>
 #include <QQmlApplicationEngine>
 
+class Todo : public QObject
+{
+    Q_OBJECT
+
+public:
+    Todo(lager::cursor<todo> data)
+        : LAGER_QT(done){data[&todo::done]}
+        , LAGER_QT(text){data[&todo::text].xf(
+              zug::map([](auto&& x) { return QString::fromStdString(x); }),
+              zug::map([](auto&& x) { return x.toStdString(); }))}
+    {}
+
+    LAGER_QT_CURSOR(bool, done);
+    LAGER_QT_CURSOR(QString, text);
+};
+
+class Model : public QObject
+{
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE Todo* todo(std::size_t index)
+    {
+        return new Todo{state_[&model::todos][index]};
+    }
+
+private:
+    lager::state<model> state_;
+};
+
+#include "main.moc"
+
 int main(int argc, char** argv)
 {
     QApplication app{argc, argv};
     QQmlApplicationEngine engine;
+
+    qmlRegisterType<Model>("", 1, 0, "Model");
+    qmlRegisterUncreatableType<Todo>("", 1, 0, "Todo", "uncreatable");
+
     engine.load(LAGER_TODO_QML_DIR "/main.qml");
+
     return app.exec();
 }
