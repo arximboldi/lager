@@ -64,9 +64,6 @@ auto xform(Xform&& xform, Xform2&& xform2)
 
 namespace detail {
 
-/*!
- * @see update()
- */
 template <typename XformWriterNodePtr, std::size_t... Indices>
 decltype(auto) peek_parents(XformWriterNodePtr s,
                             std::index_sequence<Indices...>)
@@ -75,13 +72,14 @@ decltype(auto) peek_parents(XformWriterNodePtr s,
     return zug::tuplify(std::get<Indices>(s->parents())->current()...);
 }
 
+} // namespace detail
+
 /*!
- * Returns a transducer for updating the parent values via a
- * up-node. It processes the input with the function `mapping`,
- * passing to it a value or tuple containing the values of the parents
- * of the node as first parameter, and the input as second.  This
- * mapping can thus return an *updated* version of the values in the
- * parents with the new input.
+ * Returns a transducer for updating the parent values via a up-node. It
+ * processes the input with the function `updater`, passing to it a value or
+ * tuple containing the values of the parents of the node as first parameter,
+ * and the input as second.  This mapping can thus return an *updated* version
+ * of the values in the parents with the new input.
  *
  * @note This transducer should only be used for the setter of output nodes.
  */
@@ -96,6 +94,8 @@ auto update(UpdateT&& updater)
         };
     };
 }
+
+namespace detail {
 
 /*!
  * Transducer that projects the key `key` from containers with a
@@ -179,13 +179,13 @@ auto atted(KeyT&& k, const reader_mixin<ReaderTs>&... ins)
 template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& k, const writer_mixin<CursorTs>&... ins)
 {
-    return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
+    return xform(detail::xat(k), update(detail::uat(k)))(ins...);
 }
 
 template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& k, const cursor_mixin<CursorTs>&... ins)
 {
-    return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
+    return xform(detail::xat(k), update(detail::uat(k)))(ins...);
 }
 
 /*!
@@ -203,14 +203,14 @@ template <typename AttrPtrT, typename... CursorTs>
 auto attred(AttrPtrT attr, const writer_mixin<CursorTs>&... ins)
 {
     return xform(zug::map(detail::get_attr(attr)),
-                 detail::update(detail::set_attr(attr)))(ins...);
+                 update(detail::set_attr(attr)))(ins...);
 }
 
 template <typename AttrPtrT, typename... CursorTs>
 auto attred(AttrPtrT attr, const cursor_mixin<CursorTs>&... ins)
 {
     return xform(zug::map(detail::get_attr(attr)),
-                 detail::update(detail::set_attr(attr)))(ins...);
+                 update(detail::set_attr(attr)))(ins...);
 }
 
 } // namespace lager
