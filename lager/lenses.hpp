@@ -22,7 +22,7 @@ struct const_functor_t
     T value;
 
     template <typename Fn>
-    auto operator()(Fn&&)
+    decltype(auto) operator()(Fn&&)
     {
         return *this;
     }
@@ -41,13 +41,19 @@ struct identity_functor_t
     }
 };
 
+template <typename T>
+using decay_rvalue_t =
+    std::conditional_t<std::is_rvalue_reference<T>::value, std::decay_t<T>, T>;
+
 } // namespace detail
 
 template <typename LensT, typename T>
 decltype(auto) view(LensT&& lens, T&& x)
 {
     return lens([](auto&& v) {
-               return detail::const_functor_t<decltype(v)>{v};
+               return detail::const_functor_t<
+                   detail::decay_rvalue_t<decltype(v)>>{
+                   std::forward<decltype(v)>(v)};
            })(std::forward<T>(x))
         .value;
 }
@@ -80,6 +86,28 @@ auto attr(Attr attr)
             return f(p.*attr)([&](auto&& x) {
                 auto r  = std::forward<decltype(p)>(p);
                 r.*attr = std::forward<decltype(x)>(x);
+                return r;
+            });
+        };
+    };
+};
+
+template <typename Key>
+auto at(Key key)
+{
+    return [=](auto&& f) {
+        return [f, &key](auto&& p) {
+            return f([&] {
+                try {
+                    return p.at(key);
+                } catch (std::out_of_range const&) {
+                    return std::decay_t<decltype(p.at(key))>{};
+                }
+            }())([&](auto&& x) {
+                auto r = std::forward<decltype(p)>(p);
+                try {
+                    r.at(key) = std::forward<decltype(x)>(x);
+                } catch (std::out_of_range const&) {}
                 return r;
             });
         };

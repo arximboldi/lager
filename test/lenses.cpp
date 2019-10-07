@@ -94,3 +94,14 @@ TEST_CASE("Attr")
     CHECK(view(birthday_month, p3) == 3);
     CHECK(p3.birthday.month == 3);
 }
+
+TEST_CASE("At")
+{
+    auto data = std::vector<std::string>{};
+    CHECK(view(lens::at(0), data) == "");
+    CHECK(set(lens::at(0), data, "foo") == (std::vector<std::string>{}));
+
+    data.push_back("foo");
+    CHECK(view(lens::at(0), data) == "foo");
+    CHECK(set(lens::at(0), data, "bar") == (std::vector<std::string>{{"bar"}}));
+}
