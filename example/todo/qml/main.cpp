@@ -40,18 +40,20 @@ class Model : public QObject
 {
     Q_OBJECT
 
+    lager::state<model> state_;
+
 public:
     Model()
-        : LAGER_QT(count){
-              state_.xf(zug::map([](auto&& x) { return x.todos.size(); }))}
+        : LAGER_QT(count){state_.xf(zug::map(
+              [](auto&& x) { return static_cast<int>(x.todos.size()); }))}
     {}
 
-    Q_INVOKABLE Todo* todo(std::size_t index)
+    Q_INVOKABLE Todo* todo(int index)
     {
         return new Todo{state_[&model::todos][index]};
     }
 
-    LAGER_QT_READER(std::size_t, count);
+    LAGER_QT_READER(int, count);
 
     Q_INVOKABLE void add(QString text)
     {
@@ -61,8 +63,7 @@ public:
         });
     }
 
-private:
-    lager::state<model> state_;
+    Q_INVOKABLE void commit() { lager::commit(state_); }
 };
 
 #include "main.moc"
@@ -72,8 +73,9 @@ int main(int argc, char** argv)
     QApplication app{argc, argv};
     QQmlApplicationEngine engine;
 
-    qmlRegisterType<Model>("", 1, 0, "Model");
-    qmlRegisterUncreatableType<Todo>("", 1, 0, "Todo", "uncreatable");
+    qmlRegisterType<Model>("Lager.Example.Todo", 1, 0, "Model");
+    qmlRegisterUncreatableType<Todo>(
+        "Lager.Example.Todo", 1, 0, "Todo", "uncreatable");
 
     engine.load(LAGER_TODO_QML_DIR "/main.qml");
 
