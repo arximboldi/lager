@@ -1,4 +1,5 @@
-{ nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
+{ compiler ? "",
+  nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
     owner  = "NixOS";
     repo   = "nixpkgs";
     rev    = "5ac6ab091a4883385e68571425fb7fef4d74c207";
@@ -19,9 +20,15 @@ let
   old-nixpkgs     = import old-nixpkgs-src {};
   docs            = import ./nix/docs.nix { nixpkgs = old-nixpkgs-src; };
   deps            = import ./nix/deps.nix { inherit nixpkgs; };
+  compilerPkg   = if compiler != ""
+                  then pkgs.${compiler}
+                  else stdenv.cc;
+  theStdenv     = if compilerPkg.isClang
+                  then clangStdenv
+                  else stdenv;
 
 in
-stdenv.mkDerivation rec {
+theStdenv.mkDerivation rec {
   name = "lager-env";
   buildInputs = [
     gcc7
