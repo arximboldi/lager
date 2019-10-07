@@ -30,6 +30,12 @@ struct writer_mixin
         return node()->send_up(std::forward<T>(value));
     }
 
+    template <typename Fn>
+    void update(Fn&& fn)
+    {
+        return node()->send_up(std::forward<Fn>(fn)(node()->current()));
+    }
+
     template <typename T>
     auto operator[](T t) const
     {

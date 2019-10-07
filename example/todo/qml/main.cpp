@@ -41,9 +41,24 @@ class Model : public QObject
     Q_OBJECT
 
 public:
+    Model()
+        : LAGER_QT(count){
+              state_.xf(zug::map([](auto&& x) { return x.todos.size(); }))}
+    {}
+
     Q_INVOKABLE Todo* todo(std::size_t index)
     {
         return new Todo{state_[&model::todos][index]};
+    }
+
+    LAGER_QT_READER(std::size_t, count);
+
+    Q_INVOKABLE void add(QString text)
+    {
+        state_.update([&](auto x) {
+            x.todos.push_back({false, text.toStdString()});
+            return x;
+        });
     }
 
 private:
