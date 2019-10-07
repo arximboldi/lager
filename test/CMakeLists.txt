@@ -28,6 +28,7 @@ set(lager_unit_tests
   xformed.cpp
   cursor.cpp
   sensor.cpp
+  lenses.cpp
   detail/nodes.cpp)
 
 if(lager_BUILD_DEBUGGER)
