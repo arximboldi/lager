@@ -13,3 +13,4 @@ lager/config.hpp
 doc/_build
 doc/_doxygen
 tools/travis/ssh-key
+*.qmlc
