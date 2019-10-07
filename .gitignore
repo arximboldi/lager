@@ -1,5 +1,6 @@
 bazel-*/
 build/*
+build-*/*
 result
 resources/gui/*.css
 resources/gui/*.css.map
