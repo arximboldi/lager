@@ -143,6 +143,29 @@ auto at(Key key)
     };
 }
 
+template <typename Key>
+auto at_i(Key key)
+{
+    return [=](auto&& f) {
+        return [f, &key](auto&& p) {
+            return f([&] {
+                try {
+                    return std::forward<decltype(p)>(p).at(key);
+                } catch (std::out_of_range const&) {
+                    return std::decay_t<decltype(p.at(key))>{};
+                }
+            }())([&](auto&& x) {
+                if (key < p.size()) {
+                    return std::forward<decltype(p)>(p).set(
+                        key, std::forward<decltype(x)>(x));
+                } else {
+                    return std::forward<decltype(p)>(p);
+                }
+            });
+        };
+    };
+}
+
 } // namespace lens
 
 } // namespace lager

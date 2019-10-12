@@ -12,6 +12,7 @@
 
 #include <catch.hpp>
 
+#include <immer/vector.hpp>
 #include <lager/lenses.hpp>
 #include <zug/util.hpp>
 
@@ -189,4 +190,19 @@ TEST_CASE("lenses, attr2, references")
         int&& y      = view(birthday_month, std::move(p1));
         const int& z = view(birthday_month, p2);
     }
+}
+
+TEST_CASE("lenses, at immutable index")
+{
+    auto first      = at_i(0);
+    auto first_name = comp(first, attr(&person::name));
+
+    auto v1 = immer::vector<person>{};
+    CHECK(view(first_name, v1) == "");
+    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "");
+
+    v1 = v1.push_back({{}, "foo"});
+    CHECK(view(first_name, v1) == "foo");
+    CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
+    CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
 }
