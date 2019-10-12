@@ -42,14 +42,7 @@ struct writer_mixin
     {
         using value_t = typename DerivT::value_type;
         auto l        = detail::smart_lens<value_t>::make(std::forward<T>(t));
-        return xf(zug::map([l](auto&& x) {
-                      return lager::view(l, std::forward<decltype(x)>(x));
-                  }),
-                  lager::update([l](auto&& x, auto&& v) {
-                      return lager::set(l,
-                                        std::forward<decltype(x)>(x),
-                                        std::forward<decltype(v)>(v));
-                  }));
+        return zoom(l, *this);
     }
 
     template <typename Xform, typename Xform2>

@@ -36,9 +36,7 @@ struct reader_mixin
     {
         using value_t = typename DerivT::value_type;
         auto l        = detail::smart_lens<value_t>::make(std::forward<T>(t));
-        return xf(zug::map([l](auto&& x) {
-            return lager::view(l, std::forward<decltype(x)>(x));
-        }));
+        return zoom(l, *this);
     }
 
     template <typename Xform>
