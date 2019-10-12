@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QObject>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
 class Todo : public QObject
 {
@@ -76,6 +77,8 @@ int main(int argc, char** argv)
     qmlRegisterType<Model>("Lager.Example.Todo", 1, 0, "Model");
     qmlRegisterUncreatableType<Todo>(
         "Lager.Example.Todo", 1, 0, "Todo", "uncreatable");
+
+    QQuickStyle::setStyle("Material");
 
     engine.load(LAGER_TODO_QML_DIR "/main.qml");
 

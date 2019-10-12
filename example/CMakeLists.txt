@@ -95,12 +95,13 @@ find_package(Qt5Core)
 find_package(Qt5Qml)
 find_package(Qt5Gui)
 find_package(Qt5Widgets)
+find_package(Qt5QuickControls2)
 
-if (Qt5Core_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND)
+if (Qt5Core_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND AND Qt5QuickControls2_FOUND)
   add_executable(todo-qml EXCLUDE_FROM_ALL
     todo/qml/main.cpp)
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
-  target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml)
+  target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_compile_definitions(todo-qml PRIVATE
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
   add_dependencies(examples todo-qml)
