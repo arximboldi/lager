@@ -17,18 +17,22 @@
 #include <lager/state.hpp>
 
 #include <QApplication>
+#include <QFileInfo>
+#include <QMessageBox>
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 
-class Todo : public QObject
+#include <iostream>
+
+class Entry : public QObject
 {
     Q_OBJECT
 
 public:
-    Todo(lager::cursor<todo> data)
-        : LAGER_QT(done){data[&todo::done]}
-        , LAGER_QT(text){data[&todo::text].xf(
+    Entry(lager::cursor<todo::entry> data)
+        : LAGER_QT(done){data[&todo::entry::done]}
+        , LAGER_QT(text){data[&todo::entry::text].xf(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
     {}
@@ -41,23 +45,26 @@ class Model : public QObject
 {
     Q_OBJECT
 
-    lager::state<model> state_;
+    lager::state<todo::model> state_;
+    lager::state<QString> file_name_;
 
 public:
     Model()
-        : LAGER_QT(name){state_[&model::name].xf(
+        : LAGER_QT(name){state_[&todo::model::name].xf(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
+        , LAGER_QT(fileName){file_name_}
         , LAGER_QT(count){state_.xf(zug::map(
               [](auto&& x) { return static_cast<int>(x.todos.size()); }))}
     {}
 
     LAGER_QT_READER(QString, name);
+    LAGER_QT_READER(QString, fileName);
     LAGER_QT_READER(int, count);
 
-    Q_INVOKABLE Todo* todo(int index)
+    Q_INVOKABLE Entry* todo(int index)
     {
-        return new Todo{state_[&model::todos][index]};
+        return new Entry{state_[&todo::model::todos][index]};
     }
 
     Q_INVOKABLE void add(QString text)
@@ -68,7 +75,42 @@ public:
         });
     }
 
-    Q_INVOKABLE void commit() { lager::commit(state_); }
+    Q_INVOKABLE bool save(QString fname)
+    {
+        try {
+            auto fpath = QUrl{fname}.toLocalFile();
+            if (QFileInfo{fname}.suffix() != "todo")
+                fpath += ".todo";
+            todo::save(fpath.toStdString(), state_.get());
+            state_.update([&](auto s) {
+                s.name = QFileInfo{fname}.baseName().toStdString();
+                return s;
+            });
+            file_name_.set(fname);
+            commit();
+            return true;
+        } catch (std::exception const& err) {
+            std::cerr << "Exception thrown: " << err.what() << std::endl;
+            return false;
+        }
+    }
+
+    Q_INVOKABLE bool load(QString fname)
+    {
+        try {
+            auto model = todo::load(QUrl{fname}.toLocalFile().toStdString());
+            model.name = QFileInfo{fname}.baseName().toStdString();
+            state_.set(model);
+            file_name_.set(fname);
+            commit();
+            return true;
+        } catch (std::exception const& err) {
+            std::cerr << "Exception thrown: " << err.what() << std::endl;
+            return false;
+        }
+    }
+
+    Q_INVOKABLE void commit() { lager::commit(state_, file_name_); }
 };
 
 #include "main.moc"
@@ -79,8 +121,7 @@ int main(int argc, char** argv)
     QQmlApplicationEngine engine;
 
     qmlRegisterType<Model>("Lager.Example.Todo", 1, 0, "Model");
-    qmlRegisterUncreatableType<Todo>(
-        "Lager.Example.Todo", 1, 0, "Todo", "uncreatable");
+    qmlRegisterUncreatableType<Entry>("Lager.Example.Todo", 1, 0, "Entry", "");
 
     QQuickStyle::setStyle("Material");
 

@@ -10,25 +10,66 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#include <lager/debug/cereal/immer_flex_vector.hpp>
+#include <lager/debug/cereal/struct.hpp>
+
 #include <immer/flex_vector.hpp>
 
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/comparison.hpp>
 
-struct todo
+#include <cereal/archives/json.hpp>
+#include <cereal/cereal.hpp>
+
+#include <fstream>
+
+namespace todo {
+
+struct entry
 {
     bool done = false;
     std::string text;
 };
 
+using entries = immer::flex_vector<entry>;
+
 struct model
 {
     std::string name;
-    immer::flex_vector<todo> todos;
+    entries todos;
 };
+
+LAGER_CEREAL_STRUCT(todo::entry, (done)(text));
+LAGER_CEREAL_STRUCT(todo::model, (name)(todos));
+
+} // namespace todo
+
+BOOST_FUSION_ADAPT_STRUCT(todo::entry, done, text);
+BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);
+
+namespace todo {
 
 using boost::fusion::operators::operator==;
 using boost::fusion::operators::operator!=;
 
-BOOST_FUSION_ADAPT_STRUCT(todo, done, text)
-BOOST_FUSION_ADAPT_STRUCT(model, name, todos)
+inline void save(const std::string& fname, model todos)
+{
+    auto s = std::ofstream{fname};
+    {
+        auto a = cereal::JSONOutputArchive{s};
+        a(todos);
+    }
+}
+
+inline model load(const std::string& fname)
+{
+    auto s = std::ifstream{fname};
+    auto r = model{};
+    {
+        auto a = cereal::JSONInputArchive{s};
+        a(r);
+    }
+    return r;
+}
+
+} // namespace todo
