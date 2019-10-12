@@ -25,11 +25,14 @@ struct person
 {
     yearday birthday;
     std::string name;
+    std::vector<std::string> things;
 };
 
 using namespace lager;
+using namespace lager::lens;
+using namespace zug;
 
-TEST_CASE("Minimal example")
+TEST_CASE("lenses, minimal example")
 {
     auto month = [](auto&& f) {
         return [=](auto&& p) {
@@ -61,7 +64,7 @@ TEST_CASE("Minimal example")
         };
     };
 
-    auto birthday_month = zug::comp(birthday, month);
+    auto birthday_month = comp(birthday, month);
 
     auto p1 = person{{5, 4}, "juanpe"};
     CHECK(view(name, p1) == "juanpe");
@@ -76,11 +79,83 @@ TEST_CASE("Minimal example")
     CHECK(p3.birthday.month == 3);
 }
 
-TEST_CASE("Attr")
+TEST_CASE("lenses, attr")
 {
-    auto name = lens::attr(&person::name);
+    auto name           = attr(&person::name);
+    auto birthday_month = comp(attr(&person::birthday), attr(&yearday::month));
+
+    auto p1 = person{{5, 4}, "juanpe"};
+    CHECK(view(name, p1) == "juanpe");
+    CHECK(view(birthday_month, p1) == 4);
+
+    auto p2 = set(birthday_month, p1, 6);
+    CHECK(p2.birthday.month == 6);
+    CHECK(view(birthday_month, p2) == 6);
+
+    auto p3 = over(birthday_month, p1, [](auto x) { return --x; });
+    CHECK(view(birthday_month, p3) == 3);
+    CHECK(p3.birthday.month == 3);
+}
+
+TEST_CASE("lenses, attr, references")
+{
+    auto name           = attr(&person::name);
+    auto birthday_month = comp(attr(&person::birthday), attr(&yearday::month));
+
+    auto p1       = person{{5, 4}, "juanpe", {{"foo"}, {"bar"}}};
+    const auto p2 = p1;
+
+    CHECK(&view(name, p1) == &p1.name);
+    CHECK(&view(birthday_month, p1) == &p1.birthday.month);
+    CHECK(&view(name, p2) == &p2.name);
+    CHECK(&view(birthday_month, p2) == &p2.birthday.month);
+
+    {
+        int& x       = view(birthday_month, p1);
+        int&& y      = view(birthday_month, std::move(p1));
+        const int& z = view(birthday_month, p2);
+    }
+}
+
+TEST_CASE("lenses, at")
+{
+    auto first      = at(0);
+    auto first_name = comp(first, attr(&person::name));
+
+    auto v1 = std::vector<person>{};
+    CHECK(view(first_name, v1) == "");
+    CHECK(view(first_name, set(at(0), v1, person{{}, "foo"})) == "");
+
+    v1.push_back({{}, "foo"});
+    CHECK(view(first_name, v1) == "foo");
+    CHECK(view(first_name, set(at(0), v1, person{{}, "bar"})) == "bar");
+    CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
+}
+
+// This is an alternative definition of lager::lens::attr using
+// lager::lens::getset.  The standard definition is potentially more efficient
+// whene the whole lens can not be optimized away, because there is only one
+// capture of member, as opposed to two.  However, getset is still an
+// interesting device, since it provides an easier way to define lenses for
+// people not used to the pattern.
+template <typename Member>
+auto attr2(Member member)
+{
+    return getset(
+        [=](auto&& x) -> decltype(auto) {
+            return std::forward<decltype(x)>(x).*member;
+        },
+        [=](auto x, auto&& v) {
+            x.*member = std::forward<decltype(v)>(v);
+            return x;
+        });
+};
+
+TEST_CASE("lenses, attr2")
+{
+    auto name = attr2(&person::name);
     auto birthday_month =
-        zug::comp(lens::attr(&person::birthday), lens::attr(&yearday::month));
+        comp(attr2(&person::birthday), attr2(&yearday::month));
 
     auto p1 = person{{5, 4}, "juanpe"};
     CHECK(view(name, p1) == "juanpe");
@@ -95,13 +170,23 @@ TEST_CASE("Attr")
     CHECK(p3.birthday.month == 3);
 }
 
-TEST_CASE("At")
+TEST_CASE("lenses, attr2, references")
 {
-    auto data = std::vector<std::string>{};
-    CHECK(view(lens::at(0), data) == "");
-    CHECK(set(lens::at(0), data, "foo") == (std::vector<std::string>{}));
+    auto name = attr2(&person::name);
+    auto birthday_month =
+        comp(attr2(&person::birthday), attr2(&yearday::month));
 
-    data.push_back("foo");
-    CHECK(view(lens::at(0), data) == "foo");
-    CHECK(set(lens::at(0), data, "bar") == (std::vector<std::string>{{"bar"}}));
+    auto p1       = person{{5, 4}, "juanpe", {{"foo"}, {"bar"}}};
+    const auto p2 = p1;
+
+    CHECK(&view(name, p1) == &p1.name);
+    CHECK(&view(birthday_month, p1) == &p1.birthday.month);
+    CHECK(&view(name, p2) == &p2.name);
+    CHECK(&view(birthday_month, p2) == &p2.birthday.month);
+
+    {
+        int& x       = view(birthday_month, p1);
+        int&& y      = view(birthday_month, std::move(p1));
+        const int& z = view(birthday_month, p2);
+    }
 }
