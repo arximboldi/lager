@@ -27,6 +27,20 @@ using namespace zug;
 using namespace lager;
 using namespace boost::fusion::operators;
 
+template <typename AttrT, typename... CursorTs>
+auto attred(AttrT&& member, CursorTs&&... cs)
+{
+    return zoom(lens::attr(std::forward<AttrT>(member)),
+                std::forward<CursorTs>(cs)...);
+}
+
+template <typename KeyT, typename... CursorTs>
+auto atted(KeyT&& key, CursorTs&&... cs)
+{
+    return zoom(lens::at(std::forward<KeyT>(key)),
+                std::forward<CursorTs>(cs)...);
+}
+
 TEST_CASE("xformed, to_in")
 {
     reader<int> i = xform(zug::identity)(make_state(0));
@@ -191,7 +205,18 @@ TEST_CASE("atted, accessing keys of a container")
 
     st.set(map_t{{}});
     commit(st);
-    CHECK(43 == x.get()); // Simply doesn't update
+    // Note: In previous versions, before implementing atted using lenses, we
+    // would have this assertion:
+    //
+    //    CHECK(43 == x.get());
+    //
+    // This is, after removing the element, the cursor zooming on it would not
+    // update to show a default-constructed one.  This was considered useful to
+    // animate element removals (the view of the element still has a reference
+    // to the data).  There are other ways to achieve this behavior though.  We
+    // can, for example, have an at() lense that returns an optional, and then
+    // filter and dereference, to achieve, exactly the same behavior.
+    CHECK(0 == x.get());
 }
 
 TEST_CASE("atted, accessing keys of acontainer in version")

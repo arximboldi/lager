@@ -14,6 +14,7 @@
 
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
+#include <lager/detail/smart_lens.hpp>
 
 #include <lager/watch.hpp>
 #include <lager/xform.hpp>
@@ -31,15 +32,17 @@ struct reader_mixin
     decltype(auto) get() const { return node()->last(); }
 
     template <typename T>
-    auto operator[](T t) const
+    auto operator[](T&& t) const
     {
-        return atted(std::move(t), *this);
+        using value_t = typename DerivT::value_type;
+        auto l        = detail::smart_lens<value_t>::make(std::forward<T>(t));
+        return zoom(l, *this);
     }
 
-    template <typename T, typename U>
-    auto operator[](T U::*member) const
+    template <typename Xform>
+    auto xf(Xform&& xf) const
     {
-        return attred(member, *this);
+        return xform(xf)(*this);
     }
 
 protected:

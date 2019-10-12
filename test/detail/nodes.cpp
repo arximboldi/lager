@@ -23,6 +23,7 @@
 #include <array>
 
 using namespace zug;
+
 using namespace lager::detail;
 
 TEST_CASE("node, instantiate down node") { make_xform_reader_node(identity); }
@@ -199,13 +200,13 @@ TEST_CASE("node, bidirectiona update is consistent")
     using arr = std::array<int, 2>;
     auto x    = make_state_node(arr{{5, 13}});
     auto y    = make_xform_cursor_node(map([](const arr& a) { return a[0]; }),
-                                    update([](arr a, int v) {
+                                    lager::update([](arr a, int v) {
                                         a[0] = v;
                                         return a;
                                     }),
                                     x);
     auto z    = make_xform_cursor_node(map([](const arr& a) { return a[1]; }),
-                                    update([](arr a, int v) {
+                                    lager::update([](arr a, int v) {
                                         a[1] = v;
                                         return a;
                                     }),

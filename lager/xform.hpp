@@ -64,9 +64,6 @@ auto xform(Xform&& xform, Xform2&& xform2)
 
 namespace detail {
 
-/*!
- * @see update()
- */
 template <typename XformWriterNodePtr, std::size_t... Indices>
 decltype(auto) peek_parents(XformWriterNodePtr s,
                             std::index_sequence<Indices...>)
@@ -75,13 +72,14 @@ decltype(auto) peek_parents(XformWriterNodePtr s,
     return zug::tuplify(std::get<Indices>(s->parents())->current()...);
 }
 
+} // namespace detail
+
 /*!
- * Returns a transducer for updating the parent values via a
- * up-node. It processes the input with the function `mapping`,
- * passing to it a value or tuple containing the values of the parents
- * of the node as first parameter, and the input as second.  This
- * mapping can thus return an *updated* version of the values in the
- * parents with the new input.
+ * Returns a transducer for updating the parent values via a up-node. It
+ * processes the input with the function `updater`, passing to it a value or
+ * tuple containing the values of the parents of the node as first parameter,
+ * and the input as second.  This mapping can thus return an *updated* version
+ * of the values in the parents with the new input.
  *
  * @note This transducer should only be used for the setter of output nodes.
  */
@@ -98,119 +96,37 @@ auto update(UpdateT&& updater)
 }
 
 /*!
- * Transducer that projects the key `key` from containers with a
- * standard-style `at()` method.  It filters out ins without the
- * given key.
+ * Given a pointer to member, returns a *xformed* version of the ins accessed
+ * through the lens.
  */
-template <typename KeyT>
-auto xat(KeyT&& key)
+template <typename LensT, typename... ReaderTs>
+auto zoom(LensT&& l, const reader_mixin<ReaderTs>&... ins)
 {
-    return [=](auto&& step) {
-        return
-            [=](auto&& s, auto&& i) mutable
-            -> decltype(true ? std::forward<decltype(s)>(s)
-                             : step(std::forward<decltype(s)>(s), i.at(key))) {
-                try {
-                    return step(std::forward<decltype(s)>(s),
-                                std::forward<decltype(i)>(i).at(key));
-                } catch (const std::out_of_range&) {
-                    return s;
-                }
-            };
-    };
+    return xform(zug::map([l](auto&& x) {
+        return lager::view(l, std::forward<decltype(x)>(x));
+    }))(ins...);
 }
 
-/*!
- * Update function that updates the `key` in a container with a
- * standard-style `at()` method.  Does not update the container if the
- * key was not already present.
- * @see update
- */
-template <typename KeyT>
-auto uat(KeyT&& key)
+template <typename LensT, typename... CursorTs>
+auto zoom(LensT&& l, const writer_mixin<CursorTs>&... ins)
 {
-    return [=](auto col, auto&& v) {
-        try {
-            col.at(key) = std::forward<decltype(v)>(v);
-        } catch (const std::out_of_range&) {}
-        return col;
-    };
+    return xform(
+        zug::map([l](auto&&... xs) {
+            return lager::view(l,
+                               zug::tuplify(std::forward<decltype(xs)>(xs))...);
+        }),
+        lager::update([l](auto&& x, auto&&... vs) {
+            return lager::set(l,
+                              std::forward<decltype(x)>(x),
+                              zug::tuplify(std::forward<decltype(vs)>(vs)...));
+        }))(ins...);
 }
 
-/*!
- * Returns a unary function that dereferences the given pointer to
- * member to the applied objects.
- */
-template <typename AttrPtrT>
-auto get_attr(AttrPtrT attr)
+template <typename LensT, typename... CursorTs>
+auto zoom(LensT&& l, const cursor_mixin<CursorTs>&... ins)
 {
-    return [=](auto&& x) -> decltype(auto) {
-        return std::forward<decltype(x)>(x).*attr;
-    };
-}
-
-/*!
- * Returns a update function that uses the given pointer to member.
- * @see update
- */
-template <typename AttrPtrT>
-auto set_attr(AttrPtrT attr)
-{
-    return [=](auto s, auto&& x) -> decltype(auto) {
-        s.*attr = std::forward<decltype(x)>(x);
-        return s;
-    };
-}
-
-} // namespace detail
-
-/*!
- * Returns *xformed* version of the ins using `xat`. If the ins
- * are also outs, it is updated with `uat`.
- * @see xat
- * @see uat
- */
-template <typename KeyT, typename... ReaderTs>
-auto atted(KeyT&& k, const reader_mixin<ReaderTs>&... ins)
-{
-    return xform(detail::xat(std::forward<KeyT>(k)))(ins...);
-}
-
-template <typename KeyT, typename... CursorTs>
-auto atted(KeyT&& k, const writer_mixin<CursorTs>&... ins)
-{
-    return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
-}
-
-template <typename KeyT, typename... CursorTs>
-auto atted(KeyT&& k, const cursor_mixin<CursorTs>&... ins)
-{
-    return xform(detail::xat(k), detail::update(detail::uat(k)))(ins...);
-}
-
-/*!
- * Given a pointer to member, returns a *xformed* version of the ins
- * accessed through the member.  If the ins are also outs, the xformed
- * version is an inout.
- */
-template <typename AttrPtrT, typename... ReaderTs>
-auto attred(AttrPtrT attr, const reader_mixin<ReaderTs>&... ins)
-{
-    return xform(zug::map(detail::get_attr(attr)))(ins...);
-}
-
-template <typename AttrPtrT, typename... CursorTs>
-auto attred(AttrPtrT attr, const writer_mixin<CursorTs>&... ins)
-{
-    return xform(zug::map(detail::get_attr(attr)),
-                 detail::update(detail::set_attr(attr)))(ins...);
-}
-
-template <typename AttrPtrT, typename... CursorTs>
-auto attred(AttrPtrT attr, const cursor_mixin<CursorTs>&... ins)
-{
-    return xform(zug::map(detail::get_attr(attr)),
-                 detail::update(detail::set_attr(attr)))(ins...);
+    return zoom(std::forward<LensT>(l),
+                static_cast<const writer_mixin<CursorTs>&>(ins)...);
 }
 
 } // namespace lager

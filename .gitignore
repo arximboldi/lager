@@ -1,5 +1,6 @@
 bazel-*/
 build/*
+build-*/*
 result
 resources/gui/*.css
 resources/gui/*.css.map
@@ -13,3 +14,4 @@ lager/config.hpp
 doc/_build
 doc/_doxygen
 tools/travis/ssh-key
+*.qmlc
