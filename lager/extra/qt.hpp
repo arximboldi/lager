@@ -49,8 +49,7 @@ struct qt_helper
                            this->name##Changed(curr);                          \
                        });                                                     \
         return ::lager::detail::qt_helper{};                                   \
-    }();                                                                       \
-    /**/
+    }() /**/
 
 /*!
  * Use in a QObject class declaration to define a property supported
