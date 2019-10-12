@@ -32,7 +32,7 @@ struct reset_action
 
 using action = std::variant<increment_action, decrement_action, reset_action>;
 
-model update(model c, action action)
+inline model update(model c, action action)
 {
     return std::visit(
         lager::visitor{
