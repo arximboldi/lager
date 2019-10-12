@@ -14,6 +14,7 @@
 
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
+#include <lager/detail/smart_lens.hpp>
 #include <lager/watch.hpp>
 
 namespace lager {
@@ -37,19 +38,22 @@ struct writer_mixin
     }
 
     template <typename T>
-    auto operator[](T t) const
+    auto operator[](T&& t) const
     {
-        return atted(std::move(t), *this);
-    }
-
-    template <typename T, typename U>
-    auto operator[](T U::*member) const
-    {
-        return attred(member, *this);
+        using value_t = typename DerivT::value_type;
+        auto l        = detail::smart_lens<value_t>::make(std::forward<T>(t));
+        return xf(zug::map([l](auto&& x) {
+                      return lager::view(l, std::forward<decltype(x)>(x));
+                  }),
+                  lager::update([l](auto&& x, auto&& v) {
+                      return lager::set(l,
+                                        std::forward<decltype(x)>(x),
+                                        std::forward<decltype(v)>(v));
+                  }));
     }
 
     template <typename Xform, typename Xform2>
-    auto xf(Xform&& xf, Xform2&& xf2)
+    auto xf(Xform&& xf, Xform2&& xf2) const
     {
         return xform(xf, xf2)(*this);
     }
