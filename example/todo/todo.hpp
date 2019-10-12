@@ -33,7 +33,7 @@ struct todo
 struct model
 {
     std::string name;
-    std::vector<todo> todos;
+    immer::flex_vector<todo> todos;
 };
 
 BOOST_FUSION_ADAPT_STRUCT(model, name, todos)

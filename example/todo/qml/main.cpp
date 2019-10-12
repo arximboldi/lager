@@ -58,7 +58,7 @@ public:
     Q_INVOKABLE void add(QString text)
     {
         state_.update([&](auto x) {
-            x.todos.insert(x.todos.begin(), {false, text.toStdString()});
+            x.todos = x.todos.push_front({false, text.toStdString()});
             return x;
         });
     }
