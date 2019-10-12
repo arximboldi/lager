@@ -153,9 +153,9 @@ ApplicationWindow {
                     Button {
                         text: qsTr("Delete")
                         visible: mouseArea.containsMouse
-                        palette {
-                            button: "red"
-                            text: "white"
+                        onClicked: {
+                            theModel.remove(index)
+                            theModel.commit()
                         }
                     }
                 }

@@ -75,6 +75,14 @@ public:
         });
     }
 
+    Q_INVOKABLE void remove(int index)
+    {
+        state_.update([&](auto x) {
+            x.todos = x.todos.erase(index);
+            return x;
+        });
+    }
+
     Q_INVOKABLE bool save(QString fname)
     {
         try {
