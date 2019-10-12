@@ -15,19 +15,10 @@
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/comparison.hpp>
 
-using namespace boost::fusion::operators;
-
 struct todo
 {
     bool done = false;
     std::string text;
-
-    bool operator==(const todo& x) const
-    {
-        return done == x.done && text == x.text;
-    }
-
-    bool operator!=(const todo& x) const { return !(*this == x); }
 };
 
 struct model
@@ -36,4 +27,8 @@ struct model
     immer::flex_vector<todo> todos;
 };
 
+using boost::fusion::operators::operator==;
+using boost::fusion::operators::operator!=;
+
+BOOST_FUSION_ADAPT_STRUCT(todo, done, text)
 BOOST_FUSION_ADAPT_STRUCT(model, name, todos)
