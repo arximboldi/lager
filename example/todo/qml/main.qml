@@ -28,7 +28,7 @@ ApplicationWindow {
                 onClicked: stack.pop()
             }
             Label {
-                text: "Title"
+                text: theModel.name
                 font.bold: true
                 elide: Label.ElideRight
                 horizontalAlignment: Qt.AlignHCenter

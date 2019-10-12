@@ -45,16 +45,20 @@ class Model : public QObject
 
 public:
     Model()
-        : LAGER_QT(count){state_.xf(zug::map(
+        : LAGER_QT(name){state_[&model::name].xf(
+              zug::map([](auto&& x) { return QString::fromStdString(x); }),
+              zug::map([](auto&& x) { return x.toStdString(); }))}
+        , LAGER_QT(count){state_.xf(zug::map(
               [](auto&& x) { return static_cast<int>(x.todos.size()); }))}
     {}
+
+    LAGER_QT_READER(QString, name);
+    LAGER_QT_READER(int, count);
 
     Q_INVOKABLE Todo* todo(int index)
     {
         return new Todo{state_[&model::todos][index]};
     }
-
-    LAGER_QT_READER(int, count);
 
     Q_INVOKABLE void add(QString text)
     {
