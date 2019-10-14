@@ -138,11 +138,11 @@ struct debugger
                 },
                 [&](pause_action) -> result_t {
                     m.paused = true;
-                    return {m, [](auto&& ctx) { ctx.pause(); }};
+                    return {m, [](auto&& ctx) { ctx.loop().pause(); }};
                 },
                 [&](resume_action) -> result_t {
                     auto resume_eff =
-                        effect<action>{[](auto&& ctx) { ctx.resume(); }};
+                        effect<action>{[](auto&& ctx) { ctx.loop().resume(); }};
                     auto eff         = effect<action, deps_t>{noop};
                     auto pending     = m.pending;
                     m.paused         = false;

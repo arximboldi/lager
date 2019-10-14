@@ -232,10 +232,7 @@ struct context : Deps
         dispatcher_(std::forward<Action>(act));
     }
 
-    void async(std::function<void()> fn) const { loop_->async(std::move(fn)); }
-    void finish() const { loop_->finish(); }
-    void pause() const { loop_->pause(); }
-    void resume() const { loop_->resume(); }
+    detail::event_loop_iface& loop() const { return *loop_; }
 
 private:
     template <typename A, typename Ds>
