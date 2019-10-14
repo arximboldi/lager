@@ -13,6 +13,7 @@
 #pragma once
 
 #include <lager/context.hpp>
+#include <lager/detail/access.hpp>
 #include <lager/util.hpp>
 
 #include <immer/algorithm.hpp>
@@ -90,6 +91,11 @@ struct debugger
         std::size_t summary() const { return history.size(); }
 
         operator const Model&() const { return lookup(cursor).second; }
+
+        friend decltype(auto) unwrap(const model& m)
+        {
+            return unwrap(static_cast<const Model&>(m));
+        }
     };
 
     using result_t = std::pair<model, effect<action, deps_t>>;
@@ -105,9 +111,8 @@ struct debugger
                         return {m, noop};
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
-                        auto state = static_cast<base_model>(m);
-                        invoke_reducer<deps_t>(
-                            reducer, state, act, [&](auto&& e) {
+                        auto state = invoke_reducer<deps_t>(
+                            reducer, m, act, [&](auto&& e) {
                                 eff = LAGER_FWD(e);
                             });
                         m.history = m.history.take(m.cursor).push_back(
@@ -157,11 +162,10 @@ struct debugger
             act);
     }
 
-    template <typename Server, typename ViewFn>
-    static void view(Server& serv, ViewFn&& view, const model& m)
+    template <typename Server>
+    static void view(Server& serv, const model& m)
     {
         serv.view(m);
-        std::forward<ViewFn>(view)(m);
     }
 
     LAGER_CEREAL_NESTED_STRUCT(undo_action);
@@ -181,7 +185,6 @@ auto with_debugger(Server& serv)
         return [&serv, next](auto action,
                              auto&& model,
                              auto&& reducer,
-                             auto&& view,
                              auto&& loop,
                              auto&& deps) {
             using action_t   = typename decltype(action)::type;
@@ -196,12 +199,18 @@ auto with_debugger(Server& serv)
                     return debugger_t::update(
                         reducer, LAGER_FWD(model), LAGER_FWD(action));
                 },
-                [&handle, view = LAGER_FWD(view)](auto&& model) mutable {
-                    return debugger_t::view(handle, view, LAGER_FWD(model));
-                },
                 LAGER_FWD(loop),
                 LAGER_FWD(deps));
-            handle.set_context(store.get_context());
+            handle.set_context(store);
+            // Note: there are two problems with this. 1) we are using the
+            // private API, it should be possible for enhancers to add observers
+            // without relying on these tricks, and 2) if the node outlives the
+            // server we have have dangling references and potential crashes.
+            // This can be solved by making the `watchable` API more versatile.
+            detail::access::node(store)->observers().connect(
+                [&handle](auto&&, auto&& val) {
+                    debugger_t::view(handle, LAGER_FWD(val));
+                });
             return store;
         };
     };

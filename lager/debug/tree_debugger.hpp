@@ -207,6 +207,11 @@ struct tree_debugger
         summary_t summary() const { return do_summary(branches); }
 
         operator const Model&() const { return lookup(cursor).second; }
+
+        friend decltype(auto) unwrap(const model& m)
+        {
+            return unwrap(static_cast<const Model&>(m));
+        }
     };
 
     using result_t = std::pair<model, effect<action, deps_t>>;
@@ -222,9 +227,8 @@ struct tree_debugger
                         return {m, noop};
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
-                        auto state = static_cast<base_model>(m);
-                        invoke_reducer<deps_t>(
-                            reducer, state, act, [&](auto&& e) {
+                        auto state = invoke_reducer<deps_t>(
+                            reducer, m, act, [&](auto&& e) {
                                 eff = LAGER_FWD(e);
                             });
                         m.append(act, state);
@@ -277,11 +281,10 @@ struct tree_debugger
             act);
     }
 
-    template <typename Server, typename ViewFn>
-    static void view(Server& serv, ViewFn&& view, const model& m)
+    template <typename Server>
+    static void view(Server& serv, const model& m)
     {
         serv.view(m);
-        std::forward<ViewFn>(view)(m);
     }
 
     LAGER_CEREAL_NESTED_STRUCT(undo_action);

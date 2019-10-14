@@ -288,8 +288,8 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
 //! @{
 
 /*!
- * Invokes the @a reducer with the @a model and @a action and stores the result
- * in the given model. If the reducer returns an effect, it evaluates the @a
+ * Invokes the @a reducer with the @a model and @a action and returns the
+ * resulting model. If the reducer returns an effect, it evaluates the @a
  * handler passing the effect to it. This function can be used to generically
  * handle both reducers with or without side-effects.
  *
@@ -301,15 +301,15 @@ template <typename Deps = lager::deps<>,
           typename Action,
           typename EffectHandler,
           std::enable_if_t<has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
-void invoke_reducer(Reducer&& reducer,
-                    Model& model,
+auto invoke_reducer(Reducer&& reducer,
+                    Model&& model,
                     Action&& action,
-                    EffectHandler&& handler)
+                    EffectHandler&& handler) -> std::decay_t<Model>
 {
     auto [new_model, effect] =
-        std::invoke(LAGER_FWD(reducer), std::move(model), LAGER_FWD(action));
-    model = std::move(new_model);
+        std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
     LAGER_FWD(handler)(effect);
+    return std::move(new_model);
 }
 
 template <
@@ -319,13 +319,12 @@ template <
     typename Action,
     typename EffectHandler,
     std::enable_if_t<!has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
-void invoke_reducer(Reducer&& reducer,
-                    Model& model,
+auto invoke_reducer(Reducer&& reducer,
+                    Model&& model,
                     Action&& action,
-                    EffectHandler&&)
+                    EffectHandler &&) -> std::decay_t<Model>
 {
-    model =
-        std::invoke(LAGER_FWD(reducer), std::move(model), LAGER_FWD(action));
+    return std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
 }
 
 /*!

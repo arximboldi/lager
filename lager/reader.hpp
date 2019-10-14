@@ -30,6 +30,8 @@ template <typename DerivT>
 struct reader_mixin
 {
     decltype(auto) get() const { return node()->last(); }
+    decltype(auto) operator*() const { return get(); }
+    decltype(auto) operator-> () const { return &get(); }
 
     template <typename T>
     auto operator[](T&& t) const

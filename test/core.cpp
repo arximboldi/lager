@@ -22,20 +22,18 @@ TEST_CASE("basic")
 {
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
-    auto store =
-        lager::make_store<counter::action>(counter::model{},
-                                           counter::update,
-                                           view,
-                                           lager::with_manual_event_loop{});
+    auto store  = lager::make_store<counter::action>(
+        counter::model{}, counter::update, lager::with_manual_event_loop{});
+    watch(store, [&](auto&&, auto&& v) { view(v); });
 
-    CHECK(viewed);
+    CHECK(!viewed);
     CHECK(viewed->value == 0);
-    CHECK(store.current().value == 0);
+    CHECK(store.get().value == 0);
 
     store.dispatch(counter::increment_action{});
     CHECK(viewed);
     CHECK(viewed->value == 1);
-    CHECK(store.current().value == 1);
+    CHECK(store.get().value == 1);
 }
 
 TEST_CASE("effect as a result")
@@ -49,8 +47,8 @@ TEST_CASE("effect as a result")
                                [=](int model, int action) {
                                    return std::pair{model + action, effect};
                                },
-                               view,
                                lager::with_manual_event_loop{});
+    watch(store, [&](auto&&, auto&& v) { view(v); });
 
     store.dispatch(2);
     CHECK(viewed);
@@ -63,18 +61,18 @@ TEST_CASE("effects see updated world")
     auto called = 0;
     auto store  = std::optional<lager::store<int, int>>{};
     auto effect = [&](lager::context<int> ctx) {
-        CHECK(store->current() == 2);
+        CHECK(store->get() == 2);
         ++called;
     };
     store = lager::make_store<int>(0,
                                    [=](int model, int action) {
                                        return std::pair{model + action, effect};
                                    },
-                                   [&](auto model) {},
                                    lager::with_manual_event_loop{});
 
     store->dispatch(2);
     CHECK(called == 1);
+    CHECK(store->get() == 2);
 }
 
 TEST_CASE("store type erasure")
@@ -82,13 +80,10 @@ TEST_CASE("store type erasure")
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
     lager::store<counter::action, counter::model> store =
-        lager::make_store<counter::action>(counter::model{},
-                                           counter::update,
-                                           view,
-                                           lager::with_manual_event_loop{});
-
-    CHECK(viewed);
-    CHECK(viewed->value == 0);
+        lager::make_store<counter::action>(
+            counter::model{}, counter::update, lager::with_manual_event_loop{});
+    watch(store, [&](auto&&, auto&& v) { view(v); });
+    CHECK(!viewed);
 
     store.dispatch(counter::increment_action{});
     CHECK(viewed);
@@ -115,14 +110,12 @@ TEST_CASE("with deps enhancer")
     auto store = lager::make_store<counter::action>(
         counter::model{},
         counter::update,
-        [](auto) {},
         lager::with_manual_event_loop{},
         lager::with_deps(std::ref(f), services::params{"yeah"}));
     f.x = 42;
 
-    auto ctx = store.get_context();
-    CHECK(ctx.get<services::foo>().x == 42);
-    CHECK(ctx.get<services::params>().host == std::string{"yeah"});
+    CHECK(lager::get<services::foo>(store).x == 42);
+    CHECK(lager::get<services::params>(store).host == std::string{"yeah"});
 }
 
 TEST_CASE("with deps, type erased, plus effects")
@@ -157,7 +150,6 @@ TEST_CASE("with deps, type erased, plus effects")
                     effect3(ctx);
                 });
             },
-            [](auto) {},
             lager::with_manual_event_loop{},
             lager::with_deps(std::ref(f), services::params{"yeah"}));
 
@@ -201,7 +193,6 @@ TEST_CASE("sequencing multiple effects with deps")
             return std::make_pair(counter::update(m, act),
                                   lager::sequence(effect1, effect2, effect3));
         },
-        [](auto) {},
         lager::with_manual_event_loop{},
         lager::with_deps(std::ref(f), services::params{"yeah"}));
 

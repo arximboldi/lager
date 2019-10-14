@@ -15,9 +15,10 @@
 #include <lager/event_loop/manual.hpp>
 #include <lager/store.hpp>
 
-void draw(counter::model c)
+void draw(counter::model prev, counter::model curr)
 {
-    std::cout << "current value: " << c.value << '\n';
+    std::cout << "last value: " << prev.value << '\n';
+    std::cout << "current value: " << curr.value << '\n';
 }
 
 std::optional<counter::action> intent(char event)
@@ -36,11 +37,9 @@ std::optional<counter::action> intent(char event)
 
 int main()
 {
-    auto store =
-        lager::make_store<counter::action>(counter::model{},
-                                           counter::update,
-                                           draw,
-                                           lager::with_manual_event_loop{});
+    auto store = lager::make_store<counter::action>(
+        counter::model{}, counter::update, lager::with_manual_event_loop{});
+    watch(store, draw);
 
     auto event = char{};
     while (std::cin >> event) {

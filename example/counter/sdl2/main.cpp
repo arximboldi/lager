@@ -90,13 +90,12 @@ int main()
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
-    auto view = sdl_view{};
-    auto loop = lager::sdl_event_loop{};
-    auto store =
-        lager::make_store<counter::action>(counter::model{},
-                                           counter::update,
-                                           std::bind(draw, view, _1),
-                                           lager::with_sdl_event_loop{loop});
+    auto view  = sdl_view{};
+    auto loop  = lager::sdl_event_loop{};
+    auto store = lager::make_store<counter::action>(
+        counter::model{}, counter::update, lager::with_sdl_event_loop{loop});
+
+    watch(store, [&](auto&&, auto&& val) { draw(view, val); });
 
     loop.run([&](const SDL_Event& ev) {
         if (auto act = intent(ev))

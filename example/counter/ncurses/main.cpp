@@ -67,7 +67,6 @@ int main(int argc, const char** argv)
     auto store = lager::make_store<counter::action>(
         counter::model{},
         counter::update,
-        draw,
         lager::with_boost_asio_event_loop{serv},
         lager::comp(
 #ifdef DEBUGGER
@@ -80,6 +79,8 @@ int main(int argc, const char** argv)
             lager::with_debugger(meta_debugger),
 #endif
             lager::identity));
+
+    watch(store, [](auto&&, auto&& val) { draw(unwrap(val)); });
 
     term.start([&](auto ev) {
         std::visit(
@@ -96,7 +97,7 @@ int main(int argc, const char** argv)
                              ev.key == ncurses::key_code{OK, '[' - '@'}) // esc
                         term.stop();
                 },
-                [&](ncurses::resize_event) { store.update(); }},
+                [&](ncurses::resize_event) { draw(unwrap(store.get())); }},
             ev);
     });
 
