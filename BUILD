@@ -12,7 +12,10 @@ cc_library(
     hdrs = glob([
         "lager/**/*.hpp",
     ]) + [":lager-config"],
-    deps = ["@boost//:hana"],
+    deps = [
+        "@boost//:hana",
+        "@boost//:signals2",
+    ],
     includes = [".", "lager/"],
     visibility = ["//visibility:public"],
 )
