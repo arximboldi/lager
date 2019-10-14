@@ -24,7 +24,7 @@ struct dummy_debugger
     struct handle
     {
         template <typename Context>
-        void set_context(Context)
+        void set_context(Context&&)
         {}
         template <typename Model>
         void view(const Model& m)
@@ -48,10 +48,9 @@ TEST_CASE("basic")
     auto store =
         lager::make_store<counter::action>(counter::model{},
                                            counter::update,
-                                           view,
                                            lager::with_manual_event_loop{},
                                            lager::with_debugger(debugger));
-
+    watch(store, [&](auto&&, auto&& v) { view(v); });
     store.dispatch(counter::increment_action{});
 
     CHECK(viewed);
@@ -70,9 +69,9 @@ TEST_CASE("effect as a result")
                                [=](int model, int action) {
                                    return std::pair{model + action, effect};
                                },
-                               view,
                                lager::with_manual_event_loop{},
                                lager::with_debugger(debugger));
+    watch(store, [&](auto&&, auto&& v) { view(v); });
 
     store.dispatch(2);
     CHECK(viewed);
@@ -103,7 +102,6 @@ TEST_CASE("effect with dependencies")
                                [=](int model, int action) {
                                    return std::pair{model + action, effect};
                                },
-                               [](auto) {},
                                lager::with_manual_event_loop{},
                                lager::with_deps(std::ref(f)),
                                // important: debugger must be last so it can

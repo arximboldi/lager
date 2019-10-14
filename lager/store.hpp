@@ -14,6 +14,7 @@
 
 #include <lager/context.hpp>
 #include <lager/deps.hpp>
+#include <lager/state.hpp>
 #include <lager/util.hpp>
 
 #include <memory>
@@ -24,20 +25,14 @@ namespace lager {
 namespace detail {
 
 template <typename Action, typename Model>
-struct store_impl_base
+struct store_node_base : public state_node<Model>
 {
     using action_t = Action;
     using model_t  = Model;
 
-    model_t model;
+    using state_node<Model>::state_node;
 
-    store_impl_base(model_t model_)
-        : model{std::move(model_)}
-    {}
-
-    virtual ~store_impl_base()             = default;
     virtual void dispatch(action_t action) = 0;
-    virtual void update()                  = 0;
 };
 
 } // namespace detail
@@ -50,26 +45,25 @@ struct store_impl_base
 template <typename Action,
           typename Model,
           typename Dependencies = lager::deps<>>
-struct store
+class store
+    : public context<Action, Dependencies>
+    , public reader_base<detail::store_node_base<Action, Model>>
 {
-    using action_t  = Action;
-    using model_t   = Model;
-    using deps_t    = Dependencies;
+    using reader_t  = reader_base<detail::store_node_base<Action, Model>>;
     using context_t = context<Action, Dependencies>;
 
-    template <typename ReducerFn,
-              typename ViewFn,
-              typename EventLoop,
-              typename Deps>
-    store(model_t init,
-          ReducerFn reducer,
-          ViewFn view,
-          EventLoop loop,
-          Deps dependencies)
-        : store{std::make_unique<impl<ReducerFn, ViewFn, EventLoop, Deps>>(
+public:
+    using action_t = Action;
+    using model_t  = Model;
+    using deps_t   = Dependencies;
+
+    using reader_t::get;
+
+    template <typename ReducerFn, typename EventLoop, typename Deps>
+    store(model_t init, ReducerFn reducer, EventLoop loop, Deps dependencies)
+        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps>>(
               std::move(init),
               std::move(reducer),
-              std::move(view),
               std::move(loop),
               std::move(dependencies))}
     {}
@@ -80,8 +74,8 @@ struct store
               std::enable_if_t<std::is_convertible_v<Deps_, Dependencies>,
                                bool> = true>
     store(store<Action_, Model_, Deps_> other)
-        : context_{std::move(other.context_)}
-        , impl_{std::move(other.impl_)}
+        : context_t{std::move(other)}
+        , reader_t{std::move(other)}
     {}
 
     /*
@@ -96,95 +90,56 @@ struct store
     store(const store&) = delete;
     store& operator=(const store&) = delete;
 
-    /*!
-     * Dispatch @a action into the store.
-     */
-    void dispatch(action_t action) { impl_->dispatch(action); }
-
-    /*!
-     * Trigger a re-evaluation of the `draw()` function.  This should normally
-     * not be necessary.
-     */
-    void update() { return impl_->update(); }
-
-    /*!
-     * Return the @a context associated to the store, like the one passed to the
-     * effects returned to by the store reducer.
-     */
-    context_t get_context() { return context_; }
-
-    /*!
-     * Return the current state of the world.
-     */
-    const model_t& current() const { return impl_->model; }
-
 private:
     template <typename A, typename M, typename D>
     friend class store;
 
-    using impl_base = detail::store_impl_base<Action, Model>;
-
-    template <typename ReducerFn,
-              typename ViewFn,
-              typename EventLoop,
-              typename Deps>
-    struct impl final : impl_base
+    template <typename ReducerFn, typename EventLoop, typename Deps>
+    struct store_node final : detail::store_node_base<Action, Model>
     {
+        using base_t             = detail::store_node_base<Action, Model>;
         using reducer_t          = ReducerFn;
-        using view_t             = ViewFn;
         using event_loop_t       = EventLoop;
         using deps_t             = Deps;
         using concrete_context_t = context<Action, Deps>;
 
         event_loop_t loop;
         reducer_t reducer;
-        view_t view;
         concrete_context_t ctx;
 
-        impl(model_t init_,
-             reducer_t reducer_,
-             view_t view_,
-             event_loop_t loop_,
-             deps_t deps_)
-            : impl_base{std::move(init_)}
+        store_node(model_t init_,
+                   reducer_t reducer_,
+                   event_loop_t loop_,
+                   deps_t deps_)
+            : base_t{std::move(init_)}
             , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
-            , view{std::move(view_)}
             , ctx{[this](auto&& act) { dispatch(LAGER_FWD(act)); },
                   loop,
                   std::move(deps_)}
-        {
-            update();
-        }
-
-        void update() override
-        {
-            loop.post([=] { view(this->model); });
-        }
+        {}
 
         void dispatch(action_t action) override
         {
             loop.post([=] {
-                invoke_reducer<deps_t>(
-                    reducer, this->model, action, [&](auto&& effect) {
-                        LAGER_FWD(effect)(this->ctx);
-                    });
-                view(this->model);
+                base_t::send_up(invoke_reducer<deps_t>(
+                    reducer,
+                    std::move(base_t::current()),
+                    std::move(action),
+                    [&](auto&& effect) {
+                        loop.post([this, effect] { effect(ctx); });
+                    }));
+                base_t::send_down();
+                loop.post([this] { base_t::notify(); });
             });
         }
     };
 
-    template <typename ReducerFn,
-              typename ViewFn,
-              typename EventLoop,
-              typename Deps>
-    store(std::unique_ptr<impl<ReducerFn, ViewFn, EventLoop, Deps>> the_impl)
-        : context_(the_impl->ctx)
-        , impl_(std::move(the_impl))
+    template <typename ReducerFn, typename EventLoop, typename Deps>
+    store(std::shared_ptr<store_node<ReducerFn, EventLoop, Deps>> node)
+        : context_t{node->ctx}
+        , reader_t{std::move(node)}
     {}
-
-    context_t context_;
-    std::unique_ptr<impl_base> impl_;
 };
 
 /*!
@@ -200,13 +155,11 @@ auto with_deps(Args&&... args)
         return [new_deps, next](auto action,
                                 auto&& model,
                                 auto&& reducer,
-                                auto&& view,
                                 auto&& loop,
                                 auto&& deps) {
             return next(action,
                         LAGER_FWD(model),
                         LAGER_FWD(reducer),
-                        LAGER_FWD(view),
                         LAGER_FWD(loop),
                         LAGER_FWD(deps).merge(new_deps));
         };
@@ -232,12 +185,6 @@ auto with_deps(Args&&... args)
  *        two signatures:
  *          1. `(Model, Action) -> Model`
  *          2. `(Model, Action) -> pair<Model, effect<Model, Action>>`
- *
- * @param view
- *        A procedure with the signature `(Model) -> void`.  It is invoked in
- *        the event-loop whenever the data-model changes, and it can perform
- *        side-effects to, for example, update the screen the present the
- *        current state to the user.
  *
  * @param loop
  *        Event loop in which operations can be scheduled.  This allows
@@ -270,12 +217,10 @@ auto with_deps(Args&&... args)
 template <typename Action,
           typename Model,
           typename ReducerFn,
-          typename ViewFn,
           typename EventLoop,
           typename... Enhancers>
 auto make_store(Model&& init,
                 ReducerFn&& reducer,
-                ViewFn&& view,
                 EventLoop&& loop,
                 Enhancers&&... enhancers)
 {
@@ -283,7 +228,6 @@ auto make_store(Model&& init,
     auto store_creator = enhancer([&](auto action,
                                       auto&& model,
                                       auto&& reducer,
-                                      auto&& view,
                                       auto&& loop,
                                       auto&& deps) {
         using action_t = typename decltype(action)::type;
@@ -291,14 +235,12 @@ auto make_store(Model&& init,
         using deps_t   = std::decay_t<decltype(deps)>;
         return store<action_t, model_t, deps_t>{LAGER_FWD(model),
                                                 LAGER_FWD(reducer),
-                                                LAGER_FWD(view),
                                                 LAGER_FWD(loop),
                                                 LAGER_FWD(deps)};
     });
     return store_creator(type_<Action>{},
                          std::forward<Model>(init),
                          std::forward<ReducerFn>(reducer),
-                         std::forward<ViewFn>(view),
                          std::forward<EventLoop>(loop),
                          deps<>{});
 }
@@ -306,16 +248,11 @@ auto make_store(Model&& init,
 template <typename Action,
           typename Model,
           typename ReducerFn,
-          typename ViewFn,
           typename EventLoop>
-auto make_store(Model&& init,
-                ReducerFn&& reducer,
-                ViewFn&& view,
-                EventLoop&& loop)
+auto make_store(Model&& init, ReducerFn&& reducer, EventLoop&& loop)
 {
     return make_store<Action>(std::forward<Model>(init),
                               std::forward<ReducerFn>(reducer),
-                              std::forward<ViewFn>(view),
                               std::forward<EventLoop>(loop),
                               identity);
 }

@@ -84,6 +84,18 @@ struct writer_node_base
     virtual void send_up(T&&)      = 0;
 };
 
+template <typename T>
+auto has_changed(T&& a, T&& b) -> decltype(!(a == b))
+{
+    return !(a == b);
+}
+
+template <typename T>
+auto has_changed(const T& a, const T& b)
+{
+    return true;
+}
+
 /*!
  * Base class for the various node types.  Provides basic
  * functionality for setting values and propagating them to children.
@@ -110,6 +122,7 @@ public:
     virtual void recompute() {}
     virtual void recompute_deep() {}
 
+    value_type& current() { return current_; }
     const value_type& current() const { return current_; }
     const value_type& last() const { return last_; }
 
@@ -127,7 +140,7 @@ public:
     template <typename U>
     void push_down(U&& value)
     {
-        if (value != current_) {
+        if (has_changed(value, current_)) {
             current_         = std::forward<U>(value);
             needs_send_down_ = true;
         }

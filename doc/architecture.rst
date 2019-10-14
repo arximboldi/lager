@@ -277,10 +277,17 @@ purposes now:
 
 .. code-block:: c++
 
-   void draw(const model& c)
-   {
-       std::cout << "current value: " << c.value << '\n';
-   }
+    void draw(counter::model prev, counter::model curr)
+    {
+        std::cout << "last value: " << prev.value << '\n';
+        std::cout << "current value: " << curr.value << '\n';
+    }
+
+.. tip:: The view function has access to both the last and new value
+         of the application.  This allows the view to decide which
+         parts of the view do need to be updated based on the
+         differences between the old and new models.
+
 
 Glueing things together
 -----------------------
@@ -305,12 +312,11 @@ The store
 
 The main component provided by the library is the
 :cpp:class:`lager::store`.  You make one by providing an action type,
-the initial model state, the reducer, the draw function, and the event
-loop interface.  The *store* will then provide a thread-safe
-:cpp:func:`dispatch() <lager::store::dispatch>` method that can be
-used to inject actions in the system.  Whenever it receives an action,
-it will evaluate the *reducer* in the event-loop to update the state,
-and trigger a redraw.
+the initial model state, the reducer, the event loop interface.  The
+*store* will then provide a thread-safe :cpp:func:`dispatch()
+<lager::store::dispatch>` method that can be used to inject actions in
+the system.  Whenever it receives an action, it will evaluate the
+*reducer* in the event-loop to update the state, and trigger a redraw.
 
 Main loop
 ~~~~~~~~~
@@ -325,8 +331,8 @@ procedure of our application:
        auto store = lager::make_store<counter::action>(
            model{},
            update,
-           draw,
            lager::with_manual_event_loop{});
+       watch(store, draw);
 
        auto event = char{};
        while (std::cin >> event) {

@@ -124,6 +124,15 @@ auto comp(Fn&& f, Fns&&... fns)
     return result_t{std::forward<Fn>(f), comp(std::forward<Fns>(fns)...)};
 }
 
+/*!
+ * Unwraps multiple layers of state wrappers added by store enhancers.
+ */
+template <typename T>
+const T& unwrap(const T& x)
+{
+    return x;
+}
+
 //! @} group: util
 
 inline const char* resources_path()

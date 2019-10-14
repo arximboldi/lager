@@ -306,7 +306,6 @@ int main(int argc, const char** argv)
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<action>(game{},
                                            update,
-                                           std::bind(draw, view, _1),
                                            lager::with_sdl_event_loop{loop},
 #ifdef DEBUGGER
                                            lager::with_debugger(debugger)
@@ -314,7 +313,7 @@ int main(int argc, const char** argv)
                                            lager::identity
 #endif
     );
-
+    watch(store, [&](auto&&, auto&& val) { draw(view, LAGER_FWD(val)); });
     loop.run(
         [&](const SDL_Event& ev) {
             if (auto act = intent(ev))

@@ -31,8 +31,10 @@ struct with_manual_event_loop
         auto is_root = queue_.empty();
         queue_.push_back(std::forward<Fn>(fn));
         if (is_root) {
-            for (auto i = std::size_t{}; i < queue_.size(); ++i)
-                queue_[i]();
+            for (auto i = std::size_t{}; i < queue_.size(); ++i) {
+                auto f = std::move(queue_[i]);
+                f();
+            }
             queue_.clear();
         }
     }

@@ -4,8 +4,8 @@
 Views
 =====
 
-After the data-model is updated via a :ref:`Reducer<reducers>`, the
-view procedure provided to the store is invoked to update the UI.
+After the data-model is updated via a :ref:`Reducer<reducers>`, all
+views connected with the :cpp:func:`lager::watch` function are called.
 There are various ways to implement a view in the Lager model.
 
 Value based UI
