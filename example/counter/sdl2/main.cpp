@@ -96,6 +96,7 @@ int main()
         counter::model{}, counter::update, lager::with_sdl_event_loop{loop});
 
     watch(store, [&](auto&&, auto&& val) { draw(view, val); });
+    draw(view, store.get());
 
     loop.run([&](const SDL_Event& ev) {
         if (auto act = intent(ev))

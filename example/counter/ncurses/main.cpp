@@ -81,6 +81,7 @@ int main(int argc, const char** argv)
             lager::identity));
 
     watch(store, [](auto&&, auto&& val) { draw(unwrap(val)); });
+    draw(unwrap(store.get()));
 
     term.start([&](auto ev) {
         std::visit(
