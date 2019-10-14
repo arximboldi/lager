@@ -355,8 +355,7 @@ that uses it, enhanced with the ``history`` functionality:
 
    auto store = lager::make_store<history_action<doc_action>>(
        history_model<doc_model>{},
-       [] (auto m, auto a) { return update_history(update_doc, m, a); },
-       draw_doc);
+       [] (auto m, auto a) { return update_history(update_doc, m, a); });
 
 It would be nice, however, if we could write instead:
 
@@ -366,7 +365,6 @@ It would be nice, however, if we could write instead:
    auto store = lager::make_store<doc_action>(
        doc_model,
        update_doc,
-       draw_doc,
        with_history);
 
 We can indeed write such a ``with_history`` construction, my using the
@@ -388,7 +386,6 @@ follows:
        return [] (auto action,
                   auto model,
                   auto reducer,
-                  auto view,
                   auto loop,
                   auto deps)
        {
@@ -399,7 +396,6 @@ follows:
                lager::type_<history_action<action_t>>,
                history_model<model_t>{model},
                [reducer](auto m, auto a) { return update_history(reducer, m, a); },
-               view,
                loop,
                deps);
        };
