@@ -23,6 +23,7 @@
 #include <boost/hana/type.hpp>
 
 #include <functional>
+#include <memory>
 #include <type_traits>
 
 namespace lager {
