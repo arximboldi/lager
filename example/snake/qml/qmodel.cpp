@@ -41,7 +41,7 @@ int SnakeBody::rowCount(const QModelIndex&) const { return data_.size(); }
 
 QVariant SnakeBody::data(const QModelIndex& index, int) const
 {
-    if (index.row() < data_.size())
+    if (index.row() < static_cast<int>(data_.size()))
         return as_qpoint(data_[index.row()]);
     return {};
 }
