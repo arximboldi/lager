@@ -18,6 +18,15 @@ option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
 
+find_program(CCACHE ccache)
+if (CCACHE)
+  message(STATUS "Using ccache: ${CCACHE}")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE})
+else()
+  message(STATUS "Could not find ccache")
+endif()
+
 #  Targets
 #  =======
 

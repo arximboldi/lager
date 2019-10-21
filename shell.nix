@@ -33,6 +33,7 @@ theStdenv.mkDerivation rec {
   buildInputs = [
     gcc7
     cmake
+    ccache
     ncurses
     boost
     glibcLocales
