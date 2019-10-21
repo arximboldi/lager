@@ -36,6 +36,7 @@ theStdenv.mkDerivation rec {
     ccache
     ncurses
     boost
+    libiconvReal
     glibcLocales
     deps.libhttpserver
     deps.cereal
@@ -45,6 +46,7 @@ theStdenv.mkDerivation rec {
     sass
     SDL2
     SDL2_ttf
+    emscripten
     qt5.qtbase
     qt5.qtdeclarative
     qt5.qtquickcontrols

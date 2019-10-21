@@ -132,26 +132,25 @@ find_package(OpenGL)
 
 set(imgui_source_dir "$ENV{IMGUI_SOURCE_DIR}")
 
+set(imgui_sources
+  "${imgui_source_dir}/imgui.cpp"
+  "${imgui_source_dir}/imgui_draw.cpp"
+  "${imgui_source_dir}/imgui_widgets.cpp"
+  "${imgui_source_dir}/imgui_impl_sdl.cpp"
+  "${imgui_source_dir}/imgui_impl_opengl3.cpp")
+
 if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
   message(STATUS "ImGui found in ${imgui_source_dir}")
-  add_library(imgui-sdl-opengl2 EXCLUDE_FROM_ALL
-    "${imgui_source_dir}/imgui.cpp"
-    "${imgui_source_dir}/imgui_draw.cpp"
-    "${imgui_source_dir}/imgui_widgets.cpp"
-    "${imgui_source_dir}/imgui_impl_sdl.cpp"
-    "${imgui_source_dir}/imgui_impl_opengl2.cpp")
-  target_include_directories(imgui-sdl-opengl2 SYSTEM PUBLIC
-    ${imgui_source_dir}
-    ${SDL2_INCLUDE_DIR}
-    ${OPENGL_INCLUDE_DIR})
-  target_link_libraries(imgui-sdl-opengl2 PUBLIC
-    ${SDL2_LIBRARY}
-    ${OPENGL_LIBRARIES})
 
-  add_executable(todo-imgui EXCLUDE_FROM_ALL
-    todo/todo.cpp
-    todo/imgui/main.cpp)
-  target_link_libraries(todo-imgui lager imgui-sdl-opengl2)
+  add_custom_target(todo-imgui
+    COMMAND em++ -std=c++1z -I ${CMAKE_SOURCE_DIR} -I ${imgui_source_dir}
+      ${imgui_sources}
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/todo.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/imgui/main.cpp
+      -s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1
+      -s ALLOW_MEMORY_GROWTH=1
+      -o ${CMAKE_CURRENT_BINARY_DIR}/todo-imgui.html
+    COMMENT "Build todo-imgui emscripten example")
   add_dependencies(examples todo-imgui)
 else()
   message(STATUS "Disabling ImGui based examples")

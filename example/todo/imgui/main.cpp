@@ -16,35 +16,77 @@
 #include <lager/store.hpp>
 
 #include <imgui.h>
-#include <imgui_impl_opengl2.h>
+#include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-void draw(const todo::model& m) {}
+void draw(const todo::model& m)
+{
+    ImGui::Begin("Todo app");
+    ImGui::Text("%s", m.name.c_str());
+    ImGui::End();
+}
+
+void render(SDL_Window* window, SDL_GLContext gl_context, const todo::model& m)
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
+    ImGui::NewFrame();
+
+    draw(m);
+
+    ImGui::Render();
+
+    SDL_GL_MakeCurrent(window, gl_context);
+    auto size = ImGui::GetIO().DisplaySize;
+    glViewport(0, 0, (int) size.x, (int) size.y);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(window);
+}
 
 int main()
 {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
+        std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
+        return -1;
+    }
+
+    const char* glsl_version = "#version 300 es";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
+    auto current = SDL_DisplayMode{};
+    SDL_GetCurrentDisplayMode(0, &current);
     auto window =
         SDL_CreateWindow("Todo Imgui",
                          SDL_WINDOWPOS_CENTERED,
                          SDL_WINDOWPOS_CENTERED,
-                         1280,
-                         720,
+                         800,
+                         600,
                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE |
                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN);
+    if (!window) {
+        std::cerr << "Error creating SDL window: " << SDL_GetError()
+                  << std::endl;
+        return -1;
+    }
+
     auto gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
+    if (!gl_context) {
+        std::cerr << "Error creating GL context: " << SDL_GetError()
+                  << std::endl;
+        return -1;
+    }
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -55,34 +97,20 @@ int main()
     ImGui::StyleColorsDark();
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL2_Init();
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<todo::action>(
         todo::model{}, todo::update, lager::with_sdl_event_loop{loop});
 
-    lager::watch(store, [window](auto&&, auto&& m) {
-        ImGui_ImplOpenGL2_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
+    loop.run(
+        [&](const SDL_Event& ev) {
+            ImGui_ImplSDL2_ProcessEvent(&ev);
+            return ev.type != SDL_QUIT;
+        },
+        [&] { render(window, gl_context, store.get()); });
 
-        draw(m);
-
-        ImGui::Render();
-        auto size = ImGui::GetIO().DisplaySize;
-        glViewport(0, 0, (int) size.x, (int) size.y);
-        glClearColor(0, 0, 0, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(window);
-    });
-
-    loop.run([&](const SDL_Event& ev) {
-        ImGui_ImplSDL2_ProcessEvent(&ev);
-        return ev.type == SDL_QUIT;
-    });
-
-    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 

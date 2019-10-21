@@ -21,6 +21,10 @@
 #include <cassert>
 #include <cstddef>
 
+#if __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 namespace lager {
 
 struct with_sdl_event_loop;
@@ -66,6 +70,40 @@ struct sdl_event_loop
 {
     using event_fn = std::function<void()>;
 
+#if __EMSCRIPTEN__
+    std::function<bool(const SDL_Event&)> current_handler;
+    std::function<void()> current_tick;
+
+    template <typename Fn1, typename Fn2>
+    void run(Fn1&& handler, Fn2&& tick)
+    {
+        static bool guard = false;
+        assert(!guard && "only one instance is allowed!");
+        guard           = true;
+        current_handler = std::forward<Fn1>(handler);
+        current_tick    = std::forward<Fn2>(tick);
+        emscripten_set_main_loop_arg(
+            [](void* loop_) {
+                auto loop  = (sdl_event_loop*) loop_;
+                auto event = SDL_Event{};
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == loop->post_event_type_) {
+                        auto fnp = static_cast<event_fn*>(event.user.data1);
+                        (*fnp)();
+                        delete fnp;
+                    } else {
+                        loop->current_handler(event);
+                    }
+                }
+                loop->current_tick();
+            },
+            this,
+            0,
+            true);
+    }
+
+#else  // !__EMSCRIPTEN__
+
     template <typename Fn>
     void run(Fn&& handler)
     {
@@ -104,6 +142,7 @@ struct sdl_event_loop
             continue_ = continue_ && (paused_ || tick(step()));
         }
     }
+#endif // !__EMSCRIPTEN__
 
     void post(event_fn ev)
     {
@@ -124,7 +163,7 @@ private:
     std::atomic<bool> done_{false};
     std::atomic<bool> paused_{false};
     std::uint32_t post_event_type_ = SDL_RegisterEvents(1);
-};
+}; // namespace lager
 
 struct with_sdl_event_loop
 {
