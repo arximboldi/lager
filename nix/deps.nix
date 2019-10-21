@@ -79,6 +79,28 @@ rec {
     meta = with stdenv.lib; {
       homepage = "http://sinusoid.es/zug";
       description = "Transducers for C++";
+    };
+  };
+
+  imgui = stdenv.mkDerivation rec {
+    name = "imgui-${version}";
+    version = "git-${commit}";
+    commit = "6ffee0e75e8f677c5fd8280dfe544c3fcb325f45";
+    src = fetchFromGitHub {
+      owner = "ocornut";
+      repo = "imgui";
+      rev = commit;
+      sha256 = "0z84phn3d71gsawmynxj1l32fxq73706z65iqp1sx7i1qpnyz43a";
+    };
+    buildPhase = "";
+    installPhase = ''
+      mkdir $out
+      cp $src/*.h $out/
+      cp $src/*.cpp $out/
+      cp $src/examples/imgui_impl_* $out/
+    '';
+    meta = with stdenv.lib; {
+      description = "Immediate mode UI library";
       license = licenses.lgpl3;
     };
   };

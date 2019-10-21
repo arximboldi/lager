@@ -41,6 +41,7 @@ theStdenv.mkDerivation rec {
     deps.cereal
     deps.immer
     deps.zug
+    deps.imgui
     sass
     SDL2
     SDL2_ttf
@@ -75,5 +76,6 @@ theStdenv.mkDerivation rec {
     addToSearchPath QML2_IMPORT_PATH ${qt5.qtgraphicaleffects}/lib/qt-5.11/qml
     addToSearchPath QT_PLUGIN_PATH ${qt5.qtsvg.bin}/lib/qt-5.11/plugins
     export QT_QPA_PLATFORM_PLUGIN_PATH=${qt5.qtbase}/lib/qt-5.11/plugins
+    export IMGUI_SOURCE_DIR=${deps.imgui}
   '';
 }
