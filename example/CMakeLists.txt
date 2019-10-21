@@ -63,7 +63,8 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
   add_dependencies(examples counter-sdl2)
 
   add_executable(autopong EXCLUDE_FROM_ALL
-    autopong/main.cpp)
+    autopong/autopong.cpp
+    autopong/sdl2/main.cpp)
   target_include_directories(autopong SYSTEM PUBLIC
     ${SDL2_INCLUDE_DIR}
     ${SDL2_TTF_INCLUDE_DIR})
@@ -74,7 +75,8 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
   add_dependencies(examples autopong)
 
   add_executable(autopong-debug EXCLUDE_FROM_ALL
-    autopong/main.cpp)
+    autopong/autopong.cpp
+    autopong/sdl2/main.cpp)
   target_compile_definitions(autopong-debug PUBLIC DEBUGGER)
   target_include_directories(autopong-debug SYSTEM PUBLIC
     ${SDL2_INCLUDE_DIR}
@@ -102,6 +104,7 @@ find_package(Boost 1.56)
 
 if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND AND Qt5QuickControls2_FOUND AND Boost_FOUND)
   add_executable(todo-qml EXCLUDE_FROM_ALL
+    todo/todo.cpp
     todo/qml/main.cpp)
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)

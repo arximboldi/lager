@@ -52,24 +52,12 @@ namespace todo {
 using boost::fusion::operators::operator==;
 using boost::fusion::operators::operator!=;
 
-inline void save(const std::string& fname, model todos)
-{
-    auto s = std::ofstream{fname};
-    {
-        auto a = cereal::JSONOutputArchive{s};
-        a(todos);
-    }
-}
+struct action
+{};
 
-inline model load(const std::string& fname)
-{
-    auto s = std::ifstream{fname};
-    auto r = model{};
-    {
-        auto a = cereal::JSONInputArchive{s};
-        a(r);
-    }
-    return r;
-}
+model update(model m, action a);
+
+void save(const std::string& fname, model todos);
+model load(const std::string& fname);
 
 } // namespace todo
