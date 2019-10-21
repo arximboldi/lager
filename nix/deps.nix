@@ -78,7 +78,7 @@ rec {
     nativeBuildInputs = [ cmake ];
     meta = with stdenv.lib; {
       homepage = "http://sinusoid.es/zug";
-      description = "Immutable data structures for C++";
+      description = "Transducers for C++";
       license = licenses.lgpl3;
     };
   };
