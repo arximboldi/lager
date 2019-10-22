@@ -149,6 +149,8 @@ if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
       ${CMAKE_CURRENT_SOURCE_DIR}/todo/imgui/main.cpp
       -s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1
       -s ALLOW_MEMORY_GROWTH=1
+      --emrun
+      --shell-file ${CMAKE_SOURCE_DIR}/resources/emscripten_shell_minimal.html
       -o ${CMAKE_CURRENT_BINARY_DIR}/todo-imgui.html
     COMMENT "Build todo-imgui emscripten example")
   add_dependencies(examples todo-imgui)
