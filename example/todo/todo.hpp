@@ -25,26 +25,24 @@
 
 namespace todo {
 
-struct entry
+struct item
 {
     bool done = false;
     std::string text;
 };
 
-using entries = immer::flex_vector<entry>;
-
 struct model
 {
     std::string name;
-    entries todos;
+    immer::flex_vector<item> todos;
 };
 
-LAGER_CEREAL_STRUCT(todo::entry, (done)(text));
+LAGER_CEREAL_STRUCT(todo::item, (done)(text));
 LAGER_CEREAL_STRUCT(todo::model, (name)(todos));
 
 } // namespace todo
 
-BOOST_FUSION_ADAPT_STRUCT(todo::entry, done, text);
+BOOST_FUSION_ADAPT_STRUCT(todo::item, done, text);
 BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);
 
 namespace todo {

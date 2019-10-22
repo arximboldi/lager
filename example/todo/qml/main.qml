@@ -6,7 +6,7 @@ import QtQuick.Layouts 1.11
 
 import QtQuick.Dialogs 1.3
 
-import Lager.Example.Todo 1.0
+import Lager.Example.Todo 1.0 as Todo
 
 ApplicationWindow {
     width: 540
@@ -15,7 +15,7 @@ ApplicationWindow {
 
     Material.theme: Material.Dark
 
-    Model {
+    Todo.Model {
         id: theModel
     }
 
@@ -124,7 +124,7 @@ ApplicationWindow {
             model: theModel.count
             delegate: MouseArea {
                 id: mouseArea
-                property Entry todo: theModel.todo(index)
+                property Todo.Item todo: theModel.todo(index)
                 anchors.left: parent.left
                 anchors.right: parent.right
                 implicitHeight: layout.implicitHeight

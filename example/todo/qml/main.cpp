@@ -25,14 +25,14 @@
 
 #include <iostream>
 
-class Entry : public QObject
+class Item : public QObject
 {
     Q_OBJECT
 
 public:
-    Entry(lager::cursor<todo::entry> data)
-        : LAGER_QT(done){data[&todo::entry::done]}
-        , LAGER_QT(text){data[&todo::entry::text].xf(
+    Item(lager::cursor<todo::item> data)
+        : LAGER_QT(done){data[&todo::item::done]}
+        , LAGER_QT(text){data[&todo::item::text].xf(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
     {}
@@ -62,9 +62,9 @@ public:
     LAGER_QT_READER(QString, fileName);
     LAGER_QT_READER(int, count);
 
-    Q_INVOKABLE Entry* todo(int index)
+    Q_INVOKABLE Item* todo(int index)
     {
-        return new Entry{state_[&todo::model::todos][index]};
+        return new Item{state_[&todo::model::todos][index]};
     }
 
     Q_INVOKABLE void add(QString text)
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
     QQmlApplicationEngine engine;
 
     qmlRegisterType<Model>("Lager.Example.Todo", 1, 0, "Model");
-    qmlRegisterUncreatableType<Entry>("Lager.Example.Todo", 1, 0, "Entry", "");
+    qmlRegisterUncreatableType<Item>("Lager.Example.Todo", 1, 0, "Item", "");
 
     QQuickStyle::setStyle("Material");
 
