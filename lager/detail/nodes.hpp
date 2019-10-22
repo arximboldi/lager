@@ -122,7 +122,6 @@ public:
     virtual void recompute() {}
     virtual void recompute_deep() {}
 
-    value_type& current() { return current_; }
     const value_type& current() const { return current_; }
     const value_type& last() const { return last_; }
 

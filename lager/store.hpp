@@ -124,7 +124,7 @@ private:
             loop.post([=] {
                 base_t::send_up(invoke_reducer<deps_t>(
                     reducer,
-                    std::move(base_t::current()),
+                    base_t::current(),
                     std::move(action),
                     [&](auto&& effect) {
                         loop.post([this, effect] { effect(ctx); });
