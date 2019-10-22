@@ -21,7 +21,7 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 
-#include <fstream>
+#include <variant>
 
 namespace todo {
 
@@ -52,8 +52,12 @@ namespace todo {
 using boost::fusion::operators::operator==;
 using boost::fusion::operators::operator!=;
 
-struct action
-{};
+struct add_todo_action
+{
+    std::string text;
+};
+
+using action = std::variant<add_todo_action>;
 
 model update(model m, action a);
 

@@ -1,8 +1,19 @@
 #include "todo.hpp"
 
+#include <lager/util.hpp>
+
+#include <fstream>
+
 namespace todo {
 
-model update(model m, action a) { return m; }
+model update(model m, action a)
+{
+    std::visit(lager::visitor{[&](add_todo_action&& a) {
+                   m.todos = std::move(m.todos).push_front({false, a.text});
+               }},
+               std::move(a));
+    return m;
+}
 
 void save(const std::string& fname, model todos)
 {

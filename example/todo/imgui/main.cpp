@@ -22,30 +22,47 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-void draw(const todo::model& m)
+constexpr int window_padding = 48;
+constexpr int window_width   = 800;
+constexpr int window_height  = 600;
+
+// Sadly, ImGui sometimes forces us to store transient state, like text inputs.
+// We use this store this.
+struct ui_state
 {
+    static constexpr std::size_t input_string_size = 1 << 10;
+
+    std::array<char, input_string_size> new_todo_input{'\0'};
+};
+
+void draw(lager::context<todo::action> ctx, const todo::model& m, ui_state& s)
+{
+    ImGui::SetNextWindowPos({window_padding, window_padding}, ImGuiCond_Once);
+    ImGui::SetNextWindowSize(
+        {window_width - 2 * window_padding, window_height - 2 * window_padding},
+        ImGuiCond_Once);
     ImGui::Begin("Todo app");
     ImGui::Text("%s", m.name.c_str());
+
+    ImGui::PushItemWidth(-0.1f);
+    {
+        ImGui::SetKeyboardFocusHere();
+        if (ImGui::InputTextWithHint("",
+                                     "What do you want to do today?",
+                                     s.new_todo_input.data(),
+                                     s.input_string_size,
+                                     ImGuiInputTextFlags_EnterReturnsTrue)) {
+            ctx.dispatch(todo::add_todo_action{s.new_todo_input.data()});
+            s.new_todo_input[0] = '\0';
+        }
+
+        for (auto&& item : m.todos) {
+            ImGui::Text("%s", item.text.c_str());
+        }
+    }
+    ImGui::PopItemWidth();
+
     ImGui::End();
-}
-
-void render(SDL_Window* window, SDL_GLContext gl_context, const todo::model& m)
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window);
-    ImGui::NewFrame();
-
-    draw(m);
-
-    ImGui::Render();
-
-    SDL_GL_MakeCurrent(window, gl_context);
-    auto size = ImGui::GetIO().DisplaySize;
-    glViewport(0, 0, (int) size.x, (int) size.y);
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(window);
 }
 
 int main()
@@ -71,8 +88,8 @@ int main()
         SDL_CreateWindow("Todo Imgui",
                          SDL_WINDOWPOS_CENTERED,
                          SDL_WINDOWPOS_CENTERED,
-                         800,
-                         600,
+                         window_width,
+                         window_height,
                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE |
                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN);
     if (!window) {
@@ -102,13 +119,29 @@ int main()
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<todo::action>(
         todo::model{}, todo::update, lager::with_sdl_event_loop{loop});
+    auto state = ui_state{};
 
     loop.run(
         [&](const SDL_Event& ev) {
             ImGui_ImplSDL2_ProcessEvent(&ev);
             return ev.type != SDL_QUIT;
         },
-        [&] { render(window, gl_context, store.get()); });
+        [&] {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL2_NewFrame(window);
+            ImGui::NewFrame();
+            {
+                draw(store, store.get(), state);
+            }
+            ImGui::Render();
+            SDL_GL_MakeCurrent(window, gl_context);
+            auto size = ImGui::GetIO().DisplaySize;
+            glViewport(0, 0, (int) size.x, (int) size.y);
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT);
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            SDL_GL_SwapWindow(window);
+        });
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
