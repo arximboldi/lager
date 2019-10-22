@@ -79,23 +79,27 @@ bool in_bounds(point_t p)
            y(p) < game_model::height;
 }
 
-} // namespace
-
-app_model make_initial(int seed)
+template <typename Func>
+game_model make_game(Func&& random)
 {
     const point_t snake_head{game_model::width / 2, game_model::height / 2};
     snake_model::body_t body{snake_head,
                              {x(snake_head) - 1, y(snake_head)},
                              {x(snake_head) - 2, y(snake_head)}};
 
+    return {snake_model{body, direction::right},
+            random_apple_pos(std::forward<Func>(random)),
+            false};
+}
+
+} // namespace
+
+app_model make_initial(int seed)
+{
     std::mt19937 gen{unsigned(seed)};
     std::uniform_int_distribution<> dist{0, game_model::width - 1};
 
-    return {gen,
-            dist,
-            game_model{snake_model{body, direction::right},
-                       random_apple_pos([&] { return dist(gen); }),
-                       false}};
+    return {gen, dist, make_game([&] { return dist(gen); })};
 }
 
 app_model update(app_model m, action_t action)
@@ -140,7 +144,10 @@ app_model update(app_model m, action_t action)
 
                 return m;
             },
-            [&](reset) { return make_initial(y(m.game.apple_pos)); }},
+            [&](reset) {
+                m.game = make_game([&] { return m.dist(m.gen); });
+                return m;
+            }},
         action);
 }
 
