@@ -112,7 +112,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
   add_dependencies(examples todo-qml)
 
-  add_executable(snake-qml EXCLUDE_FROM_ALL 
+  add_executable(snake-qml EXCLUDE_FROM_ALL
     snake/model.cpp snake/qml/main.cpp snake/qml/qmodel.cpp)
   set_target_properties(snake-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(snake-qml lager Qt5::Core Qt5::Concurrent Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
