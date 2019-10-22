@@ -20,7 +20,6 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
-#include <cmath>
 #include <random>
 #include <utility>
 
