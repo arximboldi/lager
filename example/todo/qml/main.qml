@@ -112,7 +112,6 @@ ApplicationWindow {
                 placeholderText: qsTr("What do you wanna do today?")
             onAccepted: {
                 theModel.add(text)
-                theModel.commit()
                 text = ""
             }
             Component.onCompleted: forceActiveFocus()
@@ -131,7 +130,6 @@ ApplicationWindow {
                 hoverEnabled: true
                 onClicked: {
                     todo.done = !todo.done
-                    theModel.commit()
                 }
                 RowLayout {
                     id: layout
@@ -141,7 +139,6 @@ ApplicationWindow {
                         checked: todo.done
                         onClicked: {
                             todo.done = !todo.done
-                            theModel.commit()
                         }
                     }
                     Label {
@@ -155,7 +152,6 @@ ApplicationWindow {
                         visible: mouseArea.containsMouse
                         onClicked: {
                             theModel.remove(index)
-                            theModel.commit()
                         }
                     }
                 }

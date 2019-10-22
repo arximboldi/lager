@@ -45,8 +45,8 @@ class Model : public QObject
 {
     Q_OBJECT
 
-    lager::state<todo::model> state_;
-    lager::state<QString> file_name_;
+    lager::state<todo::model, lager::automatic_tag> state_;
+    lager::state<QString, lager::automatic_tag> file_name_;
 
 public:
     Model()
@@ -95,7 +95,6 @@ public:
                 return s;
             });
             file_name_.set(fname);
-            commit();
             return true;
         } catch (std::exception const& err) {
             std::cerr << "Exception thrown: " << err.what() << std::endl;
@@ -110,15 +109,12 @@ public:
             model.name = QFileInfo{fname}.baseName().toStdString();
             state_.set(model);
             file_name_.set(fname);
-            commit();
             return true;
         } catch (std::exception const& err) {
             std::cerr << "Exception thrown: " << err.what() << std::endl;
             return false;
         }
     }
-
-    Q_INVOKABLE void commit() { lager::commit(state_, file_name_); }
 };
 
 #include "main.moc"

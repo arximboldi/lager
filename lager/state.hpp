@@ -21,9 +21,14 @@
 
 namespace lager {
 
+struct transactional_tag
+{};
+struct automatic_tag
+{};
+
 namespace detail {
 
-template <typename T>
+template <typename T, typename TagT = transactional_tag>
 class state_node : public cursor_node<T>
 {
 public:
@@ -36,22 +41,26 @@ public:
     void send_up(value_type&& value) final
     {
         this->push_down(std::move(value));
+        if constexpr (std::is_same_v<TagT, automatic_tag>) {
+            this->send_down();
+            this->notify();
+        }
     }
 };
 
-template <typename T>
+template <typename TagT = transactional_tag, typename T>
 auto make_state_node(T&& value)
 {
-    return std::make_shared<state_node<std::decay_t<T>>>(
+    return std::make_shared<state_node<std::decay_t<T>, TagT>>(
         std::forward<T>(value));
 }
 
 } // namespace detail
 
-template <typename T>
-class state : public cursor_base<detail::state_node<T>>
+template <typename T, typename TagT = transactional_tag>
+class state : public cursor_base<detail::state_node<T, TagT>>
 {
-    using base_t = cursor_base<detail::state_node<T>>;
+    using base_t = cursor_base<detail::state_node<T, TagT>>;
 
     friend class detail::access;
     auto roots() const { return detail::access::node(*this); }
@@ -61,10 +70,10 @@ public:
     using base_t::base_t;
 
     state()
-        : base_t{detail::make_state_node(T())}
+        : base_t{detail::make_state_node<TagT>(T())}
     {}
     state(T value)
-        : base_t{detail::make_state_node(std::move(value))}
+        : base_t{detail::make_state_node<TagT>(std::move(value))}
     {}
 
     state& operator=(const state&) = delete;
@@ -76,6 +85,12 @@ public:
 
 template <typename T>
 state<T> make_state(T value)
+{
+    return value;
+}
+
+template <typename T, typename TagT>
+state<T, TagT> make_state(T value, TagT)
 {
     return value;
 }
