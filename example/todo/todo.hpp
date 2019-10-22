@@ -30,36 +30,40 @@ struct item
     bool done = false;
     std::string text;
 };
+LAGER_CEREAL_STRUCT(todo::item, (done)(text));
+
+struct toggle_item_action
+{};
+struct remove_item_action
+{};
+using item_action = std::variant<toggle_item_action, remove_item_action>;
+
+item update_item(item m, item_action a);
 
 struct model
 {
     std::string name;
     immer::flex_vector<item> todos;
 };
-
-LAGER_CEREAL_STRUCT(todo::item, (done)(text));
 LAGER_CEREAL_STRUCT(todo::model, (name)(todos));
-
-} // namespace todo
-
-BOOST_FUSION_ADAPT_STRUCT(todo::item, done, text);
-BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);
-
-namespace todo {
-
-using boost::fusion::operators::operator==;
-using boost::fusion::operators::operator!=;
 
 struct add_todo_action
 {
     std::string text;
 };
 
-using action = std::variant<add_todo_action>;
+using action =
+    std::variant<add_todo_action, std::pair<std::size_t, item_action>>;
 
 model update(model m, action a);
 
 void save(const std::string& fname, model todos);
 model load(const std::string& fname);
 
+using boost::fusion::operators::operator==;
+using boost::fusion::operators::operator!=;
+
 } // namespace todo
+
+BOOST_FUSION_ADAPT_STRUCT(todo::item, done, text);
+BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);

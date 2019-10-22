@@ -35,6 +35,22 @@ struct ui_state
     std::array<char, input_string_size> new_todo_input{'\0'};
 };
 
+void draw(lager::context<todo::item_action> ctx, const todo::item& i)
+{
+    auto checked = i.done;
+    if (ImGui::Checkbox("", &checked)) {
+        ctx.dispatch(todo::toggle_item_action{});
+    }
+
+    ImGui::SameLine();
+    ImGui::Text("%s", i.text.c_str());
+
+    ImGui::SameLine();
+    if (ImGui::Button("Delete")) {
+        ctx.dispatch(todo::remove_item_action{});
+    }
+}
+
 void draw(lager::context<todo::action> ctx, const todo::model& m, ui_state& s)
 {
     ImGui::SetNextWindowPos({window_padding, window_padding}, ImGuiCond_Once);
@@ -42,25 +58,48 @@ void draw(lager::context<todo::action> ctx, const todo::model& m, ui_state& s)
         {window_width - 2 * window_padding, window_height - 2 * window_padding},
         ImGuiCond_Once);
     ImGui::Begin("Todo app");
+
+    if (ImGui::BeginPopup("not-implemented")) {
+        ImGui::Text("Saving and loading have not been implemented!");
+        ImGui::EndPopup();
+    }
+
+    if (ImGui::Button("Save"))
+        ImGui::OpenPopup("not-implemented");
+    ImGui::SameLine();
+    if (ImGui::Button("Load"))
+        ImGui::OpenPopup("not-implemented");
+    ImGui::SameLine();
     ImGui::Text("%s", m.name.c_str());
 
-    ImGui::PushItemWidth(-0.1f);
-    {
+    ImGui::Separator();
+    if (ImGui::IsWindowAppearing())
         ImGui::SetKeyboardFocusHere();
-        if (ImGui::InputTextWithHint("",
-                                     "What do you want to do today?",
-                                     s.new_todo_input.data(),
-                                     s.input_string_size,
-                                     ImGuiInputTextFlags_EnterReturnsTrue)) {
-            ctx.dispatch(todo::add_todo_action{s.new_todo_input.data()});
-            s.new_todo_input[0] = '\0';
-        }
-
-        for (auto&& item : m.todos) {
-            ImGui::Text("%s", item.text.c_str());
-        }
+    ImGui::PushItemWidth(-0.1f);
+    if (ImGui::InputTextWithHint("",
+                                 "What do you want to do today?",
+                                 s.new_todo_input.data(),
+                                 s.input_string_size,
+                                 ImGuiInputTextFlags_EnterReturnsTrue)) {
+        ctx.dispatch(todo::add_todo_action{s.new_todo_input.data()});
+        s.new_todo_input[0] = '\0';
+        ImGui::SetKeyboardFocusHere(-1);
     }
     ImGui::PopItemWidth();
+    ImGui::Separator();
+
+    ImGui::BeginChild("");
+    {
+        auto idx = std::size_t{};
+        for (auto item : m.todos) {
+            ImGui::PushID(idx);
+            auto with_idx = [idx](auto&& a) { return std::make_pair(idx, a); };
+            draw({ctx, with_idx}, item);
+            ImGui::PopID();
+            ++idx;
+        }
+    }
+    ImGui::EndChild();
 
     ImGui::End();
 }
