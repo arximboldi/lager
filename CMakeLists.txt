@@ -13,10 +13,18 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif()
 
-option(lager_BUILD_DEBUGGER "Build the time-traveling debugger" ON)
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
+
+find_program(CCACHE ccache)
+if (CCACHE)
+  message(STATUS "Using ccache: ${CCACHE}")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE})
+else()
+  message(STATUS "Could not find ccache")
+endif()
 
 #  Targets
 #  =======
@@ -31,7 +39,7 @@ target_include_directories(lager INTERFACE
 install(TARGETS lager EXPORT LagerConfig)
 
 # the library, with http debugger
-if(lager_BUILD_DEBUGGER)
+if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Boost 1.56 COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
@@ -85,9 +93,6 @@ if(lager_BUILD_TESTS)
 endif()
 
 if(lager_BUILD_EXAMPLES)
-  if(NOT lager_BUILD_DEBUGGER)
-    message(FATAL_ERROR "Examples require the debugger")
-  endif()
   add_subdirectory(example)
 endif()
 

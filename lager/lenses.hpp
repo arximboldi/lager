@@ -155,7 +155,7 @@ auto at_i(Key key)
                     return std::decay_t<decltype(p.at(key))>{};
                 }
             }())([&](auto&& x) {
-                if (key < p.size()) {
+                if (static_cast<std::size_t>(key) < p.size()) {
                     return std::forward<decltype(p)>(p).set(
                         key, std::forward<decltype(x)>(x));
                 } else {

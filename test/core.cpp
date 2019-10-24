@@ -252,3 +252,31 @@ TEST_CASE("subsetting context actions")
     eff1(ctx);
     CHECK(dispatch_count == 6);
 }
+
+using parent2_action =
+    std::variant<std::pair<int, child1_action>, child2_action, child3_action>;
+
+TEST_CASE("composing context with converter")
+{
+    auto store = lager::make_store<parent2_action>(
+        0,
+        [=](int model, parent2_action action) {
+            return std::visit(
+                lager::visitor{
+                    [](std::pair<int, child1_action> p) { return p.first; },
+                    [](auto x) { return 0; }},
+                action);
+        },
+        lager::with_manual_event_loop{});
+
+    auto ctx1 = lager::context<child1_action>{
+        store, [](auto&& act) { return std::make_pair(1, child1_action{}); }};
+    auto ctx2 = lager::context<child1_action>{
+        store, [](auto&& act) { return std::make_pair(2, child1_action{}); }};
+
+    ctx1.dispatch(child1_action{});
+    CHECK(*store == 1);
+
+    ctx2.dispatch(child1_action{});
+    CHECK(*store == 2);
+}

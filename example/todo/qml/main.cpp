@@ -25,14 +25,14 @@
 
 #include <iostream>
 
-class Entry : public QObject
+class Item : public QObject
 {
     Q_OBJECT
 
 public:
-    Entry(lager::cursor<todo::entry> data)
-        : LAGER_QT(done){data[&todo::entry::done]}
-        , LAGER_QT(text){data[&todo::entry::text].xf(
+    Item(lager::cursor<todo::item> data)
+        : LAGER_QT(done){data[&todo::item::done]}
+        , LAGER_QT(text){data[&todo::item::text].xf(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
     {}
@@ -45,8 +45,8 @@ class Model : public QObject
 {
     Q_OBJECT
 
-    lager::state<todo::model> state_;
-    lager::state<QString> file_name_;
+    lager::state<todo::model, lager::automatic_tag> state_;
+    lager::state<QString, lager::automatic_tag> file_name_;
 
 public:
     Model()
@@ -62,9 +62,9 @@ public:
     LAGER_QT_READER(QString, fileName);
     LAGER_QT_READER(int, count);
 
-    Q_INVOKABLE Entry* todo(int index)
+    Q_INVOKABLE Item* todo(int index)
     {
-        return new Entry{state_[&todo::model::todos][index]};
+        return new Item{state_[&todo::model::todos][index]};
     }
 
     Q_INVOKABLE void add(QString text)
@@ -95,7 +95,6 @@ public:
                 return s;
             });
             file_name_.set(fname);
-            commit();
             return true;
         } catch (std::exception const& err) {
             std::cerr << "Exception thrown: " << err.what() << std::endl;
@@ -110,15 +109,12 @@ public:
             model.name = QFileInfo{fname}.baseName().toStdString();
             state_.set(model);
             file_name_.set(fname);
-            commit();
             return true;
         } catch (std::exception const& err) {
             std::cerr << "Exception thrown: " << err.what() << std::endl;
             return false;
         }
     }
-
-    Q_INVOKABLE void commit() { lager::commit(state_, file_name_); }
 };
 
 #include "main.moc"
@@ -129,7 +125,7 @@ int main(int argc, char** argv)
     QQmlApplicationEngine engine;
 
     qmlRegisterType<Model>("Lager.Example.Todo", 1, 0, "Model");
-    qmlRegisterUncreatableType<Entry>("Lager.Example.Todo", 1, 0, "Entry", "");
+    qmlRegisterUncreatableType<Item>("Lager.Example.Todo", 1, 0, "Item", "");
 
     QQuickStyle::setStyle("Material");
 

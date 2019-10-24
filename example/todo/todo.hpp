@@ -21,55 +21,49 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 
-#include <fstream>
+#include <variant>
 
 namespace todo {
 
-struct entry
+struct item
 {
     bool done = false;
     std::string text;
 };
+LAGER_CEREAL_STRUCT(todo::item, (done)(text));
 
-using entries = immer::flex_vector<entry>;
+struct toggle_item_action
+{};
+struct remove_item_action
+{};
+using item_action = std::variant<toggle_item_action, remove_item_action>;
+
+item update_item(item m, item_action a);
 
 struct model
 {
     std::string name;
-    entries todos;
+    immer::flex_vector<item> todos;
 };
-
-LAGER_CEREAL_STRUCT(todo::entry, (done)(text));
 LAGER_CEREAL_STRUCT(todo::model, (name)(todos));
 
-} // namespace todo
+struct add_todo_action
+{
+    std::string text;
+};
 
-BOOST_FUSION_ADAPT_STRUCT(todo::entry, done, text);
-BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);
+using action =
+    std::variant<add_todo_action, std::pair<std::size_t, item_action>>;
 
-namespace todo {
+model update(model m, action a);
+
+void save(const std::string& fname, model todos);
+model load(const std::string& fname);
 
 using boost::fusion::operators::operator==;
 using boost::fusion::operators::operator!=;
 
-inline void save(const std::string& fname, model todos)
-{
-    auto s = std::ofstream{fname};
-    {
-        auto a = cereal::JSONOutputArchive{s};
-        a(todos);
-    }
-}
-
-inline model load(const std::string& fname)
-{
-    auto s = std::ifstream{fname};
-    auto r = model{};
-    {
-        auto a = cereal::JSONInputArchive{s};
-        a(r);
-    }
-    return r;
-}
-
 } // namespace todo
+
+BOOST_FUSION_ADAPT_STRUCT(todo::item, done, text);
+BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);

@@ -23,6 +23,7 @@
 #include <boost/hana/type.hpp>
 
 #include <functional>
+#include <memory>
 #include <type_traits>
 
 namespace lager {
@@ -92,12 +93,13 @@ auto merge_actions_aux(Actions1 a1, Actions2 a2)
         });
     };
     auto result = boost::hana::fold(a1, a2, [&](auto acc, auto x) {
-        return boost::hana::if_(has_convertible(acc, x),
-                                [&] { return acc; },
-                                [&] {
-                                    auto xs = remove_convertibles(acc, x);
-                                    return boost::hana::append(xs, x);
-                                })();
+        return boost::hana::if_(
+            has_convertible(acc, x),
+            [&] { return acc; },
+            [&] {
+                auto xs = remove_convertibles(acc, x);
+                return boost::hana::append(xs, x);
+            })();
     });
     static_assert(decltype(boost::hana::length(result))::value > 0, "");
     return boost::hana::if_(
@@ -134,7 +136,29 @@ struct dispatcher<actions<Actions...>> : std::function<void(Actions)>...
 
     template <typename Fn>
     dispatcher(Fn other)
-        : std::function<void(Actions)>{std::move(other)}...
+        : std::function<void(Actions)>{other}...
+    {}
+
+    template <typename Action, typename... As, typename Converter>
+    static auto dispatcher_fn_aux(dispatcher<actions<As...>> other_,
+                                  Converter conv)
+    {
+        auto& other = static_cast<std::function<void(
+            find_convertible_action_t<std::result_of_t<Converter(Action)>,
+                                      As...>)>&>(other_);
+        return [conv, other](auto&& act) { other(conv(LAGER_FWD(act))); };
+    }
+
+    template <typename... As, typename Converter>
+    dispatcher(dispatcher<actions<As...>> other, Converter conv)
+        : std::function<void(Actions)>{
+              dispatcher_fn_aux<Actions>(other, conv)}...
+    {}
+
+    template <typename Fn, typename Converter>
+    dispatcher(Fn other, Converter conv)
+        : std::function<void(Actions)>{
+              [other, conv](auto&& act) { other(conv(LAGER_FWD(act))); }}...
     {}
 };
 
@@ -216,6 +240,13 @@ struct context : Deps
     context(const context<Actions_, Deps_>& ctx)
         : deps_t{ctx}
         , dispatcher_{ctx.dispatcher_}
+        , loop_{ctx.loop_}
+    {}
+
+    template <typename Actions_, typename Deps_, typename Converter>
+    context(const context<Actions_, Deps_>& ctx, Converter c)
+        : deps_t{ctx}
+        , dispatcher_{ctx.dispatcher_, c}
         , loop_{ctx.loop_}
     {}
 

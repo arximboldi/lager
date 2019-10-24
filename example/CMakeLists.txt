@@ -63,7 +63,8 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
   add_dependencies(examples counter-sdl2)
 
   add_executable(autopong EXCLUDE_FROM_ALL
-    autopong/main.cpp)
+    autopong/autopong.cpp
+    autopong/sdl2/main.cpp)
   target_include_directories(autopong SYSTEM PUBLIC
     ${SDL2_INCLUDE_DIR}
     ${SDL2_TTF_INCLUDE_DIR})
@@ -74,7 +75,8 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
   add_dependencies(examples autopong)
 
   add_executable(autopong-debug EXCLUDE_FROM_ALL
-    autopong/main.cpp)
+    autopong/autopong.cpp
+    autopong/sdl2/main.cpp)
   target_compile_definitions(autopong-debug PUBLIC DEBUGGER)
   target_include_directories(autopong-debug SYSTEM PUBLIC
     ${SDL2_INCLUDE_DIR}
@@ -102,6 +104,7 @@ find_package(Boost 1.56)
 
 if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND AND Qt5QuickControls2_FOUND AND Boost_FOUND)
   add_executable(todo-qml EXCLUDE_FROM_ALL
+    todo/todo.cpp
     todo/qml/main.cpp)
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
@@ -109,7 +112,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
   add_dependencies(examples todo-qml)
 
-  add_executable(snake-qml EXCLUDE_FROM_ALL 
+  add_executable(snake-qml EXCLUDE_FROM_ALL
     snake/model.cpp snake/qml/main.cpp snake/qml/qmodel.cpp)
   set_target_properties(snake-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(snake-qml lager Qt5::Core Qt5::Concurrent Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
@@ -119,4 +122,39 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
   add_dependencies(examples snake-qml)
 else()
   message(STATUS "Disabling Qt based examples")
+endif()
+
+# ImGui examples
+# ==============
+
+set(OpenGL_GL_PREFERENCE GLVND)
+find_package(OpenGL)
+
+set(imgui_source_dir "$ENV{IMGUI_SOURCE_DIR}")
+
+set(imgui_sources
+  "${imgui_source_dir}/imgui.cpp"
+  "${imgui_source_dir}/imgui_draw.cpp"
+  "${imgui_source_dir}/imgui_widgets.cpp"
+  "${imgui_source_dir}/imgui_impl_sdl.cpp"
+  "${imgui_source_dir}/imgui_impl_opengl3.cpp")
+
+if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
+  message(STATUS "ImGui found in ${imgui_source_dir}")
+
+  add_custom_target(todo-imgui
+    COMMAND em++ -std=c++1z -I ${CMAKE_SOURCE_DIR} -I ${imgui_source_dir}
+      ${imgui_sources}
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/todo.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/imgui/main.cpp
+      -s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1
+      -s ALLOW_MEMORY_GROWTH=1
+      -Wno-undefined-internal # false positive relted to deduction guides
+      --emrun
+      --shell-file ${CMAKE_SOURCE_DIR}/resources/emscripten_shell_minimal.html
+      -o ${CMAKE_CURRENT_BINARY_DIR}/todo-imgui.html
+    COMMENT "Build todo-imgui emscripten example")
+  add_dependencies(examples todo-imgui)
+else()
+  message(STATUS "Disabling ImGui based examples")
 endif()

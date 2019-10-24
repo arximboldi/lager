@@ -6,7 +6,7 @@ import QtQuick.Layouts 1.11
 
 import QtQuick.Dialogs 1.3
 
-import Lager.Example.Todo 1.0
+import Lager.Example.Todo 1.0 as Todo
 
 ApplicationWindow {
     width: 540
@@ -15,7 +15,7 @@ ApplicationWindow {
 
     Material.theme: Material.Dark
 
-    Model {
+    Todo.Model {
         id: theModel
     }
 
@@ -112,7 +112,6 @@ ApplicationWindow {
                 placeholderText: qsTr("What do you wanna do today?")
             onAccepted: {
                 theModel.add(text)
-                theModel.commit()
                 text = ""
             }
             Component.onCompleted: forceActiveFocus()
@@ -124,14 +123,13 @@ ApplicationWindow {
             model: theModel.count
             delegate: MouseArea {
                 id: mouseArea
-                property Entry todo: theModel.todo(index)
+                property Todo.Item todo: theModel.todo(index)
                 anchors.left: parent.left
                 anchors.right: parent.right
                 implicitHeight: layout.implicitHeight
                 hoverEnabled: true
                 onClicked: {
                     todo.done = !todo.done
-                    theModel.commit()
                 }
                 RowLayout {
                     id: layout
@@ -141,7 +139,6 @@ ApplicationWindow {
                         checked: todo.done
                         onClicked: {
                             todo.done = !todo.done
-                            theModel.commit()
                         }
                     }
                     Label {
@@ -155,7 +152,6 @@ ApplicationWindow {
                         visible: mouseArea.containsMouse
                         onClicked: {
                             theModel.remove(index)
-                            theModel.commit()
                         }
                     }
                 }
