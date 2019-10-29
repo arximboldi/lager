@@ -409,7 +409,7 @@ public:
 
 private:
     template <typename... Ds>
-    friend struct deps;
+    friend class deps;
 
     using storage_t = boost::hana::map<
         boost::hana::pair<get_key_t<Deps>, get_storage_t<Deps>>...>;

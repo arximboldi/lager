@@ -120,7 +120,7 @@ struct store
 
 private:
     template <typename A, typename M, typename D>
-    friend class store;
+    friend struct store;
 
     using impl_base = detail::store_impl_base<Action, Model>;
 
