@@ -39,13 +39,14 @@ model update(model m, action a)
     return m;
 }
 
-void save(const std::string& fname, model todos)
+model save(const std::string& fname, model todos)
 {
     auto s = std::ofstream{fname};
     {
         auto a = cereal::JSONOutputArchive{s};
         a(todos);
     }
+    return todos;
 }
 
 model load(const std::string& fname)

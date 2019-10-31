@@ -57,7 +57,7 @@ using action =
 
 model update(model m, action a);
 
-void save(const std::string& fname, model todos);
+model save(const std::string& fname, model todos);
 model load(const std::string& fname);
 
 using boost::fusion::operators::operator==;
