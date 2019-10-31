@@ -19,6 +19,8 @@
 
 #include <lager/util.hpp>
 
+#include <iostream>
+
 namespace lager {
 
 struct transactional_tag
@@ -36,7 +38,14 @@ public:
 
     using cursor_node<T>::cursor_node;
 
-    void send_up(const value_type& value) final { this->push_down(value); }
+    void send_up(const value_type& value) final
+    {
+        this->push_down(value);
+        if constexpr (std::is_same_v<TagT, automatic_tag>) {
+            this->send_down();
+            this->notify();
+        }
+    }
 
     void send_up(value_type&& value) final
     {

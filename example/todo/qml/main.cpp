@@ -69,10 +69,12 @@ public:
 
     Q_INVOKABLE void add(QString text)
     {
-        state_.update([&](auto x) {
-            x.todos = x.todos.push_front({false, text.toStdString()});
-            return x;
-        });
+        if (!text.isEmpty()) {
+            state_.update([&](auto x) {
+                x.todos = x.todos.push_front({false, text.toStdString()});
+                return x;
+            });
+        }
     }
 
     Q_INVOKABLE void remove(int index)
@@ -89,8 +91,8 @@ public:
             auto fpath = QUrl{fname}.toLocalFile();
             if (QFileInfo{fname}.suffix() != "todo")
                 fpath += ".todo";
-            todo::save(fpath.toStdString(), state_.get());
             state_.update([&](auto s) {
+                s      = todo::save(fpath.toStdString(), std::move(s));
                 s.name = QFileInfo{fname}.baseName().toStdString();
                 return s;
             });

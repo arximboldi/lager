@@ -71,6 +71,20 @@ TEST_CASE("state, commit makes latest value visible")
     CHECK(x.get() == 3);
 }
 
+TEST_CASE("state, automatic")
+{
+    auto x = make_state(42, automatic_tag{});
+    CHECK(x.get() == 42);
+
+    x.set(13);
+    CHECK(x.get() == 13);
+
+    x.set(8);
+    x.set(5);
+    x.set(3);
+    CHECK(x.get() == 3);
+}
+
 TEST_CASE("state, commit idempotence")
 {
     auto x = make_state(42);
@@ -123,6 +137,34 @@ TEST_CASE("state, watches always view consistent state")
 
     commit(x, y);
     CHECK(sx.count() == 1);
+    CHECK(sy.count() == 1);
+}
+
+TEST_CASE("state, watches automatic can show inconsistent state")
+{
+    auto x  = make_state(42, automatic_tag{});
+    auto y  = make_state(35, automatic_tag{});
+    auto sx = testing::spy([&](int old, int curr) {
+        CHECK(42 == old);
+        CHECK(84 == curr);
+        CHECK(x.get() == 84);
+        CHECK(y.get() == 35);
+    });
+    auto sy = testing::spy([&](int old, int curr) {
+        CHECK(35 == old);
+        CHECK(70 == curr);
+        CHECK(x.get() == 84);
+        CHECK(y.get() == 70);
+    });
+
+    watch(x, sx);
+    watch(y, sy);
+
+    x.set(84);
+    CHECK(x.get() == 84);
+    CHECK(sx.count() == 1);
+    y.set(70);
+    CHECK(y.get() == 70);
     CHECK(sy.count() == 1);
 }
 
