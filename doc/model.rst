@@ -203,7 +203,7 @@ progresses in one direction, that change is an implicit construction,
 that entities can not be dealt with concurrently.  Identity becomes an
 implicit and flaky construction.
 
-However, in real life, we deal with identity explicit way.  That is
+However, in real life, we deal with identity in an explicit way.  That is
 why people have *names* or *passport numbers*.  These are special
 values, **identity values**, that help us identify people. Identity as
 such serves a double purpose, solving the forementioned state/identity
@@ -296,7 +296,7 @@ Normalization
 
 After applying the principle of explicit identity to your program, you
 might realise this insight: *the data-model of the application starts
-too look like a data-base!*
+to look like a data-base!*
 
 And you are correct: the model of our application is an in-memory
 data-base, and the Lager store, combined with reducers and actions,
