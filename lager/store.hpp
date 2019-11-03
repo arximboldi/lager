@@ -92,7 +92,7 @@ public:
 
 private:
     template <typename A, typename M, typename D>
-    friend class store;
+    friend struct store;
 
     template <typename ReducerFn, typename EventLoop, typename Deps>
     struct store_node final : detail::store_node_base<Action, Model>
