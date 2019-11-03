@@ -185,7 +185,7 @@ In the previous example, there is ony one instance of
 ``boost::asio::io_context`` that is passed to all the effects that are
 evaluated within the Lager context.  This is a good replacement of the
 `singleton design pattern`_: there is a single instance, but there is
-low phisical coupling and you can still replace the instance in a
+low physical coupling and you can still replace the instance in a
 different context, particularly in unit tests.
 
 .. _singleton design pattern: https://en.wikipedia.org/wiki/Singleton_pattern
