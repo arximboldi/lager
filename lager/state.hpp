@@ -19,8 +19,6 @@
 
 #include <lager/util.hpp>
 
-#include <iostream>
-
 namespace lager {
 
 struct transactional_tag
