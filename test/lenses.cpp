@@ -12,6 +12,7 @@
 
 #include <catch.hpp>
 
+#include <zug/compose.hpp>
 #include <immer/vector.hpp>
 #include <lager/lenses.hpp>
 #include <zug/util.hpp>
@@ -35,7 +36,7 @@ using namespace zug;
 
 TEST_CASE("lenses, minimal example")
 {
-    auto month = [](auto&& f) {
+    auto month = zug::comp([](auto&& f) {
         return [=](auto&& p) {
             return f(p.month)([&](auto&& x) {
                 auto r  = std::forward<decltype(p)>(p);
@@ -43,9 +44,9 @@ TEST_CASE("lenses, minimal example")
                 return r;
             });
         };
-    };
+    });
 
-    auto birthday = [](auto&& f) {
+    auto birthday = zug::comp([](auto&& f) {
         return [=](auto&& p) {
             return f(p.birthday)([&](auto&& x) {
                 auto r     = std::forward<decltype(p)>(p);
@@ -53,9 +54,9 @@ TEST_CASE("lenses, minimal example")
                 return r;
             });
         };
-    };
+    });
 
-    auto name = [](auto&& f) {
+    auto name = zug::comp([](auto&& f) {
         return [=](auto&& p) {
             return f(p.name)([&](auto&& x) {
                 auto r = std::forward<decltype(p)>(p);
@@ -63,9 +64,9 @@ TEST_CASE("lenses, minimal example")
                 return r;
             });
         };
-    };
+    });
 
-    auto birthday_month = comp(birthday, month);
+    auto birthday_month = birthday | month;
 
     auto p1 = person{{5, 4}, "juanpe"};
     CHECK(view(name, p1) == "juanpe");
@@ -83,7 +84,7 @@ TEST_CASE("lenses, minimal example")
 TEST_CASE("lenses, attr")
 {
     auto name           = attr(&person::name);
-    auto birthday_month = comp(attr(&person::birthday), attr(&yearday::month));
+    auto birthday_month = attr(&person::birthday) | attr(&yearday::month);
 
     auto p1 = person{{5, 4}, "juanpe"};
     CHECK(view(name, p1) == "juanpe");
@@ -101,7 +102,7 @@ TEST_CASE("lenses, attr")
 TEST_CASE("lenses, attr, references")
 {
     auto name           = attr(&person::name);
-    auto birthday_month = comp(attr(&person::birthday), attr(&yearday::month));
+    auto birthday_month = attr(&person::birthday) | attr(&yearday::month);
 
     auto p1       = person{{5, 4}, "juanpe", {{"foo"}, {"bar"}}};
     const auto p2 = p1;
@@ -121,7 +122,7 @@ TEST_CASE("lenses, attr, references")
 TEST_CASE("lenses, at")
 {
     auto first      = at(0);
-    auto first_name = comp(first, attr(&person::name));
+    auto first_name = first | attr(&person::name);
 
     auto v1 = std::vector<person>{};
     CHECK(view(first_name, v1) == "");
@@ -155,8 +156,7 @@ auto attr2(Member member)
 TEST_CASE("lenses, attr2")
 {
     auto name = attr2(&person::name);
-    auto birthday_month =
-        comp(attr2(&person::birthday), attr2(&yearday::month));
+    auto birthday_month = attr2(&person::birthday) | attr2(&yearday::month);
 
     auto p1 = person{{5, 4}, "juanpe"};
     CHECK(view(name, p1) == "juanpe");
@@ -174,8 +174,7 @@ TEST_CASE("lenses, attr2")
 TEST_CASE("lenses, attr2, references")
 {
     auto name = attr2(&person::name);
-    auto birthday_month =
-        comp(attr2(&person::birthday), attr2(&yearday::month));
+    auto birthday_month = attr2(&person::birthday) | attr2(&yearday::month);
 
     auto p1       = person{{5, 4}, "juanpe", {{"foo"}, {"bar"}}};
     const auto p2 = p1;
@@ -195,7 +194,7 @@ TEST_CASE("lenses, attr2, references")
 TEST_CASE("lenses, at immutable index")
 {
     auto first      = at_i(0);
-    auto first_name = comp(first, attr(&person::name));
+    auto first_name = first | attr(&person::name);
 
     auto v1 = immer::vector<person>{};
     CHECK(view(first_name, v1) == "");
