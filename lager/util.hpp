@@ -66,64 +66,6 @@ struct type_
 
 #define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
 
-namespace detail {
-
-template <class F, class G>
-struct composed
-{
-    F f;
-    G g;
-
-    template <class... T>
-    decltype(auto) operator()(T&&... xs)
-    {
-        return std::invoke(f, std::invoke(g, std::forward<T>(xs)...));
-    }
-};
-
-template <typename... Fns>
-struct get_composed;
-
-template <typename... Ts>
-using get_composed_t = typename get_composed<Ts...>::type;
-
-template <typename F>
-struct get_composed<F>
-{
-    using type = F;
-};
-
-template <typename F, typename... Fs>
-struct get_composed<F, Fs...>
-{
-    using type = composed<F, get_composed_t<Fs...>>;
-};
-
-} // namespace detail
-
-//! @defgroup util
-//! @{
-
-/*!
- * Returns a function that is function composition of the given arguments. For
- * example, given `f` and `g`, returns a function that returns `f(g(...))` when
- * invoked.
- */
-template <typename F>
-auto comp(F&& f) -> F&&
-{
-    return std::forward<F>(f);
-}
-
-template <typename Fn, typename... Fns>
-auto comp(Fn&& f, Fns&&... fns)
-    -> detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>
-{
-    using result_t =
-        detail::get_composed_t<std::decay_t<Fn>, std::decay_t<Fns>...>;
-    return result_t{std::forward<Fn>(f), comp(std::forward<Fns>(fns)...)};
-}
-
 /*!
  * Unwraps multiple layers of state wrappers added by store enhancers.
  */
