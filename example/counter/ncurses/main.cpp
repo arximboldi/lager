@@ -19,6 +19,8 @@
 #include <lager/event_loop/boost_asio.hpp>
 #include <lager/store.hpp>
 
+#include <zug/compose.hpp>
+
 using namespace std::string_literals;
 
 void draw(const counter::model& c)
@@ -68,7 +70,7 @@ int main(int argc, const char** argv)
         counter::model{},
         counter::update,
         lager::with_boost_asio_event_loop{serv},
-        lager::comp(
+        zug::comp(
 #ifdef DEBUGGER
             lager::with_debugger(debugger),
 #endif

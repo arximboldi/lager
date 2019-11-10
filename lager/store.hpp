@@ -17,6 +17,8 @@
 #include <lager/state.hpp>
 #include <lager/util.hpp>
 
+#include <zug/compose.hpp>
+
 #include <memory>
 #include <type_traits>
 
@@ -224,7 +226,7 @@ auto make_store(Model&& init,
                 EventLoop&& loop,
                 Enhancers&&... enhancers)
 {
-    auto enhancer      = comp(std::forward<Enhancers>(enhancers)...);
+    auto enhancer      = zug::comp(std::forward<Enhancers>(enhancers)...);
     auto store_creator = enhancer([&](auto action,
                                       auto&& model,
                                       auto&& reducer,

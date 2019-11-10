@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <zug/compose.hpp>
+
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -97,20 +99,20 @@ namespace lens {
 template <typename Getter, typename Setter>
 auto getset(Getter&& getter, Setter&& setter)
 {
-    return [=](auto&& f) {
+    return zug::comp([=](auto&& f) {
         return [&, f](auto&& p) {
             return f(getter(std::forward<decltype(p)>(p)))([&](auto&& x) {
                 return setter(std::forward<decltype(p)>(p),
                               std::forward<decltype(x)>(x));
             });
         };
-    };
+    });
 }
 
 template <typename Member>
 auto attr(Member member)
 {
-    return [=](auto&& f) {
+    return zug::comp([=](auto&& f) {
         return [&, f](auto&& p) {
             return f(std::forward<decltype(p)>(p).*member)([&](auto&& x) {
                 auto r    = std::forward<decltype(p)>(p);
@@ -118,13 +120,13 @@ auto attr(Member member)
                 return r;
             });
         };
-    };
+    });
 }
 
 template <typename Key>
 auto at(Key key)
 {
-    return [=](auto&& f) {
+    return zug::comp([=](auto&& f) {
         return [f, &key](auto&& p) {
             return f([&] {
                 try {
@@ -140,13 +142,13 @@ auto at(Key key)
                 return r;
             });
         };
-    };
+    });
 }
 
 template <typename Key>
 auto at_i(Key key)
 {
-    return [=](auto&& f) {
+    return zug::comp([=](auto&& f) {
         return [f, &key](auto&& p) {
             return f([&] {
                 try {
@@ -163,7 +165,7 @@ auto at_i(Key key)
                 }
             });
         };
-    };
+    });
 }
 
 } // namespace lens
