@@ -14,6 +14,8 @@
 
 #include <lager/config.hpp>
 
+#include <zug/util.hpp>
+
 #include <functional>
 
 namespace lager {
@@ -46,7 +48,7 @@ visitor(Ts...)->visitor<Ts...>;
 //! @{
 
 //! Function that takes any argument and does nothing
-constexpr struct noop_t
+ZUG_INLINE_CONSTEXPR struct noop_t
 {
     template <typename... T>
     void operator()(T&&...) const
@@ -54,7 +56,14 @@ constexpr struct noop_t
 } noop{};
 
 //! Function that returns its first arguemnt
-constexpr auto identity = [](auto&& x) { return std::forward<decltype(x)>(x); };
+ZUG_INLINE_CONSTEXPR struct identity_t
+{
+    template <typename T>
+    decltype(auto) operator()(T&& x) const
+    {
+        return ZUG_FWD(x);
+    };
+} identity{};
 
 //! @} group: util
 
