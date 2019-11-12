@@ -316,6 +316,21 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
 //! @{
 
 /*!
+ * Heuristically determine if the effect is empty or a noop operation.
+ */
+template <typename Ctx>
+bool is_empty_effect(const std::function<Ctx>& v)
+{
+    return !v || v.template target<decltype(noop)>() == &noop;
+}
+
+template <typename Eff>
+bool is_empty_effect(const Eff& v)
+{
+    return false;
+}
+
+/*!
  * Invokes the @a reducer with the @a model and @a action and returns the
  * resulting model. If the reducer returns an effect, it evaluates the @a
  * handler passing the effect to it. This function can be used to generically
@@ -336,7 +351,9 @@ auto invoke_reducer(Reducer&& reducer,
 {
     auto [new_model, effect] =
         std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
-    LAGER_FWD(handler)(effect);
+    if (!is_empty_effect(effect)) {
+        LAGER_FWD(handler)(effect);
+    }
     return std::move(new_model);
 }
 
@@ -365,17 +382,15 @@ auto sequence(effect<Actions1, Deps1> a, effect<Actions2, Deps2> b)
     using actions_t = detail::merge_actions_t<Actions1, Actions2>;
     using result_t  = effect<actions_t, deps_t>;
 
-    return (!a || a.template target<decltype(noop)>() == &noop) &&
-                   (!b || b.template target<decltype(noop)>() == &noop)
+    return is_empty_effect(a) && is_empty_effect(b)
                ? result_t{noop}
-               : !a || a.template target<decltype(noop)>() == &noop
+               : is_empty_effect(a)
                      ? result_t{b}
-                     : !b || b.template target<decltype(noop)>() == &noop
-                           ? result_t{a}
-                           : result_t{[a, b](auto&& ctx) {
-                                 a(ctx);
-                                 b(ctx);
-                             }};
+                     : is_empty_effect(b) ? result_t{a}
+                                          : result_t{[a, b](auto&& ctx) {
+                                                a(ctx);
+                                                b(ctx);
+                                            }};
 }
 
 template <typename A1, typename D1, typename A2, typename D2, typename... Effs>
