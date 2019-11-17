@@ -66,12 +66,14 @@ public:
     private:
         friend http_debug_server;
 
-        handle(int argc, const char** argv)
+        handle(int argc, const char** argv, std::string resources_path)
             : program_{join_args_(argc, argv)}
+            , resources_path_(std::move(resources_path))
         {}
 
         std::string program_ = {};
-        context_t context_   = {};
+        std::string resources_path_ = {};
+        context_t context_ = {};
         std::shared_ptr<const model> model_{nullptr};
 
         static std::string join_args_(int argc, const char** argv)
@@ -233,7 +235,7 @@ public:
         assert(!handle_);
         assert(!server_.is_running());
         using handle_t = handle<Debugger>;
-        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
+        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_, resources_path_});
         auto& hdl      = *hdl_;
         server_.register_resource("/api/step/{cursor}", &hdl.step_resource_);
         server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
