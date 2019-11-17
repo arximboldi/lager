@@ -24,7 +24,7 @@
 std::string font_path()
 {
     using namespace std::string_literals;
-    return lager::resources_path() + "/SourceSansPro-Regular.ttf"s;
+    return example_common::resources_path() + "/SourceSansPro-Regular.ttf"s;
 }
 
 struct sdl_view
