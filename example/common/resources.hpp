@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include "config.hpp"
 #include <cstdlib>
 
 namespace example_common {

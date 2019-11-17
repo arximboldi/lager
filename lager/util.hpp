@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <lager/config.hpp>
-
 #include <zug/util.hpp>
 
 #include <functional>
