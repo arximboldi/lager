@@ -13,6 +13,10 @@
 #include "resources.hpp"
 #include <cstdlib>
 
+#ifndef LAGER_PREFIX_PATH
+#error LAGER_PREFIX_PATH needs to be defined for examples
+#endif
+
 const char* example_common::resources_path()
 {
     auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");

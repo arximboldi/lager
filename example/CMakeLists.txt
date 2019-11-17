@@ -9,7 +9,7 @@ add_library(examples-common EXCLUDE_FROM_ALL
   common/resources.hpp
   common/resources.cpp)
 
-target_compile_definitions(examples-common PRIVATE -DLAGER_PREFIX_PATH=${CMAKE_INSTALL_PREFIX})
+target_compile_definitions(examples-common PRIVATE LAGER_PREFIX_PATH="\\"${CMAKE_INSTALL_PREFIX}\\"")
 target_include_directories(examples-common INTERFACE common/)
 
 # std  examples
