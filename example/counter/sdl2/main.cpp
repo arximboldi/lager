@@ -14,6 +14,7 @@
 #include <SDL_ttf.h>
 
 #include "../counter.hpp"
+#include "resources.hpp"
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
 

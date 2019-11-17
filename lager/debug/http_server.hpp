@@ -200,14 +200,10 @@ public:
             using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
-                auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-                auto resources_path = env_resources_path ? env_resources_path
-                                                         : LAGER_PREFIX_PATH
-                                          "/share/lager";
                 auto req_path = req.get_path();
                 auto rel_path =
                     req_path == "/" ? "/gui/index.html" : "/gui/" + req_path;
-                auto full_path = resources_path + rel_path;
+                auto full_path = this->self.resources_path() + rel_path;
                 auto content_type =
                     detail::ends_with(full_path, ".html")
                         ? "text/html"
@@ -224,9 +220,10 @@ public:
         } gui_resource_ = {*this};
     };
 
-    http_debug_server(int argc, const char** argv, std::uint16_t port)
+    http_debug_server(int argc, const char** argv, std::uint16_t port, std::string resources_path)
         : argc_{argc}
         , argv_{argv}
+        , resources_path_{std::move(resources_path)}
         , server_{httpserver::create_webserver(port)}
     {}
 
@@ -251,9 +248,15 @@ public:
         return hdl;
     }
 
+    std::string const& resources_path()
+    {
+        return resources_path_;
+    }
+
 private:
     int argc_;
     const char** argv_;
+    std::string resources_path_;
     httpserver::webserver server_        = httpserver::create_webserver(8080);
     std::unique_ptr<handle_base> handle_ = nullptr;
 };

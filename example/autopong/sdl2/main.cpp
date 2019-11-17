@@ -11,6 +11,7 @@
 //
 
 #include "../autopong.hpp"
+#include "resources.hpp"
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -30,7 +31,7 @@ constexpr auto font_size = 32;
 std::string font_path()
 {
     using namespace std::string_literals;
-    return lager::resources_path() + "/SourceSansPro-Bold.ttf"s;
+    return example_common::resources_path() + "/SourceSansPro-Bold.ttf"s;
 }
 
 struct sdl_view
@@ -143,7 +144,7 @@ int main(int argc, const char** argv)
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #ifdef DEBUGGER
-    auto debugger = lager::http_debug_server{argc, argv, 8080};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, example_common::resources_path()};
 #endif
     auto view = sdl_view{};
     auto loop = lager::sdl_event_loop{};

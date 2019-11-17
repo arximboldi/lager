@@ -100,8 +100,5 @@ if (lager_BUILD_DOCS)
   add_subdirectory(doc)
 endif()
 
-configure_file(lager/config.hpp.in
-  "${CMAKE_SOURCE_DIR}/lager/config.hpp")
-
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
 install(DIRECTORY lager DESTINATION include)

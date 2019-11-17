@@ -12,6 +12,7 @@
 
 #include "../counter.hpp"
 #include "terminal.hpp"
+#include "resources.hpp"
 
 #include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
@@ -61,10 +62,10 @@ int main(int argc, const char** argv)
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
 #if defined(DEBUGGER) || defined(TREE_DEBUGGER)
-    auto debugger = lager::http_debug_server{argc, argv, 8080};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, example_common::resources_path()};
 #endif
 #ifdef META_DEBUGGER
-    auto meta_debugger = lager::http_debug_server{argc, argv, 8081};
+    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, example_common::resources_path()};
 #endif
     auto store = lager::make_store<counter::action>(
         counter::model{},

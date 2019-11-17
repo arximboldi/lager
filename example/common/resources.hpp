@@ -12,4 +12,13 @@
 
 #pragma once
 
-#define LAGER_PREFIX_PATH "@CMAKE_INSTALL_PREFIX@"
+#include "config.hpp"
+#include <cstdlib>
+
+namespace example_common {
+
+//! @} group: util
+
+const char* resources_path();
+
+} // namespace lager

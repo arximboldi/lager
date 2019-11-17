@@ -2,6 +2,16 @@
 add_custom_target(examples COMMENT "Build all examples")
 add_dependencies(check examples)
 
+# examples common code
+# ====================
+
+add_library(examples-common EXCLUDE_FROM_ALL
+  common/resources.hpp
+  common/resources.cpp)
+
+target_compile_definitions(examples-common PRIVATE -DLAGER_PREFIX_PATH=${CMAKE_INSTALL_PREFIX})
+target_include_directories(examples-common INTERFACE common/)
+
 # std  examples
 # ====================
 
@@ -24,6 +34,7 @@ set(counter_ncurses_include_directories
   ${CURSES_INCLUDE_DIR})
 set(counter_ncurses_link_libraries
   lager-debugger
+  examples-common
   ${CURSES_LIBRARIES})
 
 add_executable(counter-ncurses EXCLUDE_FROM_ALL ${counter_ncurses_sources})
@@ -58,6 +69,7 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(counter-sdl2
     lager-debugger
+    examples-common
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples counter-sdl2)
@@ -70,6 +82,7 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(autopong
     lager-debugger
+    examples-common
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples autopong)
@@ -83,6 +96,7 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(autopong-debug
     lager-debugger
+    examples-common
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples autopong-debug)
