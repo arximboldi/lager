@@ -63,6 +63,11 @@ public:
             std::atomic_store(&model_, std::make_shared<const model>(m));
         }
 
+        std::string const& resources_path()
+        {
+          return resources_path_;
+        }
+
     private:
         friend http_debug_server;
 
@@ -248,11 +253,6 @@ public:
         handle_ = std::move(hdl_);
         server_.start();
         return hdl;
-    }
-
-    std::string const& resources_path()
-    {
-        return resources_path_;
     }
 
 private:
