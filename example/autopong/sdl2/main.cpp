@@ -11,7 +11,6 @@
 //
 
 #include "../autopong.hpp"
-#include "resources.hpp"
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -26,12 +25,23 @@
 #include <string>
 #include <variant>
 
+#ifndef LAGER_PREFIX_PATH
+#error LAGER_PREFIX_PATH needs to be defined for examples
+#endif
+
 constexpr auto font_size = 32;
+
+inline const char* resources_path()
+{
+  auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
+  return env_resources_path ? env_resources_path
+                            : LAGER_PREFIX_PATH "/share/lager";
+}
 
 std::string font_path()
 {
     using namespace std::string_literals;
-    return example_common::resources_path() + "/SourceSansPro-Bold.ttf"s;
+    return resources_path() + "/SourceSansPro-Bold.ttf"s;
 }
 
 struct sdl_view
@@ -144,7 +154,7 @@ int main(int argc, const char** argv)
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #ifdef DEBUGGER
-    auto debugger = lager::http_debug_server{argc, argv, 8080, example_common::resources_path()};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, resources_path()};
 #endif
     auto view = sdl_view{};
     auto loop = lager::sdl_event_loop{};

@@ -12,7 +12,6 @@
 
 #include "../counter.hpp"
 #include "terminal.hpp"
-#include "resources.hpp"
 
 #include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
@@ -22,7 +21,18 @@
 
 #include <zug/compose.hpp>
 
+#ifndef LAGER_PREFIX_PATH
+#error LAGER_PREFIX_PATH needs to be defined for examples
+#endif
+
 using namespace std::string_literals;
+
+inline const char* resources_path()
+{
+  auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
+  return env_resources_path ? env_resources_path
+                            : LAGER_PREFIX_PATH "/share/lager";
+}
 
 void draw(const counter::model& c)
 {
@@ -62,10 +72,10 @@ int main(int argc, const char** argv)
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
 #if defined(DEBUGGER) || defined(TREE_DEBUGGER)
-    auto debugger = lager::http_debug_server{argc, argv, 8080, example_common::resources_path()};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, resources_path()};
 #endif
 #ifdef META_DEBUGGER
-    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, example_common::resources_path()};
+    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, resources_path()};
 #endif
     auto store = lager::make_store<counter::action>(
         counter::model{},
