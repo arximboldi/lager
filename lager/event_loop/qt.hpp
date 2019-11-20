@@ -14,35 +14,33 @@
 
 #include <QCoreApplication>
 #include <QMetaObject>
-#include <Qt>
-#include <QtConcurrentRun>
 
 #include <functional>
 #include <utility>
 
 namespace lager {
 
-struct with_qapplication_event_loop
+struct with_qt_event_loop
 {
-    std::reference_wrapper<QCoreApplication> app;
+    std::reference_wrapper<QObject> obj;
 
     template <typename Fn>
     void async(Fn&& fn)
     {
-        QtConcurrent::run(std::forward<Fn>(fn));
+        throw std::runtime_error{"not implemented!"};
     }
 
     template <typename Fn>
     void post(Fn&& fn)
     {
         QMetaObject::invokeMethod(
-            &app.get(), std::forward<Fn>(fn), Qt::QueuedConnection);
+            &obj.get(), std::forward<Fn>(fn), Qt::QueuedConnection);
     }
 
-    void finish() { app.get().quit(); }
+    void finish() { QCoreApplication::instance()->quit(); }
 
-    void pause() {}
-    void resume() {}
+    void pause() { throw std::runtime_error{"not implemented!"}; }
+    void resume() { throw std::runtime_error{"not implemented!"}; }
 };
 
 } // namespace lager

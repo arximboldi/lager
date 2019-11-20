@@ -17,6 +17,9 @@
 #include <zug/util.hpp>
 
 #include <functional>
+#include <variant>
+
+#define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
 
 namespace lager {
 
@@ -43,6 +46,35 @@ struct visitor : Ts...
 
 template <class... Ts>
 visitor(Ts...)->visitor<Ts...>;
+
+namespace detail {
+
+template <typename TupleT>
+struct matcher : TupleT
+{
+    template <typename... Visitors>
+    decltype(auto) operator()(Visitors&&... vs) &&
+    {
+        return std::apply(
+            [&](auto&&... xs) {
+                return std::visit(lager::visitor{LAGER_FWD(vs)...},
+                                  LAGER_FWD(xs)...);
+            },
+            static_cast<TupleT&&>(std::move(*this)));
+    }
+};
+
+template <typename T>
+matcher(T)->matcher<T>;
+
+} // namespace detail
+
+template <typename... Variants>
+auto match(Variants&&... vs)
+{
+    return detail::matcher{
+        std::forward_as_tuple(std::forward<Variants>(vs)...)};
+}
 
 //! @defgroup util
 //! @{
@@ -72,8 +104,6 @@ struct type_
 {
     using type = Type;
 };
-
-#define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
 
 /*!
  * Unwraps multiple layers of state wrappers added by store enhancers.
