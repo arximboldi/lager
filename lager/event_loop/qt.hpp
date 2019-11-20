@@ -14,7 +14,6 @@
 
 #include <QCoreApplication>
 #include <QMetaObject>
-#include <QtConcurrentRun>
 
 #include <functional>
 #include <utility>
@@ -28,7 +27,7 @@ struct with_qt_event_loop
     template <typename Fn>
     void async(Fn&& fn)
     {
-        QtConcurrent::run(std::forward<Fn>(fn));
+        throw std::runtime_error{"not implemented!"};
     }
 
     template <typename Fn>
@@ -40,8 +39,8 @@ struct with_qt_event_loop
 
     void finish() { QCoreApplication::instance()->quit(); }
 
-    void pause() {}
-    void resume() {}
+    void pause() { throw std::runtime_error{"not implemented!"}; }
+    void resume() { throw std::runtime_error{"not implemented!"}; }
 };
 
 } // namespace lager
