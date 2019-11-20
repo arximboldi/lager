@@ -13,7 +13,7 @@
 #include "../model.hpp"
 #include "qmodel.hpp"
 
-#include <lager/event_loop/qapplication.hpp>
+#include <lager/event_loop/qt.hpp>
 #include <lager/store.hpp>
 
 #include <QApplication>
@@ -32,10 +32,8 @@ int main(int argc, char** argv)
 
     std::random_device rd;
     auto initial_state = make_initial(rd());
-    auto store =
-        lager::make_store<action_t>(std::move(initial_state),
-                                    update,
-                                    lager::with_qapplication_event_loop{app});
+    auto store         = lager::make_store<action_t>(
+        std::move(initial_state), update, lager::with_qt_event_loop{app});
 
     Game game{store};
     watch(store,

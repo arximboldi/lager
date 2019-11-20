@@ -14,7 +14,6 @@
 
 #include <QCoreApplication>
 #include <QMetaObject>
-#include <Qt>
 #include <QtConcurrentRun>
 
 #include <functional>
@@ -22,9 +21,9 @@
 
 namespace lager {
 
-struct with_qapplication_event_loop
+struct with_qt_event_loop
 {
-    std::reference_wrapper<QCoreApplication> app;
+    std::reference_wrapper<QObject> obj;
 
     template <typename Fn>
     void async(Fn&& fn)
@@ -36,10 +35,10 @@ struct with_qapplication_event_loop
     void post(Fn&& fn)
     {
         QMetaObject::invokeMethod(
-            &app.get(), std::forward<Fn>(fn), Qt::QueuedConnection);
+            &obj.get(), std::forward<Fn>(fn), Qt::QueuedConnection);
     }
 
-    void finish() { app.get().quit(); }
+    void finish() { QCoreApplication::instance()->quit(); }
 
     void pause() {}
     void resume() {}
