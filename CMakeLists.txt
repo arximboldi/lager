@@ -16,6 +16,11 @@ endif()
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
+option(lager_EMBED_RESOURCES_PATH "Embed installation paths for easier, non-portable resource location" ON)
+
+if ((NOT lager_BUILD_EXAMPLES) AND lager_BUILD_TESTS)
+  message(FATA_ERROR "Examples require embedded resources path")
+endif()
 
 find_program(CCACHE ccache)
 if (CCACHE)
@@ -100,5 +105,15 @@ if (lager_BUILD_DOCS)
   add_subdirectory(doc)
 endif()
 
+# Also configure and install the resources_path.hpp file if wanted
+if (lager_EMBED_RESOURCES_PATH)
+  set(LAGER_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
+  configure_file(lager/resources_path.hpp.in
+    ${CMAKE_BINARY_DIR}/include/resources_path.hpp)
+  target_include_directories(lager
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/>)
+  install(FILES ${CMAKE_BINARY_DIR}/include/resources_path.hpp DESTINATION include)
+endif()
+
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
-install(DIRECTORY lager DESTINATION include)
+install(DIRECTORY lager DESTINATION include PATTERN "*.hpp")

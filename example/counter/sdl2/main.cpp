@@ -16,25 +16,15 @@
 #include "../counter.hpp"
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
+#include <lager/resources_path.hpp>
 
 #include <iostream>
 #include <string>
 
-#ifndef LAGER_PREFIX_PATH
-#error LAGER_PREFIX_PATH needs to be defined for examples
-#endif
-
-inline const char* resources_path()
-{
-  auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-  return env_resources_path ? env_resources_path
-                            : LAGER_PREFIX_PATH "/share/lager";
-}
-
 std::string font_path()
 {
     using namespace std::string_literals;
-    return resources_path() + "/SourceSansPro-Regular.ttf"s;
+    return lager::resources_path() + "/SourceSansPro-Regular.ttf"s;
 }
 
 struct sdl_view

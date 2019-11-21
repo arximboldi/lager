@@ -18,6 +18,7 @@
 #include <lager/debug/tree_debugger.hpp>
 #include <lager/event_loop/boost_asio.hpp>
 #include <lager/store.hpp>
+#include <lager/resources_path.hpp>
 
 #include <zug/compose.hpp>
 
@@ -26,13 +27,6 @@
 #endif
 
 using namespace std::string_literals;
-
-inline const char* resources_path()
-{
-  auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-  return env_resources_path ? env_resources_path
-                            : LAGER_PREFIX_PATH "/share/lager";
-}
 
 void draw(const counter::model& c)
 {
@@ -72,10 +66,10 @@ int main(int argc, const char** argv)
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
 #if defined(DEBUGGER) || defined(TREE_DEBUGGER)
-    auto debugger = lager::http_debug_server{argc, argv, 8080, resources_path()};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, lager::resources_path()};
 #endif
 #ifdef META_DEBUGGER
-    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, resources_path()};
+    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, lager::resources_path()};
 #endif
     auto store = lager::make_store<counter::action>(
         counter::model{},

@@ -2,9 +2,6 @@
 add_custom_target(examples COMMENT "Build all examples")
 add_dependencies(check examples)
 
-# inject LAGER_PREFIX_PATH into examples
-add_library(lager-prefix INTERFACE)
-target_compile_definitions(lager-prefix INTERFACE LAGER_PREFIX_PATH="\\"${CMAKE_INSTALL_PREFIX}\\"")
 
 # std  examples
 # ====================
@@ -28,7 +25,6 @@ set(counter_ncurses_include_directories
   ${CURSES_INCLUDE_DIR})
 set(counter_ncurses_link_libraries
   lager-debugger
-  lager-prefix
   ${CURSES_LIBRARIES})
 
 add_executable(counter-ncurses EXCLUDE_FROM_ALL ${counter_ncurses_sources})
@@ -63,7 +59,6 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(counter-sdl2
     lager-debugger
-    lager-prefix
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples counter-sdl2)
@@ -76,7 +71,6 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(autopong
     lager-debugger
-    lager-prefix
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples autopong)
@@ -90,7 +84,6 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     ${SDL2_TTF_INCLUDE_DIR})
   target_link_libraries(autopong-debug
     lager-debugger
-    lager-prefix
     ${SDL2_LIBRARY}
     ${SDL2_TTF_LIBRARIES})
   add_dependencies(examples autopong-debug)
