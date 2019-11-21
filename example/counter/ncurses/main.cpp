@@ -22,10 +22,6 @@
 
 #include <zug/compose.hpp>
 
-#ifndef LAGER_PREFIX_PATH
-#error LAGER_PREFIX_PATH needs to be defined for examples
-#endif
-
 using namespace std::string_literals;
 
 void draw(const counter::model& c)
