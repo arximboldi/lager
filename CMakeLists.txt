@@ -109,10 +109,10 @@ endif()
 if (lager_EMBED_RESOURCES_PATH)
   set(LAGER_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
   configure_file(lager/resources_path.hpp.in
-    ${CMAKE_BINARY_DIR}/include/resources_path.hpp)
+    ${CMAKE_BINARY_DIR}/include/lager/resources_path.hpp)
   target_include_directories(lager
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/>)
-  install(FILES ${CMAKE_BINARY_DIR}/include/resources_path.hpp DESTINATION include/lager)
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>)
+  install(FILES ${CMAKE_BINARY_DIR}/include/lager/resources_path.hpp DESTINATION include/lager)
 endif()
 
 install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
