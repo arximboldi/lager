@@ -19,6 +19,9 @@
 
 #define LAGER_FWD(name_) std::forward<decltype(name_)>(name_)
 
+#define LAGER_STATIC_ASSERT_MESSAGE_BEGIN "\n=======================\n\n"
+#define LAGER_STATIC_ASSERT_MESSAGE_END "\n\n=======================\n"
+
 namespace lager {
 
 //! @defgroup util

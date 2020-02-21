@@ -276,11 +276,26 @@ private:
 //! @defgroup effects
 //! @{
 
+template <typename Action, typename Deps>
+struct effect_for
+{
+    static_assert(
+        is_deps<Deps>::value,
+        LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+        "The second template argument of `lager::effect<...>`, must be a "
+        "lager::deps<>. \n\nMaybe you are trying to specify an effect that can "
+        "dispatch multiple action types? In that case, use the syntax: "
+        "lager::effect<lager::actions<...>, ...>" //
+        LAGER_STATIC_ASSERT_MESSAGE_END);
+
+    using type = std::function<void(const context<Action, Deps>&)>;
+};
+
 /*!
  * Effectful procedure that uses the store context.
  */
 template <typename Action, typename Deps = lager::deps<>>
-using effect = std::function<void(const context<Action, Deps>&)>;
+using effect = typename effect_for<Action, Deps>::type;
 
 //! @} group: effects
 

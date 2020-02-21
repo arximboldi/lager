@@ -488,6 +488,17 @@ bool has(const deps<Ts...>& d)
     return d.template has<Key>();
 }
 
+/*!
+ * Metafunction to see if something is a deps type.
+ */
+template <typename T>
+struct is_deps : std::false_type
+{};
+
+template <typename... Ts>
+struct is_deps<deps<Ts...>> : std::true_type
+{};
+
 //! @}
 
 } // namespace lager
