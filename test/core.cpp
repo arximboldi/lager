@@ -42,12 +42,12 @@ TEST_CASE("effect as a result")
     auto view   = [&](auto model) { viewed = model; };
     auto called = 0;
     auto effect = [&](lager::context<int> ctx) { ++called; };
-    auto store =
-        lager::make_store<int>(0,
-                               [=](int model, int action) {
-                                   return std::pair{model + action, effect};
-                               },
-                               lager::with_manual_event_loop{});
+    auto store  = lager::make_store<int>(
+        0,
+        [=](int model, int action) {
+            return std::pair{model + action, effect};
+        },
+        lager::with_manual_event_loop{});
     watch(store, [&](auto&&, auto&& v) { view(v); });
 
     store.dispatch(2);
@@ -64,11 +64,12 @@ TEST_CASE("effects see updated world")
         CHECK(store->get() == 2);
         ++called;
     };
-    store = lager::make_store<int>(0,
-                                   [=](int model, int action) {
-                                       return std::pair{model + action, effect};
-                                   },
-                                   lager::with_manual_event_loop{});
+    store = lager::make_store<int>(
+        0,
+        [=](int model, int action) {
+            return std::pair{model + action, effect};
+        },
+        lager::with_manual_event_loop{});
 
     store->dispatch(2);
     CHECK(called == 1);
