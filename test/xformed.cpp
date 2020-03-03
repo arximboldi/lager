@@ -310,6 +310,15 @@ struct machine
 
 BOOST_FUSION_ADAPT_STRUCT(machine, name, wheels)
 
+bool operator==(const machine& a, const machine& b)
+{
+    return boost::fusion::operator==(a, b);
+}
+bool operator!=(const machine& a, const machine& b)
+{
+    return boost::fusion::operator!=(a, b);
+}
+
 TEST_CASE("atted, modifying attributes of immutable")
 {
     auto st = make_state(machine{"car", 4});
