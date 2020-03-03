@@ -6,15 +6,15 @@ rec {
   libhttpserver = stdenv.mkDerivation rec {
     name = "libhttpserver-${version}";
     version = "git-${commit}";
-    commit = "4895f43ed29195af70beb47bcfd1ef3ab4555665";
+    commit = "04a23c871b5358e18dd76a220ac715817934eaa9";
     src = fetchFromGitHub {
       owner = "etr";
       repo = "libhttpserver";
       rev = commit;
-      sha256 = "1qg5frqvfhb8bpfiz9wivwjz2icy3si112grv188kgypws58n832";
+      sha256 = "0ild7kvq5x960yzlx3hzr7qkgdz80hx4h2xkjl9ycjnsp2hblnf6";
     };
     propagatedBuildInputs = [ libmicrohttpd ];
-    nativeBuildInputs = [ autoreconfHook gcc5 ];
+    nativeBuildInputs = [ autoreconfHook ];
     configureScript = "../configure";
     configurePhase = ''
       substituteInPlace configure --replace "/bin/pwd" "${coreutils}/bin/pwd"
