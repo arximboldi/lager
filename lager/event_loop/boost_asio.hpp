@@ -12,41 +12,61 @@
 
 #pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
+
 #include <functional>
 #include <thread>
 
 namespace lager {
 
+/*!
+ * Event loop that relies on a Boost.Asio executor.
+ *
+ * @note The Boost asio executor must be single threaded, since in general the
+ *       store is not thread-safe -- `context::dispatch()` is thread safe, but
+ *       it schedules the evaluation of actual store updates and effects in the
+ *       event loop which, it assumes, evaluates them serially.  You can easily
+ *       serialize a multi-threaded executor by wrapping it in a
+ *       `boost::asio::strand`.
+ */
+template <typename Executor>
 struct with_boost_asio_event_loop
 {
-    std::reference_wrapper<boost::asio::io_service> service;
-    std::function<void()> finalizer = {};
+    Executor executor;
+    std::function<void()> stop = [this] { executor.context().stop(); };
+
+    with_boost_asio_event_loop(Executor ex)
+        : executor{std::move(ex)}
+    {}
+
+    with_boost_asio_event_loop(Executor ex, std::function<void()> st)
+        : executor{std::move(ex)}
+        , stop{std::move(st)}
+    {}
 
     template <typename Fn>
     void async(Fn&& fn)
     {
-        std::thread([fn   = std::move(fn),
-                     work = boost::asio::io_service::work(service)] { fn(); })
-            .detach();
+        using work_t = boost::asio::executor_work_guard<Executor>;
+
+        std::thread([fn = std::move(fn), work = work_t{executor}] {
+            fn();
+        }).detach();
     }
 
     template <typename Fn>
     void post(Fn&& fn)
     {
-        service.get().post(std::forward<Fn>(fn));
-    }
-
-    void finish()
-    {
-        if (finalizer)
-            finalizer();
-        else
-            service.get().stop();
+        boost::asio::post(executor, std::forward<Fn>(fn));
     }
 
     void pause() {}
     void resume() {}
+
+    void finish() { stop(); }
 };
 
 } // namespace lager
