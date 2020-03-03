@@ -63,10 +63,7 @@ public:
             std::atomic_store(&model_, std::make_shared<const model>(m));
         }
 
-        std::string const& resources_path()
-        {
-          return resources_path_;
-        }
+        std::string const& resources_path() { return resources_path_; }
 
     private:
         friend http_debug_server;
@@ -76,9 +73,9 @@ public:
             , resources_path_(std::move(resources_path))
         {}
 
-        std::string program_ = {};
+        std::string program_        = {};
         std::string resources_path_ = {};
-        context_t context_ = {};
+        context_t context_          = {};
         std::shared_ptr<const model> model_{nullptr};
 
         static std::string join_args_(int argc, const char** argv)
@@ -107,7 +104,7 @@ public:
             {}
         };
 
-        using response_t = const httpserver::http_response;
+        using response_t = const std::shared_ptr<httpserver::http_response>;
         using request_t  = httpserver::http_request;
 
         struct : resource_t
@@ -124,7 +121,7 @@ public:
                       cereal::make_nvp("cursor", m.cursor),
                       cereal::make_nvp("paused", m.paused));
                 }
-                return httpserver::http_response_builder(
+                return std::make_shared<httpserver::string_response>(
                     s.str(), 200, "text/json");
             }
         } root_resource_ = {*this};
@@ -144,7 +141,7 @@ public:
                         a(cereal::make_nvp("action", *result.first));
                     a(cereal::make_nvp("model", result.second));
                 }
-                return httpserver::http_response_builder(
+                return std::make_shared<httpserver::string_response>(
                     s.str(), 200, "text/json");
             }
         } step_resource_ = {*this};
@@ -157,7 +154,7 @@ public:
                 auto cursor = std::stoul(req.get_arg("cursor"));
                 this->self.context_.dispatch(
                     typename Debugger::goto_action{cursor});
-                return httpserver::http_response_builder("", 200);
+                return std::make_shared<httpserver::string_response>("", 200);
             }
         } goto_resource_ = {*this};
 
@@ -167,7 +164,7 @@ public:
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::undo_action{});
-                return httpserver::http_response_builder("", 200);
+                return std::make_shared<httpserver::string_response>("", 200);
             }
         } undo_resource_ = {*this};
 
@@ -177,7 +174,7 @@ public:
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::redo_action{});
-                return httpserver::http_response_builder("", 200);
+                return std::make_shared<httpserver::string_response>("", 200);
             }
         } redo_resource_ = {*this};
 
@@ -187,7 +184,7 @@ public:
             response_t render_POST(const request_t& req) override
             {
                 this->self.context_.dispatch(typename Debugger::pause_action{});
-                return httpserver::http_response_builder("", 200);
+                return std::make_shared<httpserver::string_response>("", 200);
             }
         } pause_resource_ = {*this};
 
@@ -198,7 +195,7 @@ public:
             {
                 this->self.context_.dispatch(
                     typename Debugger::resume_action{});
-                return httpserver::http_response_builder("", 200);
+                return std::make_shared<httpserver::string_response>("", 200);
             }
         } resume_resource_ = {*this};
 
@@ -220,14 +217,16 @@ public:
                                     ? "text/css"
                                     /* otherwise */
                                     : "text/plain";
-                return httpserver::http_response_builder(
-                           full_path, 200, content_type)
-                    .file_response();
+                return std::make_shared<httpserver::file_response>(
+                    full_path, 200, content_type);
             }
         } gui_resource_ = {*this};
     };
 
-    http_debug_server(int argc, const char** argv, std::uint16_t port, std::string resources_path)
+    http_debug_server(int argc,
+                      const char** argv,
+                      std::uint16_t port,
+                      std::string resources_path)
         : argc_{argc}
         , argv_{argv}
         , resources_path_{std::move(resources_path)}
@@ -240,8 +239,9 @@ public:
         assert(!handle_);
         assert(!server_.is_running());
         using handle_t = handle<Debugger>;
-        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_, resources_path_});
-        auto& hdl      = *hdl_;
+        auto hdl_      = std::unique_ptr<handle_t>(
+            new handle_t{argc_, argv_, resources_path_});
+        auto& hdl = *hdl_;
         server_.register_resource("/api/step/{cursor}", &hdl.step_resource_);
         server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
         server_.register_resource("/api/undo", &hdl.undo_resource_);
