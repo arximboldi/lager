@@ -18,6 +18,7 @@
 #include <lager/debug/tree_debugger.hpp>
 #include <lager/event_loop/boost_asio.hpp>
 #include <lager/store.hpp>
+#include <lager/resources_path.hpp>
 
 #include <zug/compose.hpp>
 
@@ -61,10 +62,10 @@ int main(int argc, const char** argv)
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
     ::init_pair(3, COLOR_WHITE, COLOR_BLUE);
 #if defined(DEBUGGER) || defined(TREE_DEBUGGER)
-    auto debugger = lager::http_debug_server{argc, argv, 8080};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, lager::resources_path()};
 #endif
 #ifdef META_DEBUGGER
-    auto meta_debugger = lager::http_debug_server{argc, argv, 8081};
+    auto meta_debugger = lager::http_debug_server{argc, argv, 8081, lager::resources_path()};
 #endif
     auto store = lager::make_store<counter::action>(
         counter::model{},

@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <lager/config.hpp>
-
 #include <zug/util.hpp>
 
 #include <functional>
@@ -112,15 +110,6 @@ template <typename T>
 const T& unwrap(const T& x)
 {
     return x;
-}
-
-//! @} group: util
-
-inline const char* resources_path()
-{
-    auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-    return env_resources_path ? env_resources_path
-                              : LAGER_PREFIX_PATH "/share/lager";
 }
 
 } // namespace lager

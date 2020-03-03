@@ -63,15 +63,22 @@ public:
             std::atomic_store(&model_, std::make_shared<const model>(m));
         }
 
+        std::string const& resources_path()
+        {
+          return resources_path_;
+        }
+
     private:
         friend http_debug_server;
 
-        handle(int argc, const char** argv)
+        handle(int argc, const char** argv, std::string resources_path)
             : program_{join_args_(argc, argv)}
+            , resources_path_(std::move(resources_path))
         {}
 
         std::string program_ = {};
-        context_t context_   = {};
+        std::string resources_path_ = {};
+        context_t context_ = {};
         std::shared_ptr<const model> model_{nullptr};
 
         static std::string join_args_(int argc, const char** argv)
@@ -200,14 +207,10 @@ public:
             using resource_t::resource_t;
             response_t render_GET(const request_t& req) override
             {
-                auto env_resources_path = std::getenv("LAGER_RESOURCES_PATH");
-                auto resources_path = env_resources_path ? env_resources_path
-                                                         : LAGER_PREFIX_PATH
-                                          "/share/lager";
                 auto req_path = req.get_path();
                 auto rel_path =
                     req_path == "/" ? "/gui/index.html" : "/gui/" + req_path;
-                auto full_path = resources_path + rel_path;
+                auto full_path = this->self.resources_path() + rel_path;
                 auto content_type =
                     detail::ends_with(full_path, ".html")
                         ? "text/html"
@@ -224,9 +227,10 @@ public:
         } gui_resource_ = {*this};
     };
 
-    http_debug_server(int argc, const char** argv, std::uint16_t port)
+    http_debug_server(int argc, const char** argv, std::uint16_t port, std::string resources_path)
         : argc_{argc}
         , argv_{argv}
+        , resources_path_{std::move(resources_path)}
         , server_{httpserver::create_webserver(port)}
     {}
 
@@ -236,7 +240,7 @@ public:
         assert(!handle_);
         assert(!server_.is_running());
         using handle_t = handle<Debugger>;
-        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_});
+        auto hdl_      = std::unique_ptr<handle_t>(new handle_t{argc_, argv_, resources_path_});
         auto& hdl      = *hdl_;
         server_.register_resource("/api/step/{cursor}", &hdl.step_resource_);
         server_.register_resource("/api/goto/{cursor}", &hdl.goto_resource_);
@@ -254,6 +258,7 @@ public:
 private:
     int argc_;
     const char** argv_;
+    std::string resources_path_;
     httpserver::webserver server_        = httpserver::create_webserver(8080);
     std::unique_ptr<handle_base> handle_ = nullptr;
 };

@@ -16,6 +16,7 @@
 #include "../counter.hpp"
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
+#include <lager/resources_path.hpp>
 
 #include <iostream>
 #include <string>

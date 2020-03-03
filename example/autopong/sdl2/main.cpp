@@ -19,11 +19,13 @@
 #include <lager/debug/http_server.hpp>
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
+#include <lager/resources_path.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <string>
 #include <variant>
+
 
 constexpr auto font_size = 32;
 
@@ -143,7 +145,7 @@ int main(int argc, const char** argv)
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #ifdef DEBUGGER
-    auto debugger = lager::http_debug_server{argc, argv, 8080};
+    auto debugger = lager::http_debug_server{argc, argv, 8080, lager::resources_path()};
 #endif
     auto view = sdl_view{};
     auto loop = lager::sdl_event_loop{};
