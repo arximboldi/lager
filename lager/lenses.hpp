@@ -37,7 +37,7 @@ struct const_functor
     T value;
 
     template <typename Fn>
-    auto operator()(Fn&&) &&
+    const_functor operator()(Fn&&) &&
     {
         return std::move(*this);
     }
