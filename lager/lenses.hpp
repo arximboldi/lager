@@ -13,10 +13,12 @@
 #pragma once
 
 #include <zug/compose.hpp>
+#include <lager/util.hpp>
 
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <optional>
 
 namespace lager {
 
@@ -109,10 +111,13 @@ auto getset(Getter&& getter, Setter&& setter)
     });
 }
 
+/*!
+ * `(Part Whole::*) -> Lens<Whole, Part>`
+ */
 template <typename Member>
 auto attr(Member member)
 {
-    return zug::comp([=](auto&& f) {
+    return zug::comp([member](auto&& f) {
         return [&, f](auto&& p) {
             return f(std::forward<decltype(p)>(p).*member)([&](auto&& x) {
                 auto r    = std::forward<decltype(p)>(p);
@@ -123,50 +128,102 @@ auto attr(Member member)
     });
 }
 
+/*!
+ * `Key -> Lens<{X}, [X]>`
+ */
 template <typename Key>
-auto at(Key key)
-{
-    return zug::comp([=](auto&& f) {
-        return [f, &key](auto&& p) {
-            return f([&] {
+auto at(Key key) {
+    return zug::comp([key](auto&& f) {
+        return [f, &key](auto&& whole) {
+            using Part = std::optional<std::decay_t<decltype(whole.at(key))>>;
+
+            return f([&]() -> Part {
                 try {
-                    return std::forward<decltype(p)>(p).at(key);
-                } catch (std::out_of_range const&) {
-                    return std::decay_t<decltype(p.at(key))>{};
+                    return std::forward<decltype(whole)>(whole).at(key);
+                } catch (std::out_of_range const&) { return std::nullopt; }
+            }())([&](Part part) {
+                auto r = std::forward<decltype(whole)>(whole);
+                if (part.has_value()) {
+                    try {
+                        r.at(key) = std::move(part).value();
+                    } catch (std::out_of_range const&) {}
                 }
-            }())([&](auto&& x) {
-                auto r = std::forward<decltype(p)>(p);
-                try {
-                    r.at(key) = std::forward<decltype(x)>(x);
-                } catch (std::out_of_range const&) {}
                 return r;
             });
         };
     });
 }
 
+/*!
+ * `Key -> Lens<{X}, [X]>`
+ */
 template <typename Key>
-auto at_i(Key key)
-{
-    return zug::comp([=](auto&& f) {
-        return [f, &key](auto&& p) {
-            return f([&] {
+auto at_i(Key key) {
+    return zug::comp([key](auto&& f) {
+        return [f, &key](auto&& whole) {
+            using Part = std::optional<std::decay_t<decltype(whole.at(key))>>;
+
+            return f([&]() -> Part {
                 try {
-                    return std::forward<decltype(p)>(p).at(key);
-                } catch (std::out_of_range const&) {
-                    return std::decay_t<decltype(p.at(key))>{};
-                }
-            }())([&](auto&& x) {
-                if (static_cast<std::size_t>(key) < p.size()) {
-                    return std::forward<decltype(p)>(p).set(
-                        key, std::forward<decltype(x)>(x));
+                    return std::forward<decltype(whole)>(whole).at(key);
+                } catch (std::out_of_range const&) { return std::nullopt; }
+            }())([&](Part part) {
+                if (part.has_value() &&
+                    static_cast<std::size_t>(key) < whole.size()) {
+                    return std::forward<decltype(whole)>(whole).set(
+                        key, std::move(part).value());
                 } else {
-                    return std::forward<decltype(p)>(p);
+                    return std::forward<decltype(whole)>(whole);
                 }
             });
         };
     });
 }
+
+/*!
+ * `X -> Lens<[X], X>`
+ */
+template <typename T>
+auto fallback(T&& t) {
+    return zug::comp([t = std::forward<T>(t)](auto&& f) {
+        return [&, f](auto&& whole) {
+            return f(LAGER_FWD(whole).value_or(std::move(t)))(
+                [&](auto&& x) { return LAGER_FWD(x); });
+        };
+    });
+}
+
+/*!
+ * `(Lens<W, P> | Lens<W, [P]>) -> Lens<[W], [P]>`
+ */
+template <typename Lens>
+auto optlift(Lens&& lens) {
+    return zug::comp([lens = std::forward<Lens>(lens)](auto&& f) {
+        return [&, f](auto&& whole) {
+            using Whole = std::decay_t<decltype(whole)>;
+            using Part  = std::optional<std::decay_t<decltype(::lager::view(
+                lens, std::declval<std::decay_t<decltype(whole.value())>>()))>>;
+
+            if (whole.has_value()) {
+                auto&& whole_val = LAGER_FWD(whole).value();
+                return f(Part{::lager::view(lens, LAGER_FWD(whole_val))})(
+                    [&](Part part) {
+                        if (part.has_value()) {
+                            return Whole{::lager::set(lens,
+                                                      LAGER_FWD(whole_val),
+                                                      std::move(part).value())};
+                        } else {
+                            return LAGER_FWD(whole);
+                        }
+                    });
+            } else {
+                return f(Part{std::nullopt})(
+                    [&](auto&&) { return LAGER_FWD(whole); });
+            }
+        };
+    });
+}
+
 
 } // namespace lens
 

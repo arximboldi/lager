@@ -26,6 +26,11 @@ class flex_vector;
 
 } // namespace immer
 
+namespace std {
+template <typename T>
+class optional;
+} // namespace std
+
 namespace lager {
 namespace detail {
 
@@ -60,6 +65,29 @@ struct smart_lens_base
 template <typename T>
 struct smart_lens : smart_lens_base<T>
 {};
+
+struct functor_wrapper_t {
+    template <typename T>
+    const_functor<T> operator()(T&& t) const noexcept;
+};
+
+template <typename Lens, typename T>
+using viewed_t = decltype(
+    std::declval<Lens>()(functor_wrapper_t{})(std::declval<T>()).value);
+
+template <typename T>
+struct smart_lens<std::optional<T>>
+{
+    template <typename U>
+    static auto make(U &&u) {
+        // don't lift lenses that can already handle optionals
+        if constexpr (zug::meta::is_detected<viewed_t, U, std::optional<T>>::value) {
+            return std::forward<U>(u);
+        } else {
+            return ::lager::lens::optlift(smart_lens<T>::make(std::forward<U>(u)));
+        }
+    }
+};
 
 template <typename T, typename MP, std::uint32_t B, std::uint32_t BL>
 struct smart_lens<immer::vector<T, MP, B, BL>>
