@@ -17,6 +17,21 @@
 
 namespace lager {
 
+namespace detail {
+
+template <typename RootCursorT>
+void send_down_root(RootCursorT&& root)
+{
+    noop((detail::access::roots(std::forward<RootCursorT>(root))->send_down(), 0));
+}
+
+template <typename RootCursorT>
+void notify_root(RootCursorT&& root)
+{
+    noop((detail::access::roots(std::forward<RootCursorT>(root))->notify(), 0));
+}
+} // namespace detail
+
 /*!
  * Commit changes to a series of root cursors.  All values from the root cursors
  * are propagated before notifying any watchers.  This ensures that watchers
@@ -25,10 +40,8 @@ namespace lager {
 template <typename... RootCursorTs>
 void commit(RootCursorTs&&... roots)
 {
-    noop((detail::access::roots(std::forward<RootCursorTs>(roots))->send_down(),
-          0)...);
-    noop((detail::access::roots(std::forward<RootCursorTs>(roots))->notify(),
-          0)...);
+    (detail::send_down_root(std::forward<RootCursorTs>(roots)), ...);
+    (detail::notify_root(std::forward<RootCursorTs>(roots)), ...);
 }
 
 } // namespace lager
