@@ -91,7 +91,7 @@ auto has_changed(T&& a, T&& b) -> decltype(!(a == b))
 }
 
 template <typename T>
-auto has_changed(const T& a, const T& b)
+auto has_changed(const T&, const T&)
 {
     return true;
 }
