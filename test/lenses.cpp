@@ -27,7 +27,7 @@ struct person
 {
     yearday birthday;
     std::string name;
-    std::vector<std::string> things;
+    std::vector<std::string> things {};
 };
 
 using namespace lager;
@@ -113,20 +113,20 @@ TEST_CASE("lenses, attr, references")
     CHECK(&view(birthday_month, p2) == &p2.birthday.month);
 
     {
-        int& x       = view(birthday_month, p1);
-        int&& y      = view(birthday_month, std::move(p1));
-        const int& z = view(birthday_month, p2);
+        [[maybe_unused]] int& x       = view(birthday_month, p1);
+        [[maybe_unused]] int&& y      = view(birthday_month, std::move(p1));
+        [[maybe_unused]] const int& z = view(birthday_month, p2);
     }
 }
 
 TEST_CASE("lenses, at")
 {
     auto first      = at(0);
-    auto first_name = first | attr(&person::name);
+    auto first_name = first | optlift(attr(&person::name));
 
     auto v1 = std::vector<person>{};
-    CHECK(view(first_name, v1) == "");
-    CHECK(view(first_name, set(at(0), v1, person{{}, "foo"})) == "");
+    CHECK(view(first_name, v1) == std::nullopt);
+    CHECK(view(first_name, set(at(0), v1, person{{}, "foo"})) == std::nullopt);
 
     v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
@@ -185,23 +185,81 @@ TEST_CASE("lenses, attr2, references")
     CHECK(&view(birthday_month, p2) == &p2.birthday.month);
 
     {
-        int& x       = view(birthday_month, p1);
-        int&& y      = view(birthday_month, std::move(p1));
-        const int& z = view(birthday_month, p2);
+        [[maybe_unused]] int& x       = view(birthday_month, p1);
+        [[maybe_unused]] int&& y      = view(birthday_month, std::move(p1));
+        [[maybe_unused]] const int& z = view(birthday_month, p2);
     }
 }
 
 TEST_CASE("lenses, at immutable index")
 {
     auto first      = at_i(0);
-    auto first_name = first | attr(&person::name);
+    auto first_name = first | optlift(attr(&person::name));
 
     auto v1 = immer::vector<person>{};
-    CHECK(view(first_name, v1) == "");
-    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "");
+    CHECK(view(first_name, v1) == std::nullopt);
+    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == std::nullopt);
 
     v1 = v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
     CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
+}
+
+TEST_CASE("lenses, fallback")
+{
+    auto first      = at_i(0);
+    auto first_name = first | optlift(attr(&person::name)) | fallback("NULL");
+
+    auto v1 = immer::vector<person>{};
+    CHECK(view(first_name, v1) == "NULL");
+    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "NULL");
+
+    v1 = v1.push_back({{}, "foo"});
+    CHECK(view(first_name, v1) == "foo");
+    CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
+    CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
+}
+
+TEST_CASE("lenses, optlift")
+{
+    auto first          = at_i(0);
+    auto birthday       = attr(&person::birthday);
+    auto month          = attr(&yearday::month);
+    auto birthday_month = birthday | month;
+
+    SECTION("lifting composed lenses") {
+        auto first_month = first
+                | optlift(birthday_month);
+
+        auto p1 = person{{5, 4}, "juanpe"};
+
+        auto v1 = immer::vector<person>{};
+        CHECK(view(first_month, v1) == std::nullopt);
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+
+        v1 = v1.push_back(p1);
+        CHECK(view(first_month, v1) == 4);
+        p1.birthday.month = 6;
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(first_month, v1, 8)) == 8);
+    }
+
+    SECTION("composing lifted lenses") {
+        auto first_month = first
+                | optlift(birthday)
+                | optlift(month);
+
+        auto p1 = person{{5, 4}, "juanpe"};
+
+        auto v1 = immer::vector<person>{};
+        CHECK(view(first_month, v1) == std::nullopt);
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+
+        v1 = v1.push_back(p1);
+        CHECK(view(first_month, v1) == 4);
+        p1.birthday.month = 6;
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(first_month, v1, 8)) == 8);
+    }
 }
