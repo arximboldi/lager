@@ -13,6 +13,8 @@
 #pragma once
 
 #include <lager/lenses.hpp>
+#include <zug/meta/detected.hpp>
+#include <type_traits>
 
 namespace immer {
 
@@ -27,9 +29,19 @@ class flex_vector;
 namespace lager {
 namespace detail {
 
+template <typename T, typename Key>
+using at_t = std::decay_t<decltype(std::declval<T>().at(std::declval<Key>()))>;
+
+template <typename T>
 struct smart_lens_base
 {
-    template <typename Key>
+    template <typename Lens, std::enable_if_t<!zug::meta::is_detected<at_t, T, Lens>::value, int> = 0>
+    static auto make(Lens l)
+    {
+        return l;
+    }
+
+    template <typename Key, std::enable_if_t<zug::meta::is_detected<at_t, T, Key>::value, int> = 0>
     static auto make(Key k)
     {
         return lens::at(std::move(k));
@@ -46,7 +58,7 @@ struct smart_lens_base
  * Try to find a nice lens type for the give type.
  */
 template <typename T>
-struct smart_lens : smart_lens_base
+struct smart_lens : smart_lens_base<T>
 {};
 
 template <typename T, typename MP, std::uint32_t B, std::uint32_t BL>
