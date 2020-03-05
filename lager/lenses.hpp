@@ -194,6 +194,19 @@ auto fallback(T&& t) {
 }
 
 /*!
+ * `() -> Lens<[X], X>`
+ */
+auto fallback() {
+    return zug::comp([](auto&& f) {
+        return [&, f](auto&& whole) {
+            using T = std::decay_t<decltype(whole.value())>;
+            return f(LAGER_FWD(whole).value_or(T{}))(
+                [&](auto&& x) { return LAGER_FWD(x); });
+        };
+    });
+}
+
+/*!
  * `(Lens<W, P> | Lens<W, [P]>) -> Lens<[W], [P]>`
  */
 template <typename Lens>
