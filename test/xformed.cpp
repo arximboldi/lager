@@ -27,18 +27,37 @@ using namespace zug;
 using namespace lager;
 using namespace boost::fusion::operators;
 
+namespace detail {
+template <typename T> struct is_optional : std::false_type {};
+template <typename T> struct is_optional<std::optional<T>> : std::true_type {};
+template <typename T>
+[[maybe_unused]] constexpr bool is_optional_v = is_optional<std::decay_t<T>>::value;
+}
+
 template <typename AttrT, typename... CursorTs>
 auto attred(AttrT&& member, CursorTs&&... cs)
 {
-    return zoom(lens::attr(std::forward<AttrT>(member)),
-                std::forward<CursorTs>(cs)...);
+    if constexpr (std::disjunction_v<
+            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
+        return zoom(lens::optlift(lens::attr(std::forward<AttrT>(member))),
+                    std::forward<CursorTs>(cs)...);    
+    } else {
+        return zoom(lens::attr(std::forward<AttrT>(member)),
+                    std::forward<CursorTs>(cs)...);
+    }
 }
 
 template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& key, CursorTs&&... cs)
 {
-    return zoom(lens::at(std::forward<KeyT>(key)),
-                std::forward<CursorTs>(cs)...);
+    if constexpr (std::disjunction_v<
+            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
+        return zoom(lens::optlift(lens::at(std::forward<KeyT>(key))),
+                    std::forward<CursorTs>(cs)...);
+    } else {
+        return zoom(lens::at(std::forward<KeyT>(key)),
+                    std::forward<CursorTs>(cs)...);
+    }
 }
 
 TEST_CASE("xformed, to_in")
