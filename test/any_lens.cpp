@@ -62,7 +62,7 @@ TEST_CASE("type erased lenses, attr")
 
 TEST_CASE("type erased lenses, at")
 {
-    auto first_vll = attr(&tree::children) | at(0);
+    auto first_vll = attr(&tree::children) | at_i(0);
     any_lens<tree, std::optional<immer::box<tree>>> first_child = first_vll;
     any_lens<tree, std::optional<size_t>> first_value =
             first_child.get() | optlift(unbox | attr(&tree::value));
