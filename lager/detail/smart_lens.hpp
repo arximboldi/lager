@@ -26,11 +26,6 @@ class flex_vector;
 
 } // namespace immer
 
-namespace std {
-template <typename T>
-class optional;
-} // namespace std
-
 namespace lager {
 namespace detail {
 
