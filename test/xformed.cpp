@@ -206,11 +206,11 @@ TEST_CASE("atted, accessing keys of a container")
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
     auto x      = atted("john", st);
-    CHECK(0 == x.get()); // not found => default constructed
+    CHECK(std::nullopt == x.get()); // not found => nullopt
 
     x.set(12);
     commit(st);
-    CHECK(0 == x.get()); // not magically created
+    CHECK(std::nullopt == x.get()); // not magically created
     CHECK(map_t{} == st.get());
 
     st.set(map_t{{"john", 42}});
@@ -230,12 +230,12 @@ TEST_CASE("atted, accessing keys of a container")
     //    CHECK(43 == x.get());
     //
     // This is, after removing the element, the cursor zooming on it would not
-    // update to show a default-constructed one.  This was considered useful to
-    // animate element removals (the view of the element still has a reference
-    // to the data).  There are other ways to achieve this behavior though.  We
-    // can, for example, have an at() lense that returns an optional, and then
-    // filter and dereference, to achieve, exactly the same behavior.
-    CHECK(0 == x.get());
+    // update to show nullopt.  This was considered useful to animate element
+    // removals (the view of the element still has a reference to the data).
+    // There are other ways to achieve this behavior though.  We can, for
+    // example, have an at() lense that returns an optional, and then filter and
+    // dereference, to achieve, exactly the same behavior.
+    CHECK(std::nullopt == x.get());
 }
 
 TEST_CASE("atted, accessing keys of acontainer in version")
@@ -243,7 +243,7 @@ TEST_CASE("atted, accessing keys of acontainer in version")
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
     auto x      = atted("john", st);
-    CHECK(0 == x.get()); // not found => default constructed
+    CHECK(std::nullopt == x.get()); // not found => nullopt
 
     st.set(map_t{{"john", 42}});
     commit(st);
