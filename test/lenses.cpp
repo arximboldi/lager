@@ -263,3 +263,100 @@ TEST_CASE("lenses, optlift")
         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
     }
 }
+
+TEST_CASE("lenses, optmap")
+{
+    auto first          = at_i(0);
+    auto birthday       = attr(&person::birthday);
+    auto month          = attr(&yearday::month);
+    auto birthday_month = birthday | month;
+
+    SECTION("mapping composed lenses") {
+        auto first_month = first
+                | optmap(birthday_month);
+
+        auto p1 = person{{5, 4}, "juanpe"};
+
+        auto v1 = immer::vector<person>{};
+        CHECK(view(first_month, v1) == std::nullopt);
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+
+        v1 = v1.push_back(p1);
+        CHECK(view(first_month, v1) == 4);
+        p1.birthday.month = 6;
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(first_month, v1, 8)) == 8);
+    }
+
+    SECTION("composing mapped lenses") {
+        auto first_month = first
+                | optmap(birthday)
+                | optmap(month);
+
+        auto p1 = person{{5, 4}, "juanpe"};
+
+        auto v1 = immer::vector<person>{};
+        CHECK(view(first_month, v1) == std::nullopt);
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+
+        v1 = v1.push_back(p1);
+        CHECK(view(first_month, v1) == 4);
+        p1.birthday.month = 6;
+        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(first_month, v1, 8)) == 8);
+    }
+}
+
+TEST_CASE("lenses, optbind")
+{
+    [[maybe_unused]] auto wrong = optbind(attr(&person::name));
+    std::optional<person> p1 = person{{5, 4}, "juanpe"};
+    // CHECK(view(wrong, p1) == "juanpe"); // should not compile
+
+    SECTION("composing bound lenses") {
+        auto first       = optbind(at(0));
+        auto first_first = first | first;
+
+        std::optional<std::vector<std::vector<int>>> v1;
+
+        v1 = {};
+        CHECK(view(first, v1) == std::nullopt);
+        CHECK(view(first_first, v1) == std::nullopt);
+        CHECK(view(first, set(first_first, v1, 256)) == std::nullopt);
+        CHECK(view(first_first, set(first_first, v1, 256)) == std::nullopt);
+
+        v1 = {{std::vector<int>{}}};
+        CHECK(view(first, v1) != std::nullopt);
+        CHECK(view(first_first, v1) == std::nullopt);
+        CHECK(view(first_first, set(first_first, v1, 256)) == std::nullopt);
+
+        v1 = {{{42}}};
+        CHECK(view(first, v1) != std::nullopt);
+        CHECK(view(first_first, v1) == 42);
+        CHECK(view(first_first, set(first_first, v1, 256)) == 256);
+    }
+
+    SECTION("binding composed bound lenses") {
+        auto raw_first   = at(0);
+        auto first       = optbind(at(0));
+        auto first_first = optbind(raw_first | first);
+
+        std::optional<std::vector<std::vector<int>>> v1;
+
+        v1 = {};
+        CHECK(view(first, v1) == std::nullopt);
+        CHECK(view(first_first, v1) == std::nullopt);
+        CHECK(view(first, set(first_first, v1, 256)) == std::nullopt);
+        CHECK(view(first_first, set(first_first, v1, 256)) == std::nullopt);
+
+        v1 = {{std::vector<int>{}}};
+        CHECK(view(first, v1) != std::nullopt);
+        CHECK(view(first_first, v1) == std::nullopt);
+        CHECK(view(first_first, set(first_first, v1, 256)) == std::nullopt);
+
+        v1 = {{{42}}};
+        CHECK(view(first, v1) != std::nullopt);
+        CHECK(view(first_first, v1) == 42);
+        CHECK(view(first_first, set(first_first, v1, 256)) == 256);
+    }
+}
