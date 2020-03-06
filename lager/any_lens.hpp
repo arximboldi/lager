@@ -32,7 +32,7 @@ struct lens_holder : public lens_i<Whole, Part> {
 } // namespace detail
 
 template <typename Whole, typename Part>
-class any_lens {
+class any_lens : zug::detail::pipeable {
     std::shared_ptr<detail::lens_i<Whole, Part> const> m_holder;
 
 public:
@@ -50,16 +50,15 @@ public:
         : m_holder{new detail::lens_holder<Lens, Whole, Part>{
               std::forward<Lens>(lens)}} {}
 
-    auto get() const {
-        return zug::comp([lens = m_holder](auto&& f) {
-            return [&, f](auto&& p) {
-                return f(lens->view(std::forward<decltype(p)>(p)))(
-                    [&](auto&& x) {
-                        return lens->set(std::forward<decltype(p)>(p),
-                                         std::forward<decltype(x)>(x));
-                    });
-            };
-        });
+    template <typename F>
+    auto operator()(F &&f) const {
+        return [lens = m_holder, f](auto&& p) {
+            return f(lens->view(std::forward<decltype(p)>(p)))(
+                [&](auto&& x) {
+                    return lens->set(std::forward<decltype(p)>(p),
+                                     std::forward<decltype(x)>(x));
+                });
+        };
     }
 };
 
