@@ -33,7 +33,7 @@ struct lens_holder : public lens_i<Whole, Part> {
 
 template <typename Whole, typename Part>
 class any_lens : zug::detail::pipeable {
-    std::shared_ptr<detail::lens_i<Whole, Part> const> m_holder;
+    std::shared_ptr<detail::lens_i<Whole, Part> const> holder_;
 
 public:
     any_lens(any_lens const&) = default;
@@ -47,15 +47,15 @@ public:
                   !std::is_same_v<std::decay_t<Lens>, std::decay_t<any_lens>>,
                   int>::type = 0>
     any_lens(Lens&& lens)
-        : m_holder{new detail::lens_holder<Lens, Whole, Part>{
+        : holder_{new detail::lens_holder<Lens, Whole, Part>{
               std::forward<Lens>(lens)}} {}
 
     template <typename F>
     auto operator()(F &&f) const {
-        return [lens = m_holder, f](auto&& p) {
-            return f(lens->view(std::forward<decltype(p)>(p)))(
+        return [&, f = std::forward<F>(f)](auto&& p) {
+            return f(holder_->view(std::forward<decltype(p)>(p)))(
                 [&](auto&& x) {
-                    return lens->set(std::forward<decltype(p)>(p),
+                    return holder_->set(std::forward<decltype(p)>(p),
                                      std::forward<decltype(x)>(x));
                 });
         };
