@@ -12,9 +12,12 @@
 
 #include <catch.hpp>
 
+#include <vector>
+
 #include <zug/compose.hpp>
 #include <immer/vector.hpp>
 #include <immer/box.hpp>
+#include <immer/algorithm.hpp>
 #include <lager/lenses.hpp>
 #include <lager/any_lens.hpp>
 #include <zug/util.hpp>
@@ -35,6 +38,17 @@ auto unbox = zug::comp([](auto&& f) {
         });
     };
 });
+
+auto force_opt = zug::comp([](auto&& f) {
+    return [f = LAGER_FWD(f)](auto&& p) {
+        using opt_t = std::optional<std::decay_t<decltype(p)>>;
+        return f(opt_t{LAGER_FWD(p)})([&](auto&& x) {
+            return std::forward<decltype(x)>(x)
+                .value_or(LAGER_FWD(p));
+        });
+    };
+});
+
 
 using namespace lager;
 using namespace lager::lens;
@@ -62,108 +76,105 @@ TEST_CASE("type erased lenses, attr")
 
 TEST_CASE("type erased lenses, at")
 {
-    auto first_vll = attr(&tree::children) | at_i(0);
-    any_lens<tree, std::optional<immer::box<tree>>> first_child = first_vll;
-    any_lens<tree, std::optional<size_t>> first_value =
-            first_child | optlift(unbox | attr(&tree::value));
+    auto children = attr(&tree::children);
+    auto first_child = children | at_i(0);
+    any_lens<tree, std::optional<immer::box<tree>>> te_first_child = first_child;
+    any_lens<tree, std::optional<size_t>> te_first_value =
+            te_first_child | optlift(unbox | attr(&tree::value));
 
-    auto vll = first_value;
+    auto t1 = tree{42};
+    CHECK(view(te_first_value, t1) == std::nullopt);
+    CHECK(view(te_first_value, set(first_child, t1, t1)) == std::nullopt);
+    CHECK(view(te_first_value, set(te_first_child, t1, t1)) == std::nullopt);
 
-    auto t1 = tree{42, {256, 1115}, {}};
-    CHECK(view(vll, t1) == std::nullopt);
-    // CHECK(view(vll, set(first_vll, t1, t1)) == std::nullopt);
+    t1 = over(children, t1, [](auto vec) {
+        return vec.push_back(tree{1});
+    });
 
-    // t1.push_back({{}, "foo"});
-    // CHECK(view(first_name, t1) == "foo");
-    // CHECK(view(first_name, set(at(0), t1, person{{}, "bar"})) == "bar");
-    // CHECK(view(first_name, set(first_name, t1, "bar")) == "bar");
+    CHECK(view(te_first_value, t1) == 1);
+    CHECK(view(te_first_value, set(first_child, t1, tree{2})) == 2);
+    CHECK(view(te_first_value, set(te_first_child, t1, tree{3})) == 3);
+    CHECK(view(te_first_value, set(te_first_value, t1, 4)) == 4);
 }
 
-// template <typename Member>
-// auto attr2(Member member)
-// {
-//     return getset(
-//         [=](auto&& x) -> decltype(auto) {
-//             return std::forward<decltype(x)>(x).*member;
-//         },
-//         [=](auto x, auto&& v) {
-//             x.*member = std::forward<decltype(v)>(v);
-//             return x;
-//         });
-// };
+template <typename Member>
+auto attr2(Member member)
+{
+    return getset(
+        [=](auto&& x) -> decltype(auto) {
+            return std::forward<decltype(x)>(x).*member;
+        },
+        [=](auto x, auto&& v) {
+            x.*member = std::forward<decltype(v)>(v);
+            return x;
+        });
+};
 
-// TEST_CASE("type erased lenses, attr2")
-// {
-//     auto name = attr2(&person::name);
-//     auto birthday_month = attr2(&person::birthday) | attr2(&yearday::month);
+TEST_CASE("type erased lenses, attr2")
+{
+    using te_lens = any_lens<tree, size_t>;
 
-//     auto p1 = person{{5, 4}, "juanpe"};
-//     CHECK(view(name, p1) == "juanpe");
-//     CHECK(view(birthday_month, p1) == 4);
+    te_lens value = attr2(&tree::value);
+    te_lens first = attr2(&tree::pair) | attr2(&val_pair::first);
 
-//     auto p2 = set(birthday_month, p1, 6);
-//     CHECK(p2.birthday.month == 6);
-//     CHECK(view(birthday_month, p2) == 6);
+    auto t1 = tree{42, {256, 1115}};
+    CHECK(view(value, t1) == 42);
+    CHECK(view(first, t1) == 256);
 
-//     auto p3 = over(birthday_month, p1, [](auto x) { return --x; });
-//     CHECK(view(birthday_month, p3) == 3);
-//     CHECK(p3.birthday.month == 3);
-// }
+    auto p2 = set(first, t1, 6);
+    CHECK(p2.pair.first == 6);
+    CHECK(view(first, p2) == 6);
 
-// TEST_CASE("type erased lenses, fallback")
-// {
-//     auto first      = at_i(0);
-//     auto first_name = first | optlift(attr(&person::name)) | fallback("NULL");
+    auto p3 = over(first, t1, [](auto x) { return --x; });
+    CHECK(view(first, p3) == 255);
+    CHECK(p3.pair.first == 255);
+}
 
-//     auto v1 = immer::vector<person>{};
-//     CHECK(view(first_name, v1) == "NULL");
-//     CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "NULL");
+using lens_list = std::vector<any_lens<tree, std::optional<size_t>>>;
 
-//     v1 = v1.push_back({{}, "foo"});
-//     CHECK(view(first_name, v1) == "foo");
-//     CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
-//     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
-// }
+lens_list all_values(tree t) {
+    size_t idx = 0;
+    lens_list res {attr(&tree::value) | force_opt};
+    for (auto child : t.children) {
+        auto child_lens = attr(&tree::children)
+                        | at_i(idx++)
+                        | optmap(unbox);
+        for (auto lens : all_values(child.get())) {
+            res.push_back(child_lens | optbind(lens));
+        }
+    }
+    return res;
+}
 
-// TEST_CASE("type erased lenses, optlift")
-// {
-//     auto first          = at_i(0);
-//     auto birthday       = attr(&person::birthday);
-//     auto month          = attr(&yearday::month);
-//     auto birthday_month = birthday | month;
+TEST_CASE("type erased lenses, nesting")
+{
+    auto children = attr(&tree::children);
+    auto t1 = over(children, tree{1}, [](auto vec) {
+        return vec.push_back(tree{2})
+                  .push_back(tree{3});
+    });
+    auto t2 = t1;
+    t1 = over(children, t1, [=](auto vec) {
+        return vec.push_back(t1);
+    });
 
-//     SECTION("lifting composed type erased lenses") {
-//         auto first_month = first
-//                 | optlift(birthday_month);
+    auto lenses = all_values(t1);
 
-//         auto p1 = person{{5, 4}, "juanpe"};
-
-//         auto v1 = immer::vector<person>{};
-//         CHECK(view(first_month, v1) == std::nullopt);
-//         CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
-
-//         v1 = v1.push_back(p1);
-//         CHECK(view(first_month, v1) == 4);
-//         p1.birthday.month = 6;
-//         CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
-//         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
-//     }
-
-//     SECTION("composing lifted type erased lenses") {
-//         auto first_month = first
-//                 | optlift(birthday)
-//                 | optlift(month);
-
-//         auto p1 = person{{5, 4}, "juanpe"};
-
-//         auto v1 = immer::vector<person>{};
-//         CHECK(view(first_month, v1) == std::nullopt);
-//         CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
-
-//         v1 = v1.push_back(p1);
-//         CHECK(view(first_month, v1) == 4);
-//         p1.birthday.month = 6;
-//         CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
-//         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
-//     }
-// }
+    size_t expected1[] = {1, 2, 3, 1, 2, 3};
+    for (size_t idx = 0; idx < lenses.size(); ++idx) {
+        CHECK(view(lenses[idx], t1) == expected1[idx]);
+    }
+    
+    std::optional<size_t> expected2[] =
+        {1, 2, 3, std::nullopt, std::nullopt, std::nullopt};
+    for (size_t idx = 0; idx < lenses.size(); ++idx) {
+        CHECK(view(lenses[idx], t2) == expected2[idx]);
+    }
+    
+    size_t expected3[] = {4, 6, 48, 3, 5, 16};
+    for (size_t idx = 0; idx < lenses.size(); ++idx) {
+        auto lens = lenses[idx];
+        auto expected = expected1[idx];
+        CHECK(view(lens, set(lens, t1, expected)) == expected);
+    }
+}
