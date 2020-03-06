@@ -48,15 +48,15 @@ TEST_CASE("type erased lenses, attr")
     te_lens first = attr(&tree::pair) | attr(&val_pair::first);
 
     auto t1 = tree{42, {256, 1115}};
-    CHECK(view(value.get(), t1) == 42);
-    CHECK(view(first.get(), t1) == 256);
+    CHECK(view(value, t1) == 42);
+    CHECK(view(first, t1) == 256);
 
-    auto p2 = set(first.get(), t1, 6);
+    auto p2 = set(first, t1, 6);
     CHECK(p2.pair.first == 6);
-    CHECK(view(first.get(), p2) == 6);
+    CHECK(view(first, p2) == 6);
 
-    auto p3 = over(first.get(), t1, [](auto x) { return --x; });
-    CHECK(view(first.get(), p3) == 255);
+    auto p3 = over(first, t1, [](auto x) { return --x; });
+    CHECK(view(first, p3) == 255);
     CHECK(p3.pair.first == 255);
 }
 
@@ -65,9 +65,9 @@ TEST_CASE("type erased lenses, at")
     auto first_vll = attr(&tree::children) | at_i(0);
     any_lens<tree, std::optional<immer::box<tree>>> first_child = first_vll;
     any_lens<tree, std::optional<size_t>> first_value =
-            first_child.get() | optlift(unbox | attr(&tree::value));
+            first_child | optlift(unbox | attr(&tree::value));
 
-    auto vll = first_value.get();
+    auto vll = first_value;
 
     auto t1 = tree{42, {256, 1115}, {}};
     CHECK(view(vll, t1) == std::nullopt);
