@@ -47,7 +47,7 @@ public:
                   !std::is_same_v<std::decay_t<Lens>, std::decay_t<any_lens>>,
                   int>::type = 0>
     any_lens(Lens&& lens)
-        : holder_{new detail::lens_holder<Lens, Whole, Part>{
+        : holder_{new detail::lens_holder<std::decay_t<Lens>, Whole, Part>{
               std::forward<Lens>(lens)}} {}
 
     template <typename F>
