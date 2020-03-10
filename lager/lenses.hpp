@@ -102,7 +102,7 @@ template <typename Getter, typename Setter>
 auto getset(Getter&& getter, Setter&& setter)
 {
     return zug::comp([=](auto&& f) {
-        return [&, f](auto&& p) {
+        return [&, f = LAGER_FWD(f)](auto&& p) {
             return f(getter(std::forward<decltype(p)>(p)))([&](auto&& x) {
                 return setter(std::forward<decltype(p)>(p),
                               std::forward<decltype(x)>(x));
@@ -118,7 +118,7 @@ template <typename Member>
 auto attr(Member member)
 {
     return zug::comp([member](auto&& f) {
-        return [&, f](auto&& p) {
+        return [&, f = LAGER_FWD(f)](auto&& p) {
             return f(std::forward<decltype(p)>(p).*member)([&](auto&& x) {
                 auto r    = std::forward<decltype(p)>(p);
                 r.*member = std::forward<decltype(x)>(x);
@@ -134,7 +134,7 @@ auto attr(Member member)
 template <typename Key>
 auto at(Key key) {
     return zug::comp([key](auto&& f) {
-        return [f, &key](auto&& whole) {
+        return [f = LAGER_FWD(f), &key](auto&& whole) {
             using Part = std::optional<std::decay_t<decltype(whole.at(key))>>;
 
             return f([&]() -> Part {
@@ -160,7 +160,7 @@ auto at(Key key) {
 template <typename Key>
 auto at_i(Key key) {
     return zug::comp([key](auto&& f) {
-        return [f, &key](auto&& whole) {
+        return [f = LAGER_FWD(f), &key](auto&& whole) {
             using Part = std::optional<std::decay_t<decltype(whole.at(key))>>;
 
             return f([&]() -> Part {
@@ -186,7 +186,7 @@ auto at_i(Key key) {
 template <typename T>
 auto fallback(T&& t) {
     return zug::comp([t = std::forward<T>(t)](auto&& f) {
-        return [&, f](auto&& whole) {
+        return [&, f = LAGER_FWD(f)](auto&& whole) {
             return f(LAGER_FWD(whole).value_or(std::move(t)))(
                 [&](auto&& x) { return LAGER_FWD(x); });
         };
@@ -198,7 +198,7 @@ auto fallback(T&& t) {
  */
 auto fallback() {
     return zug::comp([](auto&& f) {
-        return [&, f](auto&& whole) {
+        return [&, f = LAGER_FWD(f)](auto&& whole) {
             using T = std::decay_t<decltype(whole.value())>;
             return f(LAGER_FWD(whole).value_or(T{}))(
                 [&](auto&& x) { return LAGER_FWD(x); });
