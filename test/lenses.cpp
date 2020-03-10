@@ -199,6 +199,7 @@ TEST_CASE("lenses, at immutable index")
     auto v1 = immer::vector<person>{};
     CHECK(view(first_name, v1) == std::nullopt);
     CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == std::nullopt);
+    CHECK(view(first_name, set(first_name, v1, "bar")) == std::nullopt);
 
     v1 = v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
@@ -214,6 +215,7 @@ TEST_CASE("lenses, fallback")
     auto v1 = immer::vector<person>{};
     CHECK(view(first_name, v1) == "NULL");
     CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "NULL");
+    CHECK(view(first_name, set(first_name, v1, "bar")) == "NULL");
 
     v1 = v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
