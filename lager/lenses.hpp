@@ -13,6 +13,7 @@
 #pragma once
 
 #include <zug/compose.hpp>
+#include <zug/meta/util.hpp>
 #include <lager/util.hpp>
 
 #include <stdexcept>
@@ -206,33 +207,62 @@ auto fallback() {
     });
 }
 
+namespace detail {
+
+template <
+    template <typename>
+    typename PartMeta,
+    typename Whole,
+    typename Lens,
+    typename Functor>
+decltype(auto) opt_impl(Whole&& whole, Lens&& lens, Functor&& f) {
+    using Part = typename PartMeta<std::decay_t<decltype(::lager::view(
+        std::forward<Lens>(lens),
+        std::declval<std::decay_t<decltype(whole.value())>>()))>>::type;
+
+    if (whole.has_value()) {
+        return std::invoke(
+            std::forward<Functor>(f),
+            Part{::lager::view(
+                std::forward<Lens>(lens), std::forward<Whole>(whole).value())})(
+            [&](Part part) {
+                if (part.has_value()) {
+                    return std::decay_t<Whole>{::lager::set(
+                        std::forward<Lens>(lens),
+                        std::forward<Whole>(whole).value(),
+                        std::move(part).value())};
+                } else {
+                    return std::forward<Whole>(whole);
+                }
+            });
+    } else {
+        return std::invoke(std::forward<Functor>(f), Part{std::nullopt})(
+            [&](auto&&) { return std::forward<Whole>(whole); });
+    }
+}
+
+template <typename T> struct remove_opt { using type = T; };
+template <typename T> struct remove_opt<std::optional<T>> { using type = T; };
+template <typename T> using remove_opt_t = typename remove_opt<T>::type;
+
+template <typename T> struct to_opt {
+    using type = std::optional<remove_opt_t<std::decay_t<T>>>;
+};
+
+template <typename T> struct add_opt {
+    using type = std::optional<std::decay_t<T>>;
+};
+
+} // namespace detail
+
 /*!
  * `Lens<W, P> -> Lens<[W], [P]>`
  */
 template <typename Lens>
 auto optmap(Lens&& lens) {
     return zug::comp([lens = std::forward<Lens>(lens)](auto&& f) {
-        return [&, f](auto&& whole) {
-            using Whole = std::decay_t<decltype(whole)>;
-            using Part  = std::optional<std::decay_t<decltype(::lager::view(
-                lens, std::declval<std::decay_t<decltype(whole.value())>>()))>>;
-
-            if (whole.has_value()) {
-                auto&& whole_val = LAGER_FWD(whole).value();
-                return f(Part{::lager::view(lens, LAGER_FWD(whole_val))})(
-                    [&](Part part) {
-                        if (part.has_value()) {
-                            return Whole{::lager::set(lens,
-                                                      LAGER_FWD(whole_val),
-                                                      std::move(part).value())};
-                        } else {
-                            return LAGER_FWD(whole);
-                        }
-                    });
-            } else {
-                return f(Part{std::nullopt})(
-                    [&](auto&&) { return LAGER_FWD(whole); });
-            }
+        return [&, f = LAGER_FWD(f)](auto&& whole) {
+            return detail::opt_impl<detail::add_opt>(LAGER_FWD(whole), lens, f);
         };
     });
 }
@@ -243,38 +273,10 @@ auto optmap(Lens&& lens) {
 template <typename Lens>
 auto optbind(Lens&& lens) {
     return zug::comp([lens = std::forward<Lens>(lens)](auto&& f) {
-        return [&, f](auto&& whole) {
-            using Whole = std::decay_t<decltype(whole)>;
-            using Part  = std::decay_t<decltype(::lager::view(
-                lens, std::declval<std::decay_t<decltype(whole.value())>>()))>;
-            
-            if (whole.has_value()) {
-                auto&& whole_val = LAGER_FWD(whole).value();
-                return f(Part{::lager::view(lens, LAGER_FWD(whole_val))})(
-                    [&](Part part) {
-                        if (part.has_value()) {
-                            return Whole{::lager::set(lens,
-                                                      LAGER_FWD(whole_val),
-                                                      std::move(part).value())};
-                        } else {
-                            return LAGER_FWD(whole);
-                        }
-                    });
-            } else {
-                return f(Part{std::nullopt})(
-                    [&](auto&&) { return LAGER_FWD(whole); });
-            }
+        return [&, f = LAGER_FWD(f)](auto&& whole) {
+            return detail::opt_impl<zug::meta::identity>(LAGER_FWD(whole), lens, f);
         };
     });
-}
-
-namespace detail {
-template <typename T> struct remove_opt { using type = T; };
-template <typename T> struct remove_opt<std::optional<T>> { using type = T; };
-template <typename T> using remove_opt_t = typename remove_opt<T>::type;
-
-template <typename T> using to_opt_t =
-    typename std::optional<remove_opt_t<std::decay_t<T>>>;
 }
 
 /*!
@@ -283,27 +285,8 @@ template <typename T> using to_opt_t =
 template <typename Lens>
 auto optlift(Lens&& lens) {
     return zug::comp([lens = std::forward<Lens>(lens)](auto&& f) {
-        return [&, f](auto&& whole) {
-            using Whole = std::decay_t<decltype(whole)>;
-            using Part  = detail::to_opt_t<decltype(::lager::view(
-                lens, std::declval<std::decay_t<decltype(whole.value())>>()))>;
-
-            if (whole.has_value()) {
-                auto&& whole_val = LAGER_FWD(whole).value();
-                return f(Part{::lager::view(lens, LAGER_FWD(whole_val))})(
-                    [&](Part part) {
-                        if (part.has_value()) {
-                            return Whole{::lager::set(lens,
-                                                      LAGER_FWD(whole_val),
-                                                      std::move(part).value())};
-                        } else {
-                            return LAGER_FWD(whole);
-                        }
-                    });
-            } else {
-                return f(Part{std::nullopt})(
-                    [&](auto&&) { return LAGER_FWD(whole); });
-            }
+        return [&, f = LAGER_FWD(f)](auto&& whole) {
+            return detail::opt_impl<detail::to_opt>(LAGER_FWD(whole), lens, f);
         };
     });
 }
