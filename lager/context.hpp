@@ -363,16 +363,60 @@ struct result : std::pair<Model, lager::effect<Action, Deps>>
 {
     using base_t = std::pair<Model, lager::effect<Action, Deps>>;
 
-    using base_t::base_t;
+    result(const result&) = default;
+    result(result&&)      = default;
+    result& operator=(const result&) = default;
+    result& operator=(result&&) = default;
 
     result(Model m)
         : base_t{std::move(m), lager::noop}
     {}
 
-    result(const result&) = default;
-    result(result&&)      = default;
-    result& operator=(const result&) = default;
-    result& operator=(result&&) = default;
+    template <typename M2, typename A2, typename D2>
+    result(result<M2, A2, D2> r)
+        : base_t{[&]() -> decltype(auto) {
+            static_assert(check<M2, A2, D2>(), "");
+            return std::move(r);
+        }()}
+    {}
+
+    template <typename M2, typename A2, typename D2>
+    result(M2 m, effect<A2, D2> e)
+        : base_t{std::move(m), [&]() -> decltype(auto) {
+                     static_assert(check<M2, A2, D2>(), "");
+                     return std::move(e);
+                 }()}
+    {}
+
+    template <typename M2, typename Effect>
+    result(M2 m, Effect e)
+        : base_t{std::move(m), std::move(e)}
+    {}
+
+    template <typename M2, typename A2, typename D2>
+    constexpr static bool check()
+    {
+        static_assert(std::is_convertible_v<M2, Model>,
+                      LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+                      "The model of the result types are not convertible" //
+                      LAGER_STATIC_ASSERT_MESSAGE_END);
+        static_assert(
+            detail::are_compatible_actions_v<A2, Action>,
+            LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+            "The actions actions of the given effect are not compatible to \
+those if this result.  This effect's action must be a superset of those of the \
+given effect.\n\nThis may occur when returning effects from a nested reducer \
+and you forgot to add the nested action to the parent action variant." //
+            LAGER_STATIC_ASSERT_MESSAGE_END);
+        static_assert(
+            std::is_convertible_v<Deps, D2>,
+            LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+            "Some dependencies missing in this result type.\n\nThis may occur \
+when returning effects from a nested reducer and you forgot to add dependencies \
+from the nested resulting effect to the result of the parent reducer." //
+            LAGER_STATIC_ASSERT_MESSAGE_END);
+        return true;
+    }
 };
 
 //! @} group: effects
@@ -412,7 +456,7 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
  * Heuristically determine if the effect is empty or a noop operation.
  */
 template <typename Ctx>
-bool is_empty_effect(const std::function<Ctx>& v)
+bool is_empty_effect(const std::function<void(Ctx)>& v)
 {
     return !v || v.template target<decltype(noop)>() == &noop;
 }

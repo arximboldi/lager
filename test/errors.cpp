@@ -32,3 +32,22 @@ TEST_CASE("allow context of void")
     auto ctx = lager::context<>{};
     // ctx.dispatch();
 }
+
+struct foo
+{};
+
+TEST_CASE("result conversion")
+{
+    // bad model:
+    // lager::result<int>{lager::result<std::string>{""};}
+
+    // bad actions:
+    // lager::result<int>{lager::result<int, int>{0}};
+
+    // bad deps:
+    // lager::result<int>{lager::result<int, void, lager::deps<foo>>{0}};
+
+    // from effect
+    // lager::result<int>{0, lager::effect<int>{}};
+    // lager::result<int>{0, lager::effect<void, lager::deps<int>>{0}};
+}
