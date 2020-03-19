@@ -344,6 +344,14 @@ lager::effect<lager::actions<...>, ...> " //
     effect& operator=(const effect&) = default;
     effect& operator=(effect&&) = default;
 
+    template <typename A2,
+              typename D2,
+              std::enable_if_t<detail::are_compatible_actions_v<A2, Action> &&
+                                   std::is_convertible_v<Deps, D2>,
+                               int> = 0>
+    effect(effect<A2, D2> e)
+        : base_t{std::move(e)}
+    {}
 };
 
 /*!
