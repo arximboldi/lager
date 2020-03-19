@@ -23,6 +23,12 @@
 TEST_CASE("effect with bad multiple actions")
 {
     //(void) lager::effect<counter::increment_action,
-    //counter::decrement_action>{
+    // counter::decrement_action>{
     //    [](auto&& ctx) { ctx.dispatch(counter::increment_action{}); }};
+}
+
+TEST_CASE("allow context of void")
+{
+    auto ctx = lager::context<>{};
+    // ctx.dispatch();
 }

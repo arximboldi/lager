@@ -56,6 +56,12 @@ struct as_actions<actions<Actions...>>
     using type = actions<Actions...>;
 };
 
+template <>
+struct as_actions<void>
+{
+    using type = actions<>;
+};
+
 template <typename ActionOrActions>
 using as_actions_t = typename as_actions<ActionOrActions>::type;
 
@@ -226,9 +232,12 @@ struct event_loop_impl final : event_loop_iface
  *       store.  It is invalid to use it after the store has been destructed.
  *       Its methods may modify the store's underlying state.
  *
+ * @note Use action type `void` or empty `lager::actions<>` if `context` shall
+ *       have no `dispatch()` method and only provide deps.
+ *
  * @todo Make constructors private.
  */
-template <typename Actions, typename Deps = lager::deps<>>
+template <typename Actions = void, typename Deps = lager::deps<>>
 struct context : Deps
 {
     using deps_t    = Deps;
