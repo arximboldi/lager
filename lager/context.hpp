@@ -312,6 +312,27 @@ lager::effect<lager::actions<...>, ...> " //
 
 };
 
+/*!
+ * Convenience type for specifying the result of reducers that return both a
+ * model and an effect.
+ */
+template <typename Model, typename Action = void, typename Deps = lager::deps<>>
+struct result : std::pair<Model, lager::effect<Action, Deps>>
+{
+    using base_t = std::pair<Model, lager::effect<Action, Deps>>;
+
+    using base_t::base_t;
+
+    result(Model m)
+        : base_t{std::move(m), lager::noop}
+    {}
+
+    result(const result&) = default;
+    result(result&&)      = default;
+    result& operator=(const result&) = default;
+    result& operator=(result&&) = default;
+};
+
 //! @} group: effects
 
 /*!
