@@ -15,6 +15,7 @@
 #include <lager/deps.hpp>
 #include <lager/util.hpp>
 
+#include <boost/hana/all_of.hpp>
 #include <boost/hana/append.hpp>
 #include <boost/hana/find_if.hpp>
 #include <boost/hana/fold.hpp>
@@ -80,6 +81,27 @@ auto find_convertible_action_aux(Action act, Candidates candidates)
 template <typename Action, typename... Actions>
 using find_convertible_action_t = typename decltype(find_convertible_action_aux(
     boost::hana::type_c<Action>, boost::hana::tuple_t<Actions...>))::type;
+
+template <typename... A1, typename... A2, typename Converter>
+auto are_compatible_actions_aux(actions<A1...>, actions<A2...>, Converter c)
+{
+    return boost::hana::all_of(boost::hana::tuple_t<A1...>, [](auto t1) {
+        return boost::hana::is_just(
+            boost::hana::find_if(boost::hana::tuple_t<A2...>, [](auto t2) {
+                return std::is_convertible<
+                    decltype(c(std::declval<typename decltype(t1)::type>())),
+                    typename decltype(t2)::type>{};
+            }));
+    });
+}
+
+template <typename Actions1,
+          typename Actions2,
+          typename ConverterT = identity_t>
+constexpr bool are_compatible_actions_v =
+    decltype(are_compatible_actions_aux(as_actions_t<Actions1>{},
+                                        as_actions_t<Actions2>{},
+                                        std::declval<ConverterT>()))::value;
 
 template <typename Actions1, typename Actions2>
 auto merge_actions_aux(Actions1 a1, Actions2 a2)
@@ -245,14 +267,26 @@ struct context : Deps
 
     context() = default;
 
-    template <typename Actions_, typename Deps_>
+    template <
+        typename Actions_,
+        typename Deps_,
+        std::enable_if_t<detail::are_compatible_actions_v<Actions, Actions_> &&
+                             std::is_convertible_v<Deps_, Deps>,
+                         int> = 0>
     context(const context<Actions_, Deps_>& ctx)
         : deps_t{ctx}
         , dispatcher_{ctx.dispatcher_}
         , loop_{ctx.loop_}
     {}
 
-    template <typename Actions_, typename Deps_, typename Converter>
+    template <
+        typename Actions_,
+        typename Deps_,
+        typename Converter,
+        std::enable_if_t<
+            detail::are_compatible_actions_v<Actions, Actions_, Converter> &&
+                std::is_convertible_v<Deps_, Deps>,
+            int> = 0>
     context(const context<Actions_, Deps_>& ctx, Converter c)
         : deps_t{ctx}
         , dispatcher_{ctx.dispatcher_, c}
