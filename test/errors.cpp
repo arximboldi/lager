@@ -22,7 +22,7 @@
 //
 TEST_CASE("effect with bad multiple actions")
 {
-    // (void) lager::effect<counter::increment_action,
-    // counter::decrement_action>{
-    //     [](auto&& ctx) { ctx.dispatch(counter::increment_action{}); }};
+    //(void) lager::effect<counter::increment_action,
+    //counter::decrement_action>{
+    //    [](auto&& ctx) { ctx.dispatch(counter::increment_action{}); }};
 }
