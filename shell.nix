@@ -2,8 +2,8 @@
   nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
     owner  = "NixOS";
     repo   = "nixpkgs";
-    rev    = "5ac6ab091a4883385e68571425fb7fef4d74c207";
-    sha256 = "0rksyhnnj5028n2ql3jkf98vpd8cs1qf6rckgvx9jq2zf1xqsbla";
+    rev    = "053ad4e0db7241ae6a02394d62750fdc5d64aa9f";
+    sha256 = "11l9sr8zg8j1n5p43zjkqwpj59gn8c84z1kf16icnsbnv2smzqdc";
   }}:
 
 with import nixpkgs {};
@@ -31,7 +31,6 @@ in
 theStdenv.mkDerivation rec {
   name = "lager-env";
   buildInputs = [
-    gcc7
     cmake
     ccache
     ncurses
@@ -52,9 +51,9 @@ theStdenv.mkDerivation rec {
     qt5.qtquickcontrols
     qt5.qtquickcontrols2
     qt5.qtgraphicaleffects
-    elmPackages.elm-reactor
-    elmPackages.elm-make
-    elmPackages.elm-package
+    old-nixpkgs.elmPackages.elm-reactor
+    old-nixpkgs.elmPackages.elm-make
+    old-nixpkgs.elmPackages.elm-package
     (python3.withPackages (pkgs: with pkgs; [
       click
       requests

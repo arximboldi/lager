@@ -83,8 +83,8 @@ if(lager_BUILD_TESTS)
   target_include_directories(lager-dev SYSTEM INTERFACE
     "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
   target_link_libraries(lager-dev INTERFACE lager
-    ${CMAKE_THREAD_INIT}
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT})
   if (ENABLE_COVERAGE)
     target_compile_options(lager-dev INTERFACE "--coverage")
     target_link_libraries(lager-dev INTERFACE "--coverage")
