@@ -334,7 +334,10 @@ multiple action types? In that case, use the syntax: \
 lager::effect<lager::actions<...>, ...> " //
         LAGER_STATIC_ASSERT_MESSAGE_END);
 
-    using base_t = std::function<void(const context<Action, Deps>&)>;
+    using action_t  = Action;
+    using deps_t    = Deps;
+    using context_t = context<action_t, deps_t>;
+    using base_t    = std::function<void(const context_t&)>;
 
     using base_t::base_t;
     using base_t::operator=;
@@ -361,7 +364,11 @@ lager::effect<lager::actions<...>, ...> " //
 template <typename Model, typename Action = void, typename Deps = lager::deps<>>
 struct result : std::pair<Model, lager::effect<Action, Deps>>
 {
-    using base_t = std::pair<Model, lager::effect<Action, Deps>>;
+    using model_t  = Model;
+    using action_t = Action;
+    using deps_t   = Deps;
+    using effect_t = lager::effect<Action, Deps>;
+    using base_t   = std::pair<model_t, effect_t>;
 
     result(const result&) = default;
     result(result&&)      = default;
