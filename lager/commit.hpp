@@ -22,13 +22,13 @@ namespace detail {
 template <typename RootCursorT>
 void send_down_root(RootCursorT&& root)
 {
-    noop((detail::access::roots(std::forward<RootCursorT>(root))->send_down(), 0));
+    (void) detail::access::roots(std::forward<RootCursorT>(root))->send_down();
 }
 
 template <typename RootCursorT>
 void notify_root(RootCursorT&& root)
 {
-    noop((detail::access::roots(std::forward<RootCursorT>(root))->notify(), 0));
+    (void) detail::access::roots(std::forward<RootCursorT>(root))->notify();
 }
 } // namespace detail
 
