@@ -14,8 +14,13 @@
 
 #include <zug/compose.hpp>
 #include <immer/vector.hpp>
-#include <lager/lenses.hpp>
 #include <zug/util.hpp>
+
+#include <lager/lenses.hpp>
+#include <lager/lenses/at.hpp>
+#include <lager/lenses/attr.hpp>
+#include <lager/lenses/optional.hpp>
+#include <lager/lenses/variant.hpp>
 
 struct yearday
 {
@@ -31,7 +36,7 @@ struct person
 };
 
 using namespace lager;
-using namespace lager::lens;
+using namespace lager::lenses;
 using namespace zug;
 
 TEST_CASE("lenses, minimal example")
@@ -122,7 +127,7 @@ TEST_CASE("lenses, attr, references")
 TEST_CASE("lenses, at")
 {
     auto first      = at(0);
-    auto first_name = first | optlift(attr(&person::name));
+    auto first_name = first | with_opt(attr(&person::name));
 
     auto v1 = std::vector<person>{};
     CHECK(view(first_name, v1) == std::nullopt);
@@ -134,7 +139,7 @@ TEST_CASE("lenses, at")
     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
 }
 
-// This is an alternative definition of lager::lens::attr using
+// This is an alternative definition of lager::lenses::attr using
 // lager::lens::getset.  The standard definition is potentially more efficient
 // whene the whole lens can not be optimized away, because there is only one
 // capture of member, as opposed to two.  However, getset is still an
@@ -193,130 +198,146 @@ TEST_CASE("lenses, attr2, references")
 
 TEST_CASE("lenses, at immutable index")
 {
-    auto first      = at_i(0);
-    auto first_name = first | optlift(attr(&person::name));
+    auto first      = at(0);
+    auto first_name = first | with_opt(attr(&person::name));
 
     auto v1 = immer::vector<person>{};
     CHECK(view(first_name, v1) == std::nullopt);
-    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == std::nullopt);
+    CHECK(view(first_name, set(at(0), v1, person{{}, "foo"})) == std::nullopt);
     CHECK(view(first_name, set(first_name, v1, "bar")) == std::nullopt);
 
     v1 = v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
-    CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
+    CHECK(view(first_name, set(at(0), v1, person{{}, "bar"})) == "bar");
     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
 }
 
-TEST_CASE("lenses, fallback")
+TEST_CASE("lenses, value_or")
 {
-    auto first      = at_i(0);
-    auto first_name = first | optlift(attr(&person::name)) | fallback("NULL");
+    auto first      = at(0);
+    auto first_name = first | with_opt(attr(&person::name)) | value_or("NULL");
 
     auto v1 = immer::vector<person>{};
     CHECK(view(first_name, v1) == "NULL");
-    CHECK(view(first_name, set(at_i(0), v1, person{{}, "foo"})) == "NULL");
+    CHECK(view(first_name, set(at(0), v1, person{{}, "foo"})) == "NULL");
     CHECK(view(first_name, set(first_name, v1, "bar")) == "NULL");
 
     v1 = v1.push_back({{}, "foo"});
     CHECK(view(first_name, v1) == "foo");
-    CHECK(view(first_name, set(at_i(0), v1, person{{}, "bar"})) == "bar");
+    CHECK(view(first_name, set(at(0), v1, person{{}, "bar"})) == "bar");
     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
 }
 
-TEST_CASE("lenses, optlift")
+TEST_CASE("lenses, var_at")
 {
-    auto first          = at_i(0);
+    auto the_person  = var_at<person>;
+    auto person_name = the_person | with_opt(attr(&person::name)) | value_or("NULL");
+
+    auto v1 = std::variant<person, std::string>{"nonesuch"};
+    CHECK(view(person_name, v1) == "NULL");
+    CHECK(view(person_name, set(var_at<person>, v1, person{{}, "foo"})) == "NULL");
+    CHECK(view(person_name, set(person_name, v1, "bar")) == "NULL");
+
+    v1 = person{{}, "foo"};
+    CHECK(view(person_name, v1) == "foo");
+    CHECK(view(person_name, set(var_at<person>, v1, person{{}, "bar"})) == "bar");
+    CHECK(view(person_name, set(person_name, v1, "bar")) == "bar");
+}
+
+TEST_CASE("lenses, with_opt")
+{
+    auto first          = at(0);
     auto birthday       = attr(&person::birthday);
     auto month          = attr(&yearday::month);
     auto birthday_month = birthday | month;
 
     SECTION("lifting composed lenses") {
         auto first_month = first
-                | optlift(birthday_month);
+                | with_opt(birthday_month);
 
         auto p1 = person{{5, 4}, "juanpe"};
 
         auto v1 = immer::vector<person>{};
         CHECK(view(first_month, v1) == std::nullopt);
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+        CHECK(view(first_month, set(at(0), v1, p1)) == std::nullopt);
 
         v1 = v1.push_back(p1);
         CHECK(view(first_month, v1) == 4);
         p1.birthday.month = 6;
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(at(0), v1, p1)) == 6);
         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
     }
 
     SECTION("composing lifted lenses") {
         auto first_month = first
-                | optlift(birthday)
-                | optlift(month);
+                | with_opt(birthday)
+                | with_opt(month);
 
         auto p1 = person{{5, 4}, "juanpe"};
 
         auto v1 = immer::vector<person>{};
         CHECK(view(first_month, v1) == std::nullopt);
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+        CHECK(view(first_month, set(at(0), v1, p1)) == std::nullopt);
 
         v1 = v1.push_back(p1);
         CHECK(view(first_month, v1) == 4);
         p1.birthday.month = 6;
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(at(0), v1, p1)) == 6);
         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
     }
 }
 
-TEST_CASE("lenses, optmap")
+TEST_CASE("lenses, map_opt")
 {
-    auto first          = at_i(0);
+    auto first          = at(0);
     auto birthday       = attr(&person::birthday);
     auto month          = attr(&yearday::month);
     auto birthday_month = birthday | month;
 
     SECTION("mapping composed lenses") {
         auto first_month = first
-                | optmap(birthday_month);
+                | map_opt(birthday_month);
 
         auto p1 = person{{5, 4}, "juanpe"};
 
         auto v1 = immer::vector<person>{};
         CHECK(view(first_month, v1) == std::nullopt);
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+        CHECK(view(first_month, set(at(0), v1, p1)) == std::nullopt);
 
         v1 = v1.push_back(p1);
         CHECK(view(first_month, v1) == 4);
         p1.birthday.month = 6;
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(at(0), v1, p1)) == 6);
         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
     }
 
     SECTION("composing mapped lenses") {
         auto first_month = first
-                | optmap(birthday)
-                | optmap(month);
+                | map_opt(birthday)
+                | map_opt(month);
 
         auto p1 = person{{5, 4}, "juanpe"};
 
         auto v1 = immer::vector<person>{};
         CHECK(view(first_month, v1) == std::nullopt);
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == std::nullopt);
+        CHECK(view(first_month, set(at(0), v1, p1)) == std::nullopt);
 
         v1 = v1.push_back(p1);
         CHECK(view(first_month, v1) == 4);
         p1.birthday.month = 6;
-        CHECK(view(first_month, set(at_i(0), v1, p1)) == 6);
+        CHECK(view(first_month, set(at(0), v1, p1)) == 6);
         CHECK(view(first_month, set(first_month, v1, 8)) == 8);
     }
 }
 
-TEST_CASE("lenses, optbind")
+TEST_CASE("lenses, bind_opt")
 {
-    [[maybe_unused]] auto wrong = optbind(attr(&person::name));
+    [[maybe_unused]] auto wrong = bind_opt(attr(&person::name));
     std::optional<person> p1 = person{{5, 4}, "juanpe"};
     // CHECK(view(wrong, p1) == "juanpe"); // should not compile
 
     SECTION("composing bound lenses") {
-        auto first       = optbind(at(0));
+        auto first       = bind_opt(at(0));
         auto first_first = first | first;
 
         std::optional<std::vector<std::vector<int>>> v1;
@@ -340,8 +361,8 @@ TEST_CASE("lenses, optbind")
 
     SECTION("binding composed bound lenses") {
         auto raw_first   = at(0);
-        auto first       = optbind(at(0));
-        auto first_first = optbind(raw_first | first);
+        auto first       = bind_opt(at(0));
+        auto first_first = bind_opt(raw_first | first);
 
         std::optional<std::vector<std::vector<int>>> v1;
 
