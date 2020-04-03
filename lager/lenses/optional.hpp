@@ -1,3 +1,5 @@
+#pragma once
+
 #include <optional>
 #include <type_traits>
 #include <utility>

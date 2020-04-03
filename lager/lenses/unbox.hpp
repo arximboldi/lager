@@ -1,3 +1,5 @@
+#pragma once
+
 #include <utility>
 
 #include <zug/compose.hpp>
