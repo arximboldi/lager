@@ -15,6 +15,10 @@
 #include <lager/state.hpp>
 #include <lager/xform.hpp>
 
+#include <lager/lenses/attr.hpp>
+#include <lager/lenses/at.hpp>
+#include <lager/lenses/optional.hpp>
+
 #include <zug/transducer/filter.hpp>
 
 #include <boost/fusion/include/adapt_struct.hpp>
@@ -39,10 +43,10 @@ auto attred(AttrT&& member, CursorTs&&... cs)
 {
     if constexpr (std::disjunction_v<
             ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
-        return zoom(lens::optlift(lens::attr(std::forward<AttrT>(member))),
+        return zoom(lenses::with_opt(lenses::attr(std::forward<AttrT>(member))),
                     std::forward<CursorTs>(cs)...);    
     } else {
-        return zoom(lens::attr(std::forward<AttrT>(member)),
+        return zoom(lenses::attr(std::forward<AttrT>(member)),
                     std::forward<CursorTs>(cs)...);
     }
 }
@@ -52,10 +56,10 @@ auto atted(KeyT&& key, CursorTs&&... cs)
 {
     if constexpr (std::disjunction_v<
             ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
-        return zoom(lens::optlift(lens::at(std::forward<KeyT>(key))),
+        return zoom(lenses::with_opt(lenses::at(std::forward<KeyT>(key))),
                     std::forward<CursorTs>(cs)...);
     } else {
-        return zoom(lens::at(std::forward<KeyT>(key)),
+        return zoom(lenses::at(std::forward<KeyT>(key)),
                     std::forward<CursorTs>(cs)...);
     }
 }
