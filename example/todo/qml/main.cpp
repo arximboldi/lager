@@ -65,7 +65,7 @@ public:
     Q_INVOKABLE Item* todo(int index)
     {
         return new Item{
-            state_[&todo::model::todos][index][lager::lens::fallback()]};
+            state_[&todo::model::todos][index][lager::lenses::value_or()]};
     }
 
     Q_INVOKABLE void add(QString text)
