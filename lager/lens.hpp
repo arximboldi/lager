@@ -6,7 +6,6 @@
 #include <utility>
 
 namespace lager {
-namespace lens {
 namespace detail {
 
 template <typename Whole, typename Part>
@@ -32,21 +31,15 @@ struct lens_holder : public lens_i<Whole, Part> {
 } // namespace detail
 
 template <typename Whole, typename Part>
-class any_lens : zug::detail::pipeable {
+class lens : zug::detail::pipeable {
     std::shared_ptr<detail::lens_i<Whole, Part> const> holder_;
 
 public:
-    any_lens(any_lens const&) = default;
-    any_lens(any_lens&&)      = default;
-
-    any_lens& operator=(any_lens const&) = default;
-    any_lens& operator=(any_lens&&) = default;
-
     template <typename Lens,
               typename std::enable_if<
-                  !std::is_same_v<std::decay_t<Lens>, std::decay_t<any_lens>>,
+                  !std::is_same_v<std::decay_t<Lens>, std::decay_t<lens>>,
                   int>::type = 0>
-    any_lens(Lens&& lens)
+    lens(Lens&& lens)
         : holder_{new detail::lens_holder<std::decay_t<Lens>, Whole, Part>{
               std::forward<Lens>(lens)}} {}
 
@@ -62,5 +55,4 @@ public:
     }
 };
 
-} // namespace lens
 } // namespace lager
