@@ -45,7 +45,7 @@ public:
 
     template <typename F>
     auto operator()(F &&f) const {
-        return [&, f = std::forward<F>(f)](auto&& p) {
+        return [this, f = std::forward<F>(f)](auto&& p) {
             return f(holder_->view(std::forward<decltype(p)>(p)))(
                 [&](auto&& x) {
                     return holder_->set(std::forward<decltype(p)>(p),
