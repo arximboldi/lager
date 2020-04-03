@@ -10,7 +10,7 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <vector>
 
@@ -18,9 +18,15 @@
 #include <immer/vector.hpp>
 #include <immer/box.hpp>
 #include <immer/algorithm.hpp>
-#include <lager/lenses.hpp>
-#include <lager/any_lens.hpp>
 #include <zug/util.hpp>
+
+#include <lager/lenses.hpp>
+#include <lager/lens.hpp>
+
+#include <lager/lenses/attr.hpp>
+#include <lager/lenses/at.hpp>
+#include <lager/lenses/optional.hpp>
+#include <lager/lenses/unbox.hpp>
 
 using val_pair = std::pair<size_t, size_t>;
 
@@ -31,32 +37,13 @@ struct tree
     immer::vector<immer::box<tree>> children {};
 };
 
-auto unbox = zug::comp([](auto&& f) {
-    return [f](auto&& p) {
-        return f(std::forward<decltype(p)>(p).get())([&](auto&& x) {
-            return decltype(p){std::forward<decltype(x)>(x)};
-        });
-    };
-});
-
-auto force_opt = zug::comp([](auto&& f) {
-    return [f = LAGER_FWD(f)](auto&& p) {
-        using opt_t = std::optional<std::decay_t<decltype(p)>>;
-        return f(opt_t{LAGER_FWD(p)})([&](auto&& x) {
-            return std::forward<decltype(x)>(x)
-                .value_or(LAGER_FWD(p));
-        });
-    };
-});
-
-
 using namespace lager;
-using namespace lager::lens;
+using namespace lager::lenses;
 using namespace zug;
 
 TEST_CASE("type erased lenses, attr")
 {
-    using te_lens = any_lens<tree, size_t>;
+    using te_lens = lens<tree, size_t>;
 
     te_lens value = attr(&tree::value);
     te_lens first = attr(&tree::pair) | attr(&val_pair::first);
@@ -77,10 +64,10 @@ TEST_CASE("type erased lenses, attr")
 TEST_CASE("type erased lenses, at")
 {
     auto children = attr(&tree::children);
-    auto first_child = children | at_i(0);
-    any_lens<tree, std::optional<immer::box<tree>>> te_first_child = first_child;
-    any_lens<tree, std::optional<size_t>> te_first_value =
-            te_first_child | optlift(unbox | attr(&tree::value));
+    auto first_child = children | at(0);
+    lens<tree, std::optional<immer::box<tree>>> te_first_child = first_child;
+    lens<tree, std::optional<size_t>> te_first_value =
+            te_first_child | with_opt(unbox | attr(&tree::value));
 
     auto t1 = tree{42};
     CHECK(view(te_first_value, t1) == std::nullopt);
@@ -112,7 +99,7 @@ auto attr2(Member member)
 
 TEST_CASE("type erased lenses, attr2")
 {
-    using te_lens = any_lens<tree, size_t>;
+    using te_lens = lens<tree, size_t>;
 
     te_lens value = attr2(&tree::value);
     te_lens first = attr2(&tree::pair) | attr2(&val_pair::first);
@@ -130,17 +117,17 @@ TEST_CASE("type erased lenses, attr2")
     CHECK(p3.pair.first == 255);
 }
 
-using lens_list = std::vector<any_lens<tree, std::optional<size_t>>>;
+using lens_list = std::vector<lens<tree, std::optional<size_t>>>;
 
 lens_list all_values(tree t) {
     size_t idx = 0;
     lens_list res {attr(&tree::value) | force_opt};
     for (auto child : t.children) {
         auto child_lens = attr(&tree::children)
-                        | at_i(idx++)
-                        | optmap(unbox);
+                        | at(idx++)
+                        | map_opt(unbox);
         for (auto lens : all_values(child.get())) {
-            res.push_back(child_lens | optbind(lens));
+            res.push_back(child_lens | bind_opt(lens));
         }
     }
     return res;
@@ -174,7 +161,7 @@ TEST_CASE("type erased lenses, nesting")
     size_t expected3[] = {4, 6, 48, 3, 5, 16};
     for (size_t idx = 0; idx < lenses.size(); ++idx) {
         auto lens = lenses[idx];
-        auto expected = expected1[idx];
+        auto expected = expected3[idx];
         CHECK(view(lens, set(lens, t1, expected)) == expected);
     }
 }
