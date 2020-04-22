@@ -28,13 +28,13 @@ struct writer_mixin
     template <typename T>
     void set(T&& value)
     {
-        return node()->send_up(std::forward<T>(value));
+        return node_()->send_up(std::forward<T>(value));
     }
 
     template <typename Fn>
     void update(Fn&& fn)
     {
-        return node()->send_up(std::forward<Fn>(fn)(node()->current()));
+        return node_()->send_up(std::forward<Fn>(fn)(node_()->current()));
     }
 
     template <typename T>
@@ -48,16 +48,14 @@ struct writer_mixin
     template <typename Xform, typename Xform2>
     auto xf(Xform&& xf, Xform2&& xf2) const
     {
-        return xform(xf, xf2)(*this);
+        return xform(xf, xf2)(static_cast<const DerivT&>(*this));
     }
 
 protected:
     ~writer_mixin() = default;
 
 private:
-    friend class detail::access;
-
-    auto node() const
+    auto node_() const
     {
         return detail::access::node(*static_cast<const DerivT*>(this));
     }

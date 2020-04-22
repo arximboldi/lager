@@ -29,7 +29,7 @@ class cursor_base;
 template <typename DerivT>
 struct reader_mixin
 {
-    decltype(auto) get() const { return node()->last(); }
+    decltype(auto) get() const { return node_()->last(); }
     decltype(auto) operator*() const { return get(); }
     decltype(auto) operator-> () const { return &get(); }
 
@@ -44,16 +44,14 @@ struct reader_mixin
     template <typename Xform>
     auto xf(Xform&& xf) const
     {
-        return xform(xf)(*this);
+        return xform(xf)(static_cast<const DerivT&>(*this));
     }
 
 protected:
     ~reader_mixin() = default;
 
 private:
-    friend class detail::access;
-
-    auto node() const
+    auto node_() const
     {
         return detail::access::node(*static_cast<const DerivT*>(this));
     }
@@ -62,17 +60,13 @@ private:
 template <typename NodeT>
 class reader_base
     : public reader_mixin<reader_base<NodeT>>
-    , private detail::watchable<zug::meta::value_t<NodeT>>
+    , public watchable_base<NodeT>
 {
     template <typename T>
     friend class reader_base;
     friend class detail::access;
 
-    using base_t     = detail::watchable<zug::meta::value_t<NodeT>>;
-    using node_ptr_t = std::shared_ptr<NodeT>;
-
-    node_ptr_t node_;
-    const node_ptr_t& node() const { return node_; }
+    using base_t = watchable_base<NodeT>;
 
 public:
     using value_type = zug::meta::value_t<NodeT>;
@@ -81,18 +75,17 @@ public:
 
     template <typename T>
     reader_base(reader_base<T> x)
-        : base_t(std::move(x))
-        , node_(std::move(x.node_))
+        : base_t{std::move(x)}
     {}
 
     template <typename T>
     reader_base(cursor_base<T> x)
-        : node_(detail::access::node(std::move(x)))
+        : base_t{std::move(x)}
     {}
 
     template <typename NodeT2>
-    reader_base(std::shared_ptr<NodeT2> sig)
-        : node_(std::move(sig))
+    reader_base(std::shared_ptr<NodeT2> n)
+        : base_t{std::move(n)}
     {}
 };
 
