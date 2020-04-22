@@ -104,7 +104,7 @@ auto zoom(LensT&& l, const reader_mixin<ReaderTs>&... ins)
 {
     return xform(zug::map([l](auto&& x) {
         return lager::view(l, std::forward<decltype(x)>(x));
-    }))(ins...);
+    }))(static_cast<const ReaderTs&>(ins)...);
 }
 
 template <typename LensT, typename... CursorTs>
@@ -119,7 +119,7 @@ auto zoom(LensT&& l, const writer_mixin<CursorTs>&... ins)
             return lager::set(l,
                               std::forward<decltype(x)>(x),
                               zug::tuplify(std::forward<decltype(vs)>(vs)...));
-        }))(ins...);
+        }))(static_cast<const CursorTs&>(ins)...);
 }
 
 template <typename LensT, typename... CursorTs>
