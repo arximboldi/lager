@@ -228,19 +228,19 @@ TEST_CASE("lenses, value_or")
     CHECK(view(first_name, set(first_name, v1, "bar")) == "bar");
 }
 
-TEST_CASE("lenses, var_at")
+TEST_CASE("lenses, alternative")
 {
-    auto the_person  = var_at<person>;
+    auto the_person  = alternative<person>;
     auto person_name = the_person | with_opt(attr(&person::name)) | value_or("NULL");
 
     auto v1 = std::variant<person, std::string>{"nonesuch"};
     CHECK(view(person_name, v1) == "NULL");
-    CHECK(view(person_name, set(var_at<person>, v1, person{{}, "foo"})) == "NULL");
+    CHECK(view(person_name, set(alternative<person>, v1, person{{}, "foo"})) == "NULL");
     CHECK(view(person_name, set(person_name, v1, "bar")) == "NULL");
 
     v1 = person{{}, "foo"};
     CHECK(view(person_name, v1) == "foo");
-    CHECK(view(person_name, set(var_at<person>, v1, person{{}, "bar"})) == "bar");
+    CHECK(view(person_name, set(alternative<person>, v1, person{{}, "bar"})) == "bar");
     CHECK(view(person_name, set(person_name, v1, "bar")) == "bar");
 }
 

@@ -14,7 +14,7 @@ namespace detail {
 // due to some obscure behavior on MSVC, this has to be implemented in a
 // manually defined function object
 template <typename T>
-struct var_at_t : zug::detail::pipeable {
+struct alternative_t : zug::detail::pipeable {
     using Part = std::optional<T>;
     template <typename F>
     auto operator()(F&& f) const {
@@ -39,7 +39,7 @@ struct var_at_t : zug::detail::pipeable {
 } // namespace detail
 
 template <typename T>
-auto var_at = detail::var_at_t<T>{};
+auto alternative = detail::alternative_t<T>{};
 
 } // namespace lenses
 } // namespace lager
