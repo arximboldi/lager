@@ -14,28 +14,82 @@
 
 #include <boost/signals2/signal.hpp>
 
+#include <zug/meta/value_type.hpp>
+
+#include <memory>
+
 namespace lager {
 
-namespace detail {
-
-template <typename ValueT>
-class watchable
+template <typename NodeT>
+class watchable_base
 {
-    using WatchersT =
-        boost::signals2::signal<void(const ValueT&, const ValueT&)>;
-    WatchersT watchers_;
+    using node_ptr_t = std::shared_ptr<NodeT>;
+    using value_t    = zug::meta::value_t<NodeT>;
+    using signal_t =
+        boost::signals2::signal<void(const value_t&, const value_t&)>;
+    using connection_t = boost::signals2::scoped_connection;
+
+    node_ptr_t node_;
+    signal_t signal_;
+    connection_t conn_;
+
+    const node_ptr_t& node() const { return node_; }
+
+    friend class detail::access;
+    template <typename T>
+    friend class watchable_base;
+
+protected:
+    watchable_base() = default;
+    watchable_base(node_ptr_t p)
+        : node_{std::move(p)}
+    {}
+
+    template <typename T>
+    watchable_base(watchable_base<T> x)
+        : node_(std::move(x.node_))
+    {}
+
+    template <typename NodeT2>
+    watchable_base(std::shared_ptr<NodeT2> n)
+        : node_{std::move(n)}
+    {}
 
 public:
-    watchable() = default;
-    watchable(const watchable&) noexcept {}
-    watchable(watchable&&) noexcept {}
-    watchable& operator=(const watchable&) noexcept { return *this; }
-    watchable& operator=(watchable&&) noexcept { return *this; }
+    watchable_base(const watchable_base& other) noexcept
+        : node_(other.node_)
+    {}
 
-    WatchersT& watchers() { return watchers_; }
+    watchable_base(watchable_base&& other) noexcept
+        : node_{std::move(other.node_)}
+    {}
+
+    watchable_base& operator=(const watchable_base& other) noexcept
+    {
+        node_ = other.node_;
+        if (!signal_.empty() && node_) {
+            conn_ = node_->observers().connect(signal_);
+        }
+        return *this;
+    }
+
+    watchable_base& operator=(watchable_base&& other) noexcept
+    {
+        node_ = std::move(other.node_);
+        if (!signal_.empty() && node_) {
+            conn_ = node_->observers().connect(signal_);
+        }
+        return *this;
+    }
+
+    template <typename CallbackT>
+    auto watch(CallbackT&& callback)
+    {
+        if (signal_.empty() && node_)
+            conn_ = node_->observers().connect(signal_);
+        return signal_.connect(std::forward<CallbackT>(callback));
+    }
 };
-
-} // namespace detail
 
 /*!
  * Watch changes through a reader using callback @callback.
@@ -43,13 +97,7 @@ public:
 template <typename ReaderT, typename CallbackT>
 auto watch(ReaderT&& value, CallbackT&& callback)
 {
-    auto& watchers = detail::access::watchers(std::forward<ReaderT>(value));
-    if (watchers.empty()) {
-        detail::access::node(std::forward<ReaderT>(value))
-            ->observers()
-            .connect(watchers);
-    }
-    return watchers.connect(std::forward<CallbackT>(callback));
+    return value.watch(std::forward<CallbackT>(callback));
 }
 
 } // namespace lager

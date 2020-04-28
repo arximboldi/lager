@@ -214,7 +214,7 @@ struct tree_debugger
         }
     };
 
-    using result_t = std::pair<model, effect<action, deps_t>>;
+    using result_t = result<model, action, deps_t>;
 
     template <typename ReducerFn>
     static result_t update(ReducerFn&& reducer, model m, action act)
@@ -224,7 +224,7 @@ struct tree_debugger
                 [&](Action act) -> result_t {
                     if (m.paused) {
                         m.pending = m.pending.push_back(act);
-                        return {m, noop};
+                        return m;
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
                         auto state = invoke_reducer<deps_t>(
@@ -238,7 +238,7 @@ struct tree_debugger
                 [&](goto_action act) -> result_t {
                     if (m.check(act.cursor))
                         m.cursor = act.cursor;
-                    return {m, noop};
+                    return m;
                 },
                 [&](undo_action) -> result_t {
                     if (!m.cursor.empty()) {
@@ -249,11 +249,11 @@ struct tree_debugger
                                              index, {pos.branch, pos.step - 1})
                                        : m.cursor.take(index);
                     }
-                    return {m, noop};
+                    return m;
                 },
                 [&](redo_action) -> result_t {
                     throw std::runtime_error{"todo"};
-                    return {m, noop};
+                    return m;
                 },
                 [&](pause_action) -> result_t {
                     m.paused = true;
@@ -268,7 +268,7 @@ struct tree_debugger
                     m.pending        = {};
                     std::tie(m, eff) = immer::accumulate(
                         pending,
-                        std::pair{m, eff},
+                        result_t{m, eff},
                         [&](result_t acc, auto&& act) -> result_t {
                             auto [m, eff] = LAGER_FWD(acc);
                             auto [new_m, new_eff] =

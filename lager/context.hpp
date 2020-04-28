@@ -15,6 +15,7 @@
 #include <lager/deps.hpp>
 #include <lager/util.hpp>
 
+#include <boost/hana/all_of.hpp>
 #include <boost/hana/append.hpp>
 #include <boost/hana/find_if.hpp>
 #include <boost/hana/fold.hpp>
@@ -56,6 +57,12 @@ struct as_actions<actions<Actions...>>
     using type = actions<Actions...>;
 };
 
+template <>
+struct as_actions<void>
+{
+    using type = actions<>;
+};
+
 template <typename ActionOrActions>
 using as_actions_t = typename as_actions<ActionOrActions>::type;
 
@@ -74,6 +81,27 @@ auto find_convertible_action_aux(Action act, Candidates candidates)
 template <typename Action, typename... Actions>
 using find_convertible_action_t = typename decltype(find_convertible_action_aux(
     boost::hana::type_c<Action>, boost::hana::tuple_t<Actions...>))::type;
+
+template <typename... A1, typename... A2, typename Converter>
+auto are_compatible_actions_aux(actions<A1...>, actions<A2...>, Converter c)
+{
+    return boost::hana::all_of(boost::hana::tuple_t<A1...>, [](auto t1) {
+        return boost::hana::is_just(
+            boost::hana::find_if(boost::hana::tuple_t<A2...>, [](auto t2) {
+                return std::is_convertible<
+                    decltype(c(std::declval<typename decltype(t1)::type>())),
+                    typename decltype(t2)::type>{};
+            }));
+    });
+}
+
+template <typename Actions1,
+          typename Actions2,
+          typename ConverterT = identity_t>
+constexpr bool are_compatible_actions_v =
+    decltype(are_compatible_actions_aux(as_actions_t<Actions1>{},
+                                        as_actions_t<Actions2>{},
+                                        std::declval<ConverterT>()))::value;
 
 template <typename Actions1, typename Actions2>
 auto merge_actions_aux(Actions1 a1, Actions2 a2)
@@ -226,9 +254,12 @@ struct event_loop_impl final : event_loop_iface
  *       store.  It is invalid to use it after the store has been destructed.
  *       Its methods may modify the store's underlying state.
  *
+ * @note Use action type `void` or empty `lager::actions<>` if `context` shall
+ *       have no `dispatch()` method and only provide deps.
+ *
  * @todo Make constructors private.
  */
-template <typename Actions, typename Deps = lager::deps<>>
+template <typename Actions = void, typename Deps = lager::deps<>>
 struct context : Deps
 {
     using deps_t    = Deps;
@@ -236,14 +267,26 @@ struct context : Deps
 
     context() = default;
 
-    template <typename Actions_, typename Deps_>
+    template <
+        typename Actions_,
+        typename Deps_,
+        std::enable_if_t<detail::are_compatible_actions_v<Actions, Actions_> &&
+                             std::is_convertible_v<Deps_, Deps>,
+                         int> = 0>
     context(const context<Actions_, Deps_>& ctx)
         : deps_t{ctx}
         , dispatcher_{ctx.dispatcher_}
         , loop_{ctx.loop_}
     {}
 
-    template <typename Actions_, typename Deps_, typename Converter>
+    template <
+        typename Actions_,
+        typename Deps_,
+        typename Converter,
+        std::enable_if_t<
+            detail::are_compatible_actions_v<Actions, Actions_, Converter> &&
+                std::is_convertible_v<Deps_, Deps>,
+            int> = 0>
     context(const context<Actions_, Deps_>& ctx, Converter c)
         : deps_t{ctx}
         , dispatcher_{ctx.dispatcher_, c}
@@ -280,7 +323,108 @@ private:
  * Effectful procedure that uses the store context.
  */
 template <typename Action, typename Deps = lager::deps<>>
-using effect = std::function<void(const context<Action, Deps>&)>;
+struct effect : std::function<void(const context<Action, Deps>&)>
+{
+    static_assert(
+        is_deps<Deps>::value,
+        LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+        "The second template argument of `lager::effect<...>`, must be a \
+lager::deps<>. \n\nMaybe you are trying to specify an effect that can dispatch \
+multiple action types? In that case, use the syntax: \
+lager::effect<lager::actions<...>, ...> " //
+        LAGER_STATIC_ASSERT_MESSAGE_END);
+
+    using action_t  = Action;
+    using deps_t    = Deps;
+    using context_t = context<action_t, deps_t>;
+    using base_t    = std::function<void(const context_t&)>;
+
+    using base_t::base_t;
+    using base_t::operator=;
+
+    effect(const effect&) = default;
+    effect(effect&&)      = default;
+    effect& operator=(const effect&) = default;
+    effect& operator=(effect&&) = default;
+
+    template <typename A2,
+              typename D2,
+              std::enable_if_t<detail::are_compatible_actions_v<A2, Action> &&
+                                   std::is_convertible_v<Deps, D2>,
+                               int> = 0>
+    effect(effect<A2, D2> e)
+        : base_t{std::move(e)}
+    {}
+};
+
+/*!
+ * Convenience type for specifying the result of reducers that return both a
+ * model and an effect.
+ */
+template <typename Model, typename Action = void, typename Deps = lager::deps<>>
+struct result : std::pair<Model, lager::effect<Action, Deps>>
+{
+    using model_t  = Model;
+    using action_t = Action;
+    using deps_t   = Deps;
+    using effect_t = lager::effect<Action, Deps>;
+    using base_t   = std::pair<model_t, effect_t>;
+
+    result(const result&) = default;
+    result(result&&)      = default;
+    result& operator=(const result&) = default;
+    result& operator=(result&&) = default;
+
+    result(Model m)
+        : base_t{std::move(m), lager::noop}
+    {}
+
+    template <typename M2, typename A2, typename D2>
+    result(result<M2, A2, D2> r)
+        : base_t{[&]() -> decltype(auto) {
+            static_assert(check<M2, A2, D2>(), "");
+            return std::move(r);
+        }()}
+    {}
+
+    template <typename M2, typename A2, typename D2>
+    result(M2 m, effect<A2, D2> e)
+        : base_t{std::move(m), [&]() -> decltype(auto) {
+                     static_assert(check<M2, A2, D2>(), "");
+                     return std::move(e);
+                 }()}
+    {}
+
+    template <typename M2, typename Effect>
+    result(M2 m, Effect e)
+        : base_t{std::move(m), std::move(e)}
+    {}
+
+    template <typename M2, typename A2, typename D2>
+    constexpr static bool check()
+    {
+        static_assert(std::is_convertible_v<M2, Model>,
+                      LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+                      "The model of the result types are not convertible" //
+                      LAGER_STATIC_ASSERT_MESSAGE_END);
+        static_assert(
+            detail::are_compatible_actions_v<A2, Action>,
+            LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+            "The actions actions of the given effect are not compatible to \
+those if this result.  This effect's action must be a superset of those of the \
+given effect.\n\nThis may occur when returning effects from a nested reducer \
+and you forgot to add the nested action to the parent action variant." //
+            LAGER_STATIC_ASSERT_MESSAGE_END);
+        static_assert(
+            std::is_convertible_v<Deps, D2>,
+            LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+            "Some dependencies missing in this result type.\n\nThis may occur \
+when returning effects from a nested reducer and you forgot to add dependencies \
+from the nested resulting effect to the result of the parent reducer." //
+            LAGER_STATIC_ASSERT_MESSAGE_END);
+        return true;
+    }
+};
 
 //! @} group: effects
 
@@ -319,7 +463,7 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
  * Heuristically determine if the effect is empty or a noop operation.
  */
 template <typename Ctx>
-bool is_empty_effect(const std::function<Ctx>& v)
+bool is_empty_effect(const std::function<void(Ctx)>& v)
 {
     return !v || v.template target<decltype(noop)>() == &noop;
 }

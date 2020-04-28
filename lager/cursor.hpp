@@ -33,30 +33,16 @@ struct cursor_mixin
 
 protected:
     ~cursor_mixin() = default;
-
-private:
-    friend class detail::access;
-
-    auto node() const
-    {
-        return detail::access::node(*static_cast<const DerivT*>(this));
-    }
 };
 
 template <typename NodeT>
 class cursor_base
     : public cursor_mixin<cursor_base<NodeT>>
-    , private detail::watchable<zug::meta::value_t<NodeT>>
+    , public watchable_base<NodeT>
 {
-    template <typename T>
-    friend class cursor_base;
     friend class detail::access;
 
-    using base_t = detail::watchable<zug::meta::value_t<NodeT>>;
-
-    using node_ptr_t = std::shared_ptr<NodeT>;
-    node_ptr_t node_;
-    const node_ptr_t& node() const { return node_; }
+    using base_t = watchable_base<NodeT>;
 
 public:
     using value_type = zug::meta::value_t<NodeT>;
@@ -65,13 +51,12 @@ public:
 
     template <typename T>
     cursor_base(cursor_base<T> x)
-        : base_t(std::move(x))
-        , node_(std::move(x.node_))
+        : base_t{std::move(x)}
     {}
 
     template <typename NodeT2>
-    cursor_base(std::shared_ptr<NodeT2> sig)
-        : node_(std::move(sig))
+    cursor_base(std::shared_ptr<NodeT2> n)
+        : base_t{std::move(n)}
     {}
 };
 
