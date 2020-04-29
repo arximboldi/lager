@@ -13,7 +13,7 @@
 #include <catch.hpp>
 
 #include <lager/state.hpp>
-#include <lager/xform.hpp>
+#include <lager/with.hpp>
 
 #include <lager/lenses/at.hpp>
 #include <lager/lenses/attr.hpp>
@@ -86,6 +86,14 @@ TEST_CASE("xformed, identity")
     auto s = state<int>{42};
     auto x = s.xform(zug::identity).make();
     CHECK(x.get() == 42);
+}
+
+TEST_CASE("merging nodes")
+{
+    auto s1 = state<int>{42};
+    auto s2 = state<int>{13};
+    auto x  = with(s1, s2).make();
+    CHECK(x.get() == std::make_tuple(42, 13));
 }
 
 TEST_CASE("xformed, identity two args is zipping")

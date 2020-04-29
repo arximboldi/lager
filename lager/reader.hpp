@@ -17,7 +17,7 @@
 #include <lager/detail/smart_lens.hpp>
 
 #include <lager/watch.hpp>
-#include <lager/xform.hpp>
+#include <lager/with.hpp>
 
 #include <zug/meta/value_type.hpp>
 
@@ -36,19 +36,19 @@ struct reader_mixin
     template <typename T>
     auto operator[](T&& t) const
     {
-        return with(*this)[std::forward<T>(t)];
+        return with(deriv_())[std::forward<T>(t)];
     }
 
     template <typename Xform>
     auto xform(Xform&& xf) const
     {
-        return with(*this).xform(std::forward<Xform>(xf));
+        return with(deriv_()).xform(std::forward<Xform>(xf));
     }
 
     template <typename Lens>
     auto zoom(Lens&& l) const
     {
-        return with(*this).zoom(std::forward<Lens>(l));
+        return with(deriv_()).zoom(std::forward<Lens>(l));
     }
 
     auto make() { return static_cast<DerivT&>(*this); }
@@ -57,6 +57,8 @@ protected:
     ~reader_mixin() = default;
 
 private:
+    const DerivT& deriv_() const { return *static_cast<const DerivT*>(this); }
+
     auto node_() const
     {
         return detail::access::node(*static_cast<const DerivT*>(this));

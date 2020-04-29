@@ -38,14 +38,18 @@
 
 #pragma once
 
+#include <lager/util.hpp>
+
 #include <boost/signals2/signal.hpp>
+
+#include <zug/meta/pack.hpp>
+#include <zug/tuplify.hpp>
 
 #include <functional>
 #include <memory>
 #include <vector>
 
 namespace lager {
-
 namespace detail {
 
 /*!
@@ -68,6 +72,12 @@ constexpr struct
  */
 struct reader_node_base
 {
+    reader_node_base()                        = default;
+    reader_node_base(reader_node_base&&)      = default;
+    reader_node_base(const reader_node_base&) = delete;
+    reader_node_base& operator=(reader_node_base&&) = default;
+    reader_node_base& operator=(const reader_node_base&) = delete;
+
     virtual ~reader_node_base() = default;
     virtual void send_down()    = 0;
     virtual void notify()       = 0;
@@ -79,6 +89,12 @@ struct reader_node_base
 template <typename T>
 struct writer_node_base
 {
+    writer_node_base()                        = default;
+    writer_node_base(writer_node_base&&)      = default;
+    writer_node_base(const writer_node_base&) = delete;
+    writer_node_base& operator=(writer_node_base&&) = default;
+    writer_node_base& operator=(const writer_node_base&) = delete;
+
     virtual ~writer_node_base()    = default;
     virtual void send_up(const T&) = 0;
     virtual void send_up(T&&)      = 0;
@@ -101,17 +117,10 @@ auto has_changed(const T&, const T&)
  * functionality for setting values and propagating them to children.
  */
 template <typename T>
-class reader_node
-    : public std::enable_shared_from_this<reader_node<T>>
-    , public reader_node_base
+class reader_node : public reader_node_base
 {
 public:
     using value_type = T;
-
-    reader_node(reader_node&&)      = default;
-    reader_node(const reader_node&) = delete;
-    reader_node& operator=(reader_node&&) = default;
-    reader_node& operator=(const reader_node&) = delete;
 
     reader_node(T value)
         : current_(std::move(value))
@@ -227,6 +236,76 @@ class cursor_node
     using reader_node<T>::reader_node;
 };
 
-} // namespace detail
+template <typename T,
+          typename Parents            = zug::meta::pack<>,
+          template <class> class Base = reader_node>
+class inner_node;
 
+template <typename ValueT, typename... Parents, template <class> class Base>
+class inner_node<ValueT, zug::meta::pack<Parents...>, Base>
+    : public Base<ValueT>
+{
+    using base_t = Base<ValueT>;
+
+    std::tuple<std::shared_ptr<Parents>...> parents_;
+
+public:
+    inner_node(ValueT init, std::tuple<std::shared_ptr<Parents>...> parents)
+        : base_t{std::move(init)}
+        , parents_{std::move(parents)}
+    {}
+
+    void recompute_deep() final
+    {
+        std::apply([&](auto&&... ps) { noop((ps->recompute_deep(), 0)...); },
+                   parents_);
+        this->recompute();
+    }
+
+    const std::tuple<std::shared_ptr<Parents>...>& parents() const
+    {
+        return parents_;
+    }
+
+    template <typename T>
+    void push_up(T&& value)
+    {
+        push_up(std::forward<T>(value),
+                std::make_index_sequence<sizeof...(Parents)>{});
+    }
+
+private:
+    template <typename T, std::size_t... Indices>
+    void push_up(T&& value, std::index_sequence<Indices...>)
+    {
+        auto& parents = this->parents();
+        noop((std::get<Indices>(parents)->send_up(
+                  std::get<Indices>(std::forward<T>(value))),
+              0)...);
+    }
+
+    template <typename T>
+    void push_up(T&& value, std::index_sequence<0>)
+    {
+        std::get<0>(this->parents())->send_up(std::forward<T>(value));
+    }
+};
+
+template <typename... Nodes>
+decltype(auto)
+current_from(const std::tuple<std::shared_ptr<Nodes>...>& parents)
+{
+    return std::apply(
+        [&](auto&&... ptrs) { return zug::tuplify(ptrs->current()...); },
+        parents);
+}
+
+template <typename Node>
+std::shared_ptr<Node> link_to_parents(std::shared_ptr<Node> n)
+{
+    std::apply([&](auto&&... ps) { noop((ps->link(n), 0)...); }, n->parents());
+    return n;
+}
+
+} // namespace detail
 } // namespace lager
