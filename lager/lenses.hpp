@@ -13,32 +13,28 @@
 #pragma once
 
 #include <zug/compose.hpp>
+#include <lager/util.hpp>
 
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
 namespace lager {
-
 namespace detail {
 
 template <typename T>
 struct const_functor;
 
 template <typename T>
-auto make_const_functor(T&& x) -> const_functor<T>
-{
+auto make_const_functor(T&& x) -> const_functor<T> {
     return {std::forward<T>(x)};
 }
 
 template <typename T>
-struct const_functor
-{
+struct const_functor {
     T value;
 
     template <typename Fn>
-    auto operator()(Fn&&) &&
-    {
+    const_functor operator()(Fn&&) && {
         return std::move(*this);
     }
 };
@@ -47,24 +43,20 @@ template <typename T>
 struct identity_functor;
 
 template <typename T>
-auto make_identity_functor(T&& x) -> identity_functor<T>
-{
+auto make_identity_functor(T&& x) -> identity_functor<T> {
     return {std::forward<T>(x)};
 }
 
 template <typename T>
-struct identity_functor
-{
+struct identity_functor {
     T value;
 
     template <typename Fn>
-    auto operator()(Fn&& f) &&
-    {
+    auto operator()(Fn&& f) && {
         return make_identity_functor(
             std::forward<Fn>(f)(std::forward<T>(value)));
     }
 };
-
 } // namespace detail
 
 template <typename LensT, typename T>
@@ -94,13 +86,13 @@ decltype(auto) over(LensT&& lens, T&& x, Fn&& fn)
         .value;
 }
 
-namespace lens {
+namespace lenses {
 
 template <typename Getter, typename Setter>
 auto getset(Getter&& getter, Setter&& setter)
 {
     return zug::comp([=](auto&& f) {
-        return [&, f](auto&& p) {
+        return [&, f = LAGER_FWD(f)](auto&& p) {
             return f(getter(std::forward<decltype(p)>(p)))([&](auto&& x) {
                 return setter(std::forward<decltype(p)>(p),
                               std::forward<decltype(x)>(x));
@@ -109,65 +101,6 @@ auto getset(Getter&& getter, Setter&& setter)
     });
 }
 
-template <typename Member>
-auto attr(Member member)
-{
-    return zug::comp([=](auto&& f) {
-        return [&, f](auto&& p) {
-            return f(std::forward<decltype(p)>(p).*member)([&](auto&& x) {
-                auto r    = std::forward<decltype(p)>(p);
-                r.*member = std::forward<decltype(x)>(x);
-                return r;
-            });
-        };
-    });
-}
-
-template <typename Key>
-auto at(Key key)
-{
-    return zug::comp([=](auto&& f) {
-        return [f, &key](auto&& p) {
-            return f([&] {
-                try {
-                    return std::forward<decltype(p)>(p).at(key);
-                } catch (std::out_of_range const&) {
-                    return std::decay_t<decltype(p.at(key))>{};
-                }
-            }())([&](auto&& x) {
-                auto r = std::forward<decltype(p)>(p);
-                try {
-                    r.at(key) = std::forward<decltype(x)>(x);
-                } catch (std::out_of_range const&) {}
-                return r;
-            });
-        };
-    });
-}
-
-template <typename Key>
-auto at_i(Key key)
-{
-    return zug::comp([=](auto&& f) {
-        return [f, &key](auto&& p) {
-            return f([&] {
-                try {
-                    return std::forward<decltype(p)>(p).at(key);
-                } catch (std::out_of_range const&) {
-                    return std::decay_t<decltype(p.at(key))>{};
-                }
-            }())([&](auto&& x) {
-                if (static_cast<std::size_t>(key) < p.size()) {
-                    return std::forward<decltype(p)>(p).set(
-                        key, std::forward<decltype(x)>(x));
-                } else {
-                    return std::forward<decltype(p)>(p);
-                }
-            });
-        };
-    });
-}
-
-} // namespace lens
+} // namespace lenses
 
 } // namespace lager

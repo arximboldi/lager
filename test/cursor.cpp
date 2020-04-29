@@ -17,6 +17,11 @@
 #include <lager/state.hpp>
 #include <lager/writer.hpp>
 
+#include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/comparison.hpp>
+
+#include <immer/vector.hpp>
+
 #include "spies.hpp"
 
 using namespace lager;
@@ -107,4 +112,49 @@ TEST_CASE("values, scoped watching")
     st.set(52);
     commit(st);
     CHECK(2 == s.count());
+}
+
+struct yearday
+{
+    int day;
+    int month;
+};
+BOOST_FUSION_ADAPT_STRUCT(yearday, day, month);
+
+struct person
+{
+    yearday birthday;
+    std::string name;
+    std::vector<std::string> things {};
+};
+BOOST_FUSION_ADAPT_STRUCT(person, birthday, name);
+
+using boost::fusion::operators::operator==;
+using boost::fusion::operators::operator!=;
+
+TEST_CASE("zooming, unfocused")
+{
+    state<std::vector<person>> st{{person{{5, 4}, "juanpe"}}};
+    auto p  = st[0];
+    auto n1 = p[&person::name];
+//    auto n2 = p[lenses::attr(&person::name)];
+//    reader<std::optional<std::string>> n2 = p[lenses::attr(&person::name)];
+    auto n3 = p[lenses::value_or(person{{1, 1}, "NULL"})];
+    auto n4 = p[lenses::with_opt(lenses::attr(&person::name))];
+}
+
+TEST_CASE("zooming, unfocused, immutable")
+{
+    auto l1 = lager::lenses::getset(
+                [](auto &&vec) -> size_t { return vec.size(); },
+                [](auto &&vec, size_t) { return LAGER_FWD(vec); });
+
+    state<immer::vector<person>> st{{person{{5, 4}, "juanpe"}}};
+    auto p  = st[0];
+    auto n1 = p[&person::name];
+
+    auto n3 = p[lenses::value_or(person{{1, 1}, "NULL"})];
+    auto n4 = p[lenses::with_opt(lenses::attr(&person::name))];
+
+    auto s = st[l1];
 }

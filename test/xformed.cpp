@@ -15,6 +15,10 @@
 #include <lager/state.hpp>
 #include <lager/xform.hpp>
 
+#include <lager/lenses/attr.hpp>
+#include <lager/lenses/at.hpp>
+#include <lager/lenses/optional.hpp>
+
 #include <zug/transducer/filter.hpp>
 
 #include <boost/fusion/include/adapt_struct.hpp>
@@ -27,18 +31,37 @@ using namespace zug;
 using namespace lager;
 using namespace boost::fusion::operators;
 
+namespace detail {
+template <typename T> struct is_optional : std::false_type {};
+template <typename T> struct is_optional<std::optional<T>> : std::true_type {};
+template <typename T>
+[[maybe_unused]] constexpr bool is_optional_v = is_optional<std::decay_t<T>>::value;
+}
+
 template <typename AttrT, typename... CursorTs>
 auto attred(AttrT&& member, CursorTs&&... cs)
 {
-    return zoom(lens::attr(std::forward<AttrT>(member)),
-                std::forward<CursorTs>(cs)...);
+    if constexpr (std::disjunction_v<
+            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
+        return zoom(lenses::with_opt(lenses::attr(std::forward<AttrT>(member))),
+                    std::forward<CursorTs>(cs)...);    
+    } else {
+        return zoom(lenses::attr(std::forward<AttrT>(member)),
+                    std::forward<CursorTs>(cs)...);
+    }
 }
 
 template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& key, CursorTs&&... cs)
 {
-    return zoom(lens::at(std::forward<KeyT>(key)),
-                std::forward<CursorTs>(cs)...);
+    if constexpr (std::disjunction_v<
+            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
+        return zoom(lenses::with_opt(lenses::at(std::forward<KeyT>(key))),
+                    std::forward<CursorTs>(cs)...);
+    } else {
+        return zoom(lenses::at(std::forward<KeyT>(key)),
+                    std::forward<CursorTs>(cs)...);
+    }
 }
 
 TEST_CASE("xformed, to_in")
@@ -187,11 +210,11 @@ TEST_CASE("atted, accessing keys of a container")
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
     auto x      = atted("john", st);
-    CHECK(0 == x.get()); // not found => default constructed
+    CHECK(std::nullopt == x.get()); // not found => nullopt
 
     x.set(12);
     commit(st);
-    CHECK(0 == x.get()); // not magically created
+    CHECK(std::nullopt == x.get()); // not magically created
     CHECK(map_t{} == st.get());
 
     st.set(map_t{{"john", 42}});
@@ -211,12 +234,12 @@ TEST_CASE("atted, accessing keys of a container")
     //    CHECK(43 == x.get());
     //
     // This is, after removing the element, the cursor zooming on it would not
-    // update to show a default-constructed one.  This was considered useful to
-    // animate element removals (the view of the element still has a reference
-    // to the data).  There are other ways to achieve this behavior though.  We
-    // can, for example, have an at() lense that returns an optional, and then
-    // filter and dereference, to achieve, exactly the same behavior.
-    CHECK(0 == x.get());
+    // update to show nullopt.  This was considered useful to animate element
+    // removals (the view of the element still has a reference to the data).
+    // There are other ways to achieve this behavior though.  We can, for
+    // example, have an at() lense that returns an optional, and then filter and
+    // dereference, to achieve, exactly the same behavior.
+    CHECK(std::nullopt == x.get());
 }
 
 TEST_CASE("atted, accessing keys of acontainer in version")
@@ -224,7 +247,7 @@ TEST_CASE("atted, accessing keys of acontainer in version")
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{});
     auto x      = atted("john", st);
-    CHECK(0 == x.get()); // not found => default constructed
+    CHECK(std::nullopt == x.get()); // not found => nullopt
 
     st.set(map_t{{"john", 42}});
     commit(st);
