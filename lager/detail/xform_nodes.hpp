@@ -86,7 +86,8 @@ class xform_reader_node<XForm, zug::meta::pack<Parents...>, Base>
 {
     using base_t =
         Base<zug::result_of_t<XForm, zug::meta::value_t<Parents>...>>;
-    using down_rf_t = decltype(std::declval<XForm>()(::lager::detail::send_down));
+    using down_rf_t =
+        decltype(std::declval<XForm>()(::lager::detail::send_down));
 
     std::tuple<std::shared_ptr<Parents>...> parents_;
 
@@ -109,7 +110,7 @@ public:
             }
         }())
         , parents_(std::move(parents)...)
-        , down_step_(xform(::lager::detail::send_down))
+        , down_step_(std::forward<XForm2>(xform)(::lager::detail::send_down))
     {}
 
     void recompute() /* final */

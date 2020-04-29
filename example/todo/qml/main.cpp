@@ -32,7 +32,7 @@ class Item : public QObject
 public:
     Item(lager::cursor<todo::item> data)
         : LAGER_QT(done){data[&todo::item::done]}
-        , LAGER_QT(text){data[&todo::item::text].xf(
+        , LAGER_QT(text){data[&todo::item::text].xform(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
     {}
@@ -50,11 +50,11 @@ class Model : public QObject
 
 public:
     Model()
-        : LAGER_QT(name){state_[&todo::model::name].xf(
+        : LAGER_QT(name){state_[&todo::model::name].xform(
               zug::map([](auto&& x) { return QString::fromStdString(x); }),
               zug::map([](auto&& x) { return x.toStdString(); }))}
         , LAGER_QT(fileName){file_name_}
-        , LAGER_QT(count){state_.xf(zug::map(
+        , LAGER_QT(count){state_.xform(zug::map(
               [](auto&& x) { return static_cast<int>(x.todos.size()); }))}
     {}
 

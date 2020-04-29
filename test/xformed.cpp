@@ -15,8 +15,8 @@
 #include <lager/state.hpp>
 #include <lager/xform.hpp>
 
-#include <lager/lenses/attr.hpp>
 #include <lager/lenses/at.hpp>
+#include <lager/lenses/attr.hpp>
 #include <lager/lenses/optional.hpp>
 
 #include <zug/transducer/filter.hpp>
@@ -32,47 +32,59 @@ using namespace lager;
 using namespace boost::fusion::operators;
 
 namespace detail {
-template <typename T> struct is_optional : std::false_type {};
-template <typename T> struct is_optional<std::optional<T>> : std::true_type {};
+
 template <typename T>
-[[maybe_unused]] constexpr bool is_optional_v = is_optional<std::decay_t<T>>::value;
-}
+struct is_optional : std::false_type
+{};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type
+{};
+
+template <typename T>
+[[maybe_unused]] constexpr bool is_optional_v =
+    is_optional<std::decay_t<T>>::value;
+
+} // namespace detail
 
 template <typename AttrT, typename... CursorTs>
 auto attred(AttrT&& member, CursorTs&&... cs)
 {
-    if constexpr (std::disjunction_v<
-            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
-        return zoom(lenses::with_opt(lenses::attr(std::forward<AttrT>(member))),
-                    std::forward<CursorTs>(cs)...);    
+    if constexpr (std::disjunction_v<::detail::is_optional<
+                      typename std::decay_t<CursorTs>::value_type>...>) {
+        return with(std::forward<CursorTs>(cs)...)
+            .zoom(lenses::with_opt(lenses::attr(std::forward<AttrT>(member))))
+            .make();
     } else {
-        return zoom(lenses::attr(std::forward<AttrT>(member)),
-                    std::forward<CursorTs>(cs)...);
+        return with(std::forward<CursorTs>(cs)...)
+            .zoom(lenses::attr(std::forward<AttrT>(member)))
+            .make();
     }
 }
 
 template <typename KeyT, typename... CursorTs>
 auto atted(KeyT&& key, CursorTs&&... cs)
 {
-    if constexpr (std::disjunction_v<
-            ::detail::is_optional<typename std::decay_t<CursorTs>::value_type>...>) {
-        return zoom(lenses::with_opt(lenses::at(std::forward<KeyT>(key))),
-                    std::forward<CursorTs>(cs)...);
+    if constexpr (std::disjunction_v<::detail::is_optional<
+                      typename std::decay_t<CursorTs>::value_type>...>) {
+        return with(std::forward<CursorTs>(cs)...)
+            .zoom(lenses::with_opt(lenses::at(std::forward<KeyT>(key))));
     } else {
-        return zoom(lenses::at(std::forward<KeyT>(key)),
-                    std::forward<CursorTs>(cs)...);
+        return with(std::forward<CursorTs>(cs)...)
+            .zoom(lenses::at(std::forward<KeyT>(key)))
+            .make();
     }
 }
 
 TEST_CASE("xformed, to_in")
 {
-    reader<int> i = xform(zug::identity)(make_state(0));
+    reader<int> i = make_state(0).xform(zug::identity);
 }
 
 TEST_CASE("xformed, identity")
 {
     auto s = state<int>{42};
-    auto x = xform(zug::identity)(s);
+    auto x = s.xform(zug::identity).make();
     CHECK(x.get() == 42);
 }
 
@@ -80,14 +92,14 @@ TEST_CASE("xformed, identity two args is zipping")
 {
     auto s1 = state<int>{42};
     auto s2 = state<int>{13};
-    auto x  = xform(zug::identity)(s1, s2);
+    auto x  = with(s1, s2).xform(zug::identity).make();
     CHECK(x.get() == std::make_tuple(42, 13));
 }
 
 TEST_CASE("xformed, one arg mapping")
 {
     auto s = state<int>{42};
-    auto x = xform(map([](int a) { return a + 1; }))(s);
+    auto x = s.xform(map([](int a) { return a + 1; })).make();
     CHECK(x.get() == 43);
 }
 
@@ -95,21 +107,21 @@ TEST_CASE("xformed, two arg mapping")
 {
     auto s1 = state<int>{42};
     auto s2 = state<int>{10};
-    auto x  = xform(map(std::plus<int>{}))(s1, s2);
+    auto x  = with(s1, s2).xform(map(std::plus<int>{})).make();
     CHECK(x.get() == 52);
 }
 
 TEST_CASE("xformed, one arg filter with value")
 {
     auto s = state<int>{42};
-    auto x = xform(filter([](int a) { return a % 2 == 0; }))(s);
+    auto x = s.xform(filter([](int a) { return a % 2 == 0; })).make();
     CHECK(x.get() == 42);
 }
 
 TEST_CASE("xformed, one arg filter without value")
 {
     auto s = state<int>{43};
-    auto x = xform(filter([](int a) { return a % 2 == 0; }))(s);
+    auto x = s.xform(filter([](int a) { return a % 2 == 0; })).make();
     CHECK(x.get() == 0);
 }
 
@@ -128,8 +140,8 @@ TEST_CASE("xformed, one arg filter without value non default ctr")
 {
     auto s = state<non_default>{non_default{43}};
     CHECK_THROWS_AS(
-        xform(filter([](non_default x) { return x.v % 2 == 0; }))(s),
-        no_value_error);
+        s.xform(filter([](non_default x) { return x.v % 2 == 0; })).make(),
+        no_value_error const&);
 }
 
 TEST_CASE(
@@ -137,7 +149,7 @@ TEST_CASE(
     "one arg filter without value non default ctr ok if first value passes")
 {
     auto s = state<non_default>{42};
-    auto x = xform(filter([](non_default a) { return a.v % 2 == 0; }))(s);
+    auto x = s.xform(filter([](non_default a) { return a.v % 2 == 0; })).make();
     s.set(non_default{43});
     commit(s);
     CHECK(x.get().v == 42); // old value still visible
@@ -150,7 +162,7 @@ TEST_CASE(
 TEST_CASE("xformed, identity setter")
 {
     auto s = state<int>{42};
-    auto x = xform(zug::identity, zug::identity)(s);
+    auto x = s.xform(zug::identity, zug::identity).make();
     CHECK(x.get() == 42);
 
     x.set(5);
@@ -167,7 +179,7 @@ TEST_CASE("xformed, identity setter two parents")
     auto s1 = state<int>{42};
     auto s2 = state<int>{12};
 
-    auto x = xform(zug::identity, zug::identity)(s1, s2);
+    auto x = with(s1, s2).xform(zug::identity, zug::identity).make();
     CHECK(x.get() == std::make_tuple(42, 12));
 
     x.set(std::make_tuple(5, 12));
@@ -184,7 +196,7 @@ TEST_CASE("xformed, identity setter two parents")
 TEST_CASE("xformed, mapping")
 {
     auto st = make_state(0);
-    auto x  = xform(map([](int a) { return a + 2; }))(st);
+    auto x  = st.xform(map([](int a) { return a + 2; })).make();
     CHECK(2 == x.get());
 
     st.set(42);
@@ -195,8 +207,9 @@ TEST_CASE("xformed, mapping")
 TEST_CASE("xformed, bidirectional")
 {
     auto st = make_state(0);
-    auto x  = xform(map([](int a) { return a + 2; }),
-                   map([](int a) { return a - 2; }))(st);
+    auto x  = st.xform(map([](int a) { return a + 2; }),
+                      map([](int a) { return a - 2; }))
+                 .make();
     CHECK(2 == x.get());
 
     x.set(42);
@@ -286,7 +299,7 @@ TEST_CASE("atted, updates dont overwrite new data in complex scenario")
 {
     auto st = make_state(std::array<person, 2>{{{"john", 42}, {"emil", 2}}});
     auto x1 = atted(0u, st);
-    auto x2 = atted(1u, xform(zug::identity, zug::identity)(st));
+    auto x2 = atted(1u, st.xform(zug::identity, zug::identity).make());
     auto x3 = atted(1u, st);
     auto x4 = attred(&person::name, x2);
     auto x5 = attred(&person::age, x3);
@@ -364,8 +377,8 @@ TEST_CASE("atted, modifying attributes of immutable")
 TEST_CASE("access member with square brackets")
 {
     auto st = make_state(machine{"car", 4});
-    auto x  = st[&machine::name];
-    auto y  = reader<machine>{st}[&machine::name];
+    auto x  = st[&machine::name].make();
+    auto y  = reader<machine>{st}[&machine::name].make();
 
     x.set("tricar");
     commit(st);
@@ -378,8 +391,8 @@ TEST_CASE("accessing keys with square brackets")
 {
     using map_t = std::map<std::string, int>;
     auto st     = make_state(map_t{{"john", 12}});
-    auto x      = st["john"];
-    auto y      = reader<map_t>{st}["john"];
+    auto x      = st["john"].make();
+    auto y      = reader<map_t>{st}["john"].make();
 
     x.set(42);
     commit(st);

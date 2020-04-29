@@ -40,16 +40,23 @@ struct writer_mixin
     template <typename T>
     auto operator[](T&& t) const
     {
-        using value_t = typename DerivT::value_type;
-        auto l        = detail::smart_lens<value_t>::make(std::forward<T>(t));
-        return zoom(l, *this);
+        return with(*this)[std::forward<T>(t)];
     }
 
     template <typename Xform, typename Xform2>
-    auto xf(Xform&& xf, Xform2&& xf2) const
+    auto xform(Xform&& xf, Xform2&& xf2) const
     {
-        return xform(xf, xf2)(static_cast<const DerivT&>(*this));
+        return with(*this).xform(std::forward<Xform>(xf),
+                                 std::forward<Xform2>(xf2));
     }
+
+    template <typename Lens>
+    auto zoom(Lens&& l) const
+    {
+        return with(*this).zoom(std::forward<Lens>(l));
+    }
+
+    auto make() { return static_cast<DerivT&>(*this); }
 
 protected:
     ~writer_mixin() = default;
