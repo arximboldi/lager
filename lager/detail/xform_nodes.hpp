@@ -1,28 +1,14 @@
 //
-// Copyright (C) 2014, 2015 Ableton AG, Berlin. All rights reserved.
+// lager - library for functional interactive c++ programs
+// Copyright (C) 2017 Juan Pedro Bolivar Puente
 //
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
+// This file is part of lager.
 //
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
+// lager is free software: you can redistribute it and/or modify
+// it under the terms of the MIT License, as detailed in the LICENSE
+// file located at the root of this source code distribution,
+// or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-//
-
-/*!
- * @file
- */
 
 #pragma once
 
@@ -39,10 +25,9 @@
 #include <zug/reducing/last.hpp>
 
 namespace lager {
-
 namespace detail {
 
-ZUG_INLINE_CONSTEXPR struct send_down_t
+ZUG_INLINE_CONSTEXPR struct send_down_rf_t
 {
     template <typename ReaderNodePtr, typename... Inputs>
     auto operator()(ReaderNodePtr s, Inputs&&... is) const -> ReaderNodePtr
@@ -56,100 +41,71 @@ ZUG_INLINE_CONSTEXPR struct send_down_t
     {
         return s;
     }
-} send_down{};
+} send_down_rf{};
 
-template <typename T, typename Err>
-auto default_construct_or_throw()
-    -> std::enable_if_t<std::is_default_constructible<T>::value, T>
+template <typename ValueT, typename Xform, typename... ParentPtrs>
+ValueT initial_value(Xform&& xform, const std::tuple<ParentPtrs...>& parents)
 {
-    return T();
-}
-
-template <typename T, typename Err>
-auto default_construct_or_throw()
-    -> std::enable_if_t<!std::is_default_constructible<T>::value, T>
-{
-    throw Err();
-}
+    try {
+        return std::apply(
+            [&](auto&&... ps) {
+                return xform(zug::last)(detail::no_value{}, ps->current()...);
+            },
+            parents);
+    } catch (const no_value_error&) {
+        if constexpr (std::is_default_constructible<ValueT>::value) {
+            return ValueT{};
+        } else {
+            throw;
+        }
+    }
+};
 
 /*!
  * Implementation of a node with a transducer.
  */
-template <typename XForm              = zug::identity_t,
-          typename ParentsPack        = zug::meta::pack<>,
+template <typename Xform              = zug::identity_t,
+          typename Parents            = zug::meta::pack<>,
           template <class> class Base = reader_node>
 class xform_reader_node;
 
-template <typename XForm, typename... Parents, template <class> class Base>
-class xform_reader_node<XForm, zug::meta::pack<Parents...>, Base>
-    : public Base<zug::result_of_t<XForm, zug::meta::value_t<Parents>...>>
+template <typename Xform, typename... Parents, template <class> class Base>
+class xform_reader_node<Xform, zug::meta::pack<Parents...>, Base>
+    : public inner_node<zug::result_of_t<Xform, zug::meta::value_t<Parents>...>,
+                        zug::meta::pack<Parents...>,
+                        Base>
 {
     using base_t =
-        Base<zug::result_of_t<XForm, zug::meta::value_t<Parents>...>>;
-    using down_rf_t = decltype(std::declval<XForm>()(::lager::detail::send_down));
+        inner_node<zug::result_of_t<Xform, zug::meta::value_t<Parents>...>,
+                   zug::meta::pack<Parents...>,
+                   Base>;
+    using down_rf_t = decltype(std::declval<Xform>()(send_down_rf));
 
-    std::tuple<std::shared_ptr<Parents>...> parents_;
+    down_rf_t down_step_;
 
 public:
     using value_type = typename base_t::value_type;
 
-    xform_reader_node(xform_reader_node&&)      = default;
-    xform_reader_node(const xform_reader_node&) = delete;
-    xform_reader_node& operator=(xform_reader_node&&) = default;
-    xform_reader_node& operator=(const xform_reader_node&) = delete;
-
-    template <typename XForm2>
-    xform_reader_node(XForm2&& xform, std::shared_ptr<Parents>... parents)
-        : base_t([&]() -> value_type {
-            try {
-                return xform(zug::last)(detail::no_value{},
-                                        parents->current()...);
-            } catch (const no_value_error&) {
-                return default_construct_or_throw<value_type, no_value_error>();
-            }
-        }())
-        , parents_(std::move(parents)...)
-        , down_step_(xform(::lager::detail::send_down))
+    template <typename Xform2, typename ParentsTuple>
+    xform_reader_node(Xform2&& xform, ParentsTuple&& parents)
+        : base_t{initial_value<value_type>(std::forward<Xform2>(xform),
+                                           parents),
+                 std::forward<ParentsTuple>(parents)}
+        , down_step_{std::forward<Xform2>(xform)(send_down_rf)}
     {}
 
-    void recompute() /* final */
+    void recompute() final
     {
-        recompute(std::make_index_sequence<sizeof...(Parents)>{});
+        std::apply([&](auto&&... ps) { down_step_(this, ps->current()...); },
+                   this->parents());
     }
-
-    void recompute_deep() /* final */
-    {
-        recompute_deep(std::make_index_sequence<sizeof...(Parents)>{});
-    }
-
-    std::tuple<std::shared_ptr<Parents>...>& parents() { return parents_; }
-    const std::tuple<std::shared_ptr<Parents>...>& parents() const
-    {
-        return parents_;
-    }
-
-private:
-    template <std::size_t... Indices>
-    void recompute(std::index_sequence<Indices...>)
-    {
-        down_step_(this, std::get<Indices>(parents_)->current()...);
-    }
-
-    template <std::size_t... Indices>
-    void recompute_deep(std::index_sequence<Indices...>)
-    {
-        noop((std::get<Indices>(parents_)->recompute_deep(), 0)...);
-        recompute();
-    }
-
-    down_rf_t down_step_;
 };
 
 /*!
  * Reducing function that pushes the received values into the node
  * that is passed as pointer as an accumulator.
  */
-constexpr struct
+ZUG_INLINE_CONSTEXPR struct send_up_rf_t
 {
     template <typename WriterNodePtr, typename... Inputs>
     auto operator()(WriterNodePtr s, Inputs&&... is) const -> WriterNodePtr
@@ -162,135 +118,56 @@ constexpr struct
 /*!
  * Implementation of a node with a transducer
  */
-template <typename XForm              = zug::identity_t,
-          typename SetXForm           = zug::identity_t,
-          typename ParentsPack        = zug::meta::pack<>,
-          template <class> class Base = cursor_node>
-class xform_cursor_node;
-
-template <typename XForm,
-          typename SetXForm,
-          typename... Parents,
-          template <class>
-          class Base>
-class xform_cursor_node<XForm, SetXForm, zug::meta::pack<Parents...>, Base>
-    : public xform_reader_node<XForm, zug::meta::pack<Parents...>, Base>
+template <typename Xform, typename WXform, typename Parents>
+class xform_cursor_node : public xform_reader_node<Xform, Parents, cursor_node>
 {
-    using base_t  = xform_reader_node<XForm, zug::meta::pack<Parents...>, Base>;
-    using up_rf_t = decltype(std::declval<SetXForm>()(send_up_rf));
+    using base_t  = xform_reader_node<Xform, Parents, cursor_node>;
+    using up_rf_t = decltype(std::declval<WXform>()(send_up_rf));
+
+    up_rf_t up_step_;
 
 public:
     using value_type = typename base_t::value_type;
 
-    xform_cursor_node(xform_cursor_node&&)      = default;
-    xform_cursor_node(const xform_cursor_node&) = delete;
-    xform_cursor_node& operator=(xform_cursor_node&&) = default;
-    xform_cursor_node& operator=(const xform_cursor_node&) = delete;
-
-    template <typename XForm2, typename SetXForm2>
-    xform_cursor_node(XForm2&& xform,
-                      SetXForm2&& set_xform,
-                      std::shared_ptr<Parents>... parents)
-        : base_t(std::forward<XForm2>(xform), std::move(parents)...)
-        , up_step_(set_xform(send_up_rf))
+    template <typename Xform2, typename WXform2, typename ParentsTuple>
+    xform_cursor_node(Xform2&& xform, WXform2&& wxform, ParentsTuple&& parents)
+        : base_t{std::forward<Xform2>(xform),
+                 std::forward<ParentsTuple>(parents)}
+        , up_step_{wxform(send_up_rf)}
     {}
 
-    void send_up(const value_type& value) final
-    {
-        send_up(value, std::make_index_sequence<sizeof...(Parents)>{});
-    }
-
-    void send_up(value_type&& value) final
-    {
-        send_up(std::move(value),
-                std::make_index_sequence<sizeof...(Parents)>{});
-    }
-
-    template <typename T>
-    void push_up(T&& value)
-    {
-        push_up(std::forward<T>(value),
-                std::make_index_sequence<sizeof...(Parents)>{});
-    }
-
-private:
-    template <typename T, std::size_t... Indices>
-    void send_up(T&& x, std::index_sequence<Indices...>)
-    {
-        up_step_(this, std::forward<T>(x));
-    }
-
-    template <typename T, std::size_t... Indices>
-    void push_up(T&& value, std::index_sequence<Indices...>)
-    {
-        auto& parents = this->parents();
-        noop((std::get<Indices>(parents)->send_up(
-                  std::get<Indices>(std::forward<T>(value))),
-              0)...);
-    }
-
-    template <typename T>
-    void push_up(T&& value, std::index_sequence<0>)
-    {
-        std::get<0>(this->parents())->send_up(std::forward<T>(value));
-    }
-
-    up_rf_t up_step_;
+    void send_up(const value_type& value) final { up_step_(this, value); }
+    void send_up(value_type&& value) final { up_step_(this, std::move(value)); }
 };
 
 /*!
- * Links a node to its parents and returns it.
+ * Make a xform_reader_node with deduced types.
  */
-template <typename NodeT>
-auto link_to_parents(std::shared_ptr<NodeT> node) -> std::shared_ptr<NodeT>
+template <typename Xform, typename... Parents>
+auto make_xform_reader_node(Xform&& xform,
+                            std::tuple<std::shared_ptr<Parents>...> parents)
 {
     return link_to_parents(
-        std::move(node),
-        std::make_index_sequence<
-            std::tuple_size<std::decay_t<decltype(node->parents())>>::value>{});
-}
-
-template <typename NodeT, std::size_t... Indices>
-auto link_to_parents(std::shared_ptr<NodeT> node,
-                     std::index_sequence<Indices...>) -> std::shared_ptr<NodeT>
-{
-    auto& parents = node->parents();
-    noop((std::get<Indices>(parents)->link(node), 0)...);
-    return node;
+        std::make_shared<xform_reader_node<std::decay_t<Xform>,
+                                           zug::meta::pack<Parents...>>>(
+            std::forward<Xform>(xform), std::move(parents)));
 }
 
 /*!
  * Make a xform_reader_node with deduced types.
  */
-template <typename XForm, typename... Parents>
-auto make_xform_reader_node(XForm&& xform, std::shared_ptr<Parents>... parents)
-    -> std::shared_ptr<
-        xform_reader_node<std::decay_t<XForm>, zug::meta::pack<Parents...>>>
+template <typename Xform, typename WXform, typename... Parents>
+auto make_xform_cursor_node(Xform&& xform,
+                            WXform&& wxform,
+                            std::tuple<std::shared_ptr<Parents>...> parents)
 {
-    using node_t =
-        xform_reader_node<std::decay_t<XForm>, zug::meta::pack<Parents...>>;
-    return link_to_parents(std::make_shared<node_t>(std::forward<XForm>(xform),
-                                                    std::move(parents)...));
-}
-
-/*!
- * Make a xform_reader_node with deduced types.
- */
-template <typename XForm, typename SetXForm, typename... Parents>
-auto make_xform_cursor_node(XForm&& xform,
-                            SetXForm&& set_xform,
-                            std::shared_ptr<Parents>... parents)
-    -> std::shared_ptr<xform_cursor_node<std::decay_t<XForm>,
-                                         std::decay_t<SetXForm>,
-                                         zug::meta::pack<Parents...>>>
-{
-    using node_t = xform_cursor_node<std::decay_t<XForm>,
-                                     std::decay_t<SetXForm>,
-                                     zug::meta::pack<Parents...>>;
     return link_to_parents(
-        std::make_shared<node_t>(std::forward<XForm>(xform),
-                                 std::forward<SetXForm>(set_xform),
-                                 std::move(parents)...));
+        std::make_shared<xform_cursor_node<std::decay_t<Xform>,
+                                           std::decay_t<WXform>,
+                                           zug::meta::pack<Parents...>>>(
+            std::forward<Xform>(xform),
+            std::forward<WXform>(wxform),
+            std::move(parents)));
 }
 
 } // namespace detail

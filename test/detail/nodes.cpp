@@ -16,7 +16,7 @@
 
 #include <lager/sensor.hpp>
 #include <lager/state.hpp>
-#include <lager/xform.hpp>
+#include <lager/with.hpp>
 
 #include <zug/transducer/map.hpp>
 
@@ -26,7 +26,10 @@ using namespace zug;
 
 using namespace lager::detail;
 
-TEST_CASE("node, instantiate down node") { make_xform_reader_node(identity); }
+TEST_CASE("node, instantiate down node")
+{
+    make_xform_reader_node(identity, {});
+}
 
 TEST_CASE("node, instantiate state") { make_state_node(0); }
 
@@ -55,7 +58,7 @@ TEST_CASE("node, last value becomes visible")
 TEST_CASE("node, sending down")
 {
     auto x = make_state_node(5);
-    auto y = make_xform_reader_node(identity, x);
+    auto y = make_xform_reader_node(identity, std::make_tuple(x));
     CHECK(5 == y->last());
 
     x->send_up(12);
@@ -93,7 +96,7 @@ TEST_CASE("node, lifetime of observer")
     auto s = testing::spy();
     auto c = boost::signals2::connection{};
     {
-        auto y = make_xform_reader_node(identity, x);
+        auto y = make_xform_reader_node(identity, std::make_tuple(x));
         c      = y->observe(s);
         CHECK(c.connected());
 
@@ -134,9 +137,9 @@ TEST_CASE("node, notify idempotence")
 TEST_CASE("node, observing is consistent")
 {
     auto x = make_state_node(5);
-    auto y = make_xform_reader_node(identity, x);
-    auto z = make_xform_reader_node(identity, x);
-    auto w = make_xform_reader_node(identity, y);
+    auto y = make_xform_reader_node(identity, std::make_tuple(x));
+    auto z = make_xform_reader_node(identity, std::make_tuple(x));
+    auto w = make_xform_reader_node(identity, std::make_tuple(y));
 
     auto s = testing::spy([&](int last_value, int new_value) {
         CHECK(5 == last_value);
@@ -163,7 +166,7 @@ TEST_CASE("node, observing is consistent")
 TEST_CASE("node, bidirectional node sends values up")
 {
     auto x = make_state_node(5);
-    auto y = make_xform_cursor_node(identity, identity, x);
+    auto y = make_xform_cursor_node(identity, identity, std::make_tuple(x));
 
     y->send_up(42);
     CHECK(5 == x->last());
@@ -179,7 +182,7 @@ TEST_CASE("node, bidirectional mapping")
     auto inc = [](int x) { return ++x; };
     auto dec = [](int x) { return --x; };
     auto x   = make_state_node(5);
-    auto y   = make_xform_cursor_node(map(inc), map(dec), x);
+    auto y   = make_xform_cursor_node(map(inc), map(dec), std::make_tuple(x));
 
     CHECK(5 == x->last());
     CHECK(6 == y->last());
@@ -204,13 +207,13 @@ TEST_CASE("node, bidirectiona update is consistent")
                                         a[0] = v;
                                         return a;
                                     }),
-                                    x);
+                                    std::make_tuple(x));
     auto z    = make_xform_cursor_node(map([](const arr& a) { return a[1]; }),
                                     lager::update([](arr a, int v) {
                                         a[1] = v;
                                         return a;
                                     }),
-                                    x);
+                                    std::make_tuple(x));
 
     CHECK((arr{{5, 13}}) == x->last());
     CHECK(5 == y->last());
@@ -244,8 +247,8 @@ TEST_CASE("node, one node two parents")
     int count = 0;
     auto x    = make_sensor_node([&count] { return count++; });
     auto y    = make_state_node(12);
-    auto z =
-        make_xform_reader_node(map([](int a, int b) { return a + b; }), x, y);
+    auto z    = make_xform_reader_node(map([](int a, int b) { return a + b; }),
+                                    std::make_tuple(x, y));
     auto s =
         testing::spy([&](int, int r) { CHECK(r == x->last() + y->last()); });
     z->observe(s);

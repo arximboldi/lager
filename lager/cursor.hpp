@@ -28,8 +28,10 @@ struct cursor_mixin
     , reader_mixin<DerivT>
 {
     using writer_mixin<DerivT>::operator[];
-    using writer_mixin<DerivT>::xf;
-    using reader_mixin<DerivT>::xf;
+    using writer_mixin<DerivT>::make;
+    using writer_mixin<DerivT>::zoom;
+    using writer_mixin<DerivT>::xform;
+    using reader_mixin<DerivT>::xform;
 
 protected:
     ~cursor_mixin() = default;

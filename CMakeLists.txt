@@ -89,6 +89,11 @@ if(lager_BUILD_TESTS)
     target_compile_options(lager-dev INTERFACE "--coverage")
     target_link_libraries(lager-dev INTERFACE "--coverage")
   endif()
+  if (ENABLE_ASAN)
+    target_compile_options(lager-dev INTERFACE
+      -fno-omit-frame-pointer -fsanitize=address)
+    target_link_options(lager-dev INTERFACE -fsanitize=address)
+  endif()
 
   enable_testing()
   add_custom_target(check
