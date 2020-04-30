@@ -22,6 +22,7 @@ stdenv.mkDerivation rec {
     cmake
     gcc7
     sass
+    pkgconfig
   ];
   propagatedBuildInputs = [
     boost

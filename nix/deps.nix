@@ -13,7 +13,7 @@ rec {
       rev = commit;
       sha256 = "0ild7kvq5x960yzlx3hzr7qkgdz80hx4h2xkjl9ycjnsp2hblnf6";
     };
-    propagatedBuildInputs = [ libmicrohttpd ];
+    propagatedBuildInputs = [ gnutls libmicrohttpd ] ++ gnutls.buildInputs;
     nativeBuildInputs = [ autoreconfHook ];
     configureScript = "../configure";
     configurePhase = ''
@@ -76,6 +76,7 @@ rec {
       sha256 = "0vmcnspg9ys4qkj228kgvmpb5whly1cwx30sbg21x2iqs7y11ggx";
     };
     nativeBuildInputs = [ cmake ];
+    dontUseCmakeBuildDir = true;
     meta = with stdenv.lib; {
       homepage = "http://sinusoid.es/zug";
       description = "Transducers for C++";
