@@ -112,9 +112,11 @@ struct debugger
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
                         auto state = invoke_reducer<deps_t>(
-                            reducer, m, act, [&](auto&& e) {
-                                eff = LAGER_FWD(e);
-                            });
+                            reducer,
+                            m,
+                            act,
+                            [&](auto&& e) { eff = LAGER_FWD(e); },
+                            [] {});
                         m.history = m.history.take(m.cursor).push_back(
                             {act, std::move(state)});
                         m.cursor = m.history.size();

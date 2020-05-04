@@ -228,9 +228,11 @@ struct tree_debugger
                     } else {
                         auto eff   = effect<action, deps_t>{noop};
                         auto state = invoke_reducer<deps_t>(
-                            reducer, m, act, [&](auto&& e) {
-                                eff = LAGER_FWD(e);
-                            });
+                            reducer,
+                            m,
+                            act,
+                            [&](auto&& e) { eff = LAGER_FWD(e); },
+                            [] {});
                         m.append(act, state);
                         return {m, eff};
                     }

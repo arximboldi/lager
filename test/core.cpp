@@ -18,7 +18,7 @@
 #include "../example/counter/counter.hpp"
 #include <optional>
 
-TEST_CASE("basic")
+TEST_CASE("automatic")
 {
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
@@ -31,6 +31,28 @@ TEST_CASE("basic")
     CHECK(store.get().value == 0);
 
     store.dispatch(counter::increment_action{});
+    CHECK(viewed);
+    CHECK(viewed->value == 1);
+    CHECK(store.get().value == 1);
+}
+
+TEST_CASE("basic")
+{
+    auto viewed = std::optional<counter::model>{std::nullopt};
+    auto view   = [&](auto model) { viewed = model; };
+    auto store  = lager::make_store<counter::action, lager::transactional_tag>(
+        counter::model{}, counter::update, lager::with_manual_event_loop{});
+    watch(store, [&](auto&&, auto&& v) { view(v); });
+
+    CHECK(!viewed);
+    CHECK(viewed->value == 0);
+    CHECK(store.get().value == 0);
+
+    store.dispatch(counter::increment_action{});
+    CHECK(!viewed);
+    CHECK(store.get().value == 0);
+
+    lager::commit(store);
     CHECK(viewed);
     CHECK(viewed->value == 1);
     CHECK(store.get().value == 1);
