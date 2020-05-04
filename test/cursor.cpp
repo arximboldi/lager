@@ -12,6 +12,7 @@
 
 #include <catch.hpp>
 
+#include <lager/constant.hpp>
 #include <lager/cursor.hpp>
 #include <lager/reader.hpp>
 #include <lager/state.hpp>
@@ -158,4 +159,13 @@ TEST_CASE("zooming, unfocused, immutable")
     auto n4 = p[lenses::with_opt(lenses::attr(&person::name))].make();
 
     auto s = st[l1].make();
+}
+
+TEST_CASE("in, constant")
+{
+    auto c = make_constant(42);
+    auto i = reader<int>{c};
+
+    CHECK(*c == 42);
+    CHECK(*i == 42);
 }
