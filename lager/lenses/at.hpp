@@ -1,8 +1,8 @@
 #pragma once
 
-#include <utility>
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
+#include <utility>
 
 #include <zug/compose.hpp>
 #include <zug/meta/detected.hpp>
@@ -15,12 +15,17 @@ namespace detail {
 
 // detect if T satifsies the immer API for setting values
 template <typename T, typename Key, typename OptValue>
-using set_t = std::decay_t<decltype(
-    std::declval<T>().set(std::declval<Key>(), std::declval<OptValue>().value()))>;
+using set_opt_t = std::decay_t<decltype(std::declval<T>().set(
+    std::declval<Key>(), std::declval<OptValue>().value()))>;
 
-template <typename Whole, typename Part, typename Key, std::enable_if_t<
-        !zug::meta::is_detected<set_t, Whole, Key, Part>::value, int> = 0>
-std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key) {
+template <typename Whole,
+          typename Part,
+          typename Key,
+          std::enable_if_t<
+              !zug::meta::is_detected<set_opt_t, Whole, Key, Part>::value,
+              int> = 0>
+std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key)
+{
     auto r = std::forward<Whole>(whole);
     if (part.has_value()) {
         try {
@@ -30,9 +35,14 @@ std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key) {
     return r;
 }
 
-template <typename Whole, typename Part, typename Key, std::enable_if_t<
-        zug::meta::is_detected<set_t, Whole, Key, Part>::value, int> = 0>
-std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key) {
+template <
+    typename Whole,
+    typename Part,
+    typename Key,
+    std::enable_if_t<zug::meta::is_detected<set_opt_t, Whole, Key, Part>::value,
+                     int> = 0>
+std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key)
+{
     if (part.has_value()) {
         try {
             (void) whole.at(std::forward<Key>(key));
@@ -49,16 +59,20 @@ std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key) {
  * `Key -> Lens<{X}, [X]>`
  */
 template <typename Key>
-auto at(Key key) {
+auto at(Key key)
+{
     return zug::comp([key](auto&& f) {
         return [f = LAGER_FWD(f), &key](auto&& whole) {
             using Part = std::optional<std::decay_t<decltype(whole.at(key))>>;
             return f([&]() -> Part {
                 try {
                     return LAGER_FWD(whole).at(key);
-                } catch (std::out_of_range const&) { return std::nullopt; }
+                } catch (std::out_of_range const&) {
+                    return std::nullopt;
+                }
             }())([&](Part part) {
-                return detail::at_setter_impl(LAGER_FWD(whole), std::move(part), key);
+                return detail::at_setter_impl(
+                    LAGER_FWD(whole), std::move(part), key);
             });
         };
     });
