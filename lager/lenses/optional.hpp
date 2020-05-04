@@ -108,6 +108,11 @@ ZUG_INLINE_CONSTEXPR auto value_or() {
 }
 
 /*!
+ * `() -> Lens<[X], X>`
+ */
+ZUG_INLINE_CONSTEXPR auto or_default = value_or();
+
+/*!
  * `Lens<T, [T]>`
  */
 ZUG_INLINE_CONSTEXPR auto force_opt = zug::comp([](auto&& f) {
