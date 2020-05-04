@@ -487,33 +487,29 @@ template <typename Deps = lager::deps<>,
           typename Model,
           typename Action,
           typename EffectHandler,
-          std::enable_if_t<has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
+          typename NoEffectHandler>
 auto invoke_reducer(Reducer&& reducer,
                     Model&& model,
                     Action&& action,
-                    EffectHandler&& handler) -> std::decay_t<Model>
+                    EffectHandler&& with_effect_handler,
+                    NoEffectHandler&& without_effect_handler)
+    -> std::decay_t<Model>
 {
-    auto [new_model, effect] =
-        std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
-    if (!is_empty_effect(effect)) {
-        LAGER_FWD(handler)(effect);
+    if constexpr (has_effect_v<Reducer, Model, Action, Deps>) {
+        auto [new_model, effect] = std::invoke(
+            LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
+        if (!is_empty_effect(effect)) {
+            LAGER_FWD(with_effect_handler)(effect);
+        } else {
+            LAGER_FWD(without_effect_handler)();
+        }
+        return std::move(new_model);
+    } else {
+        auto new_model = std::invoke(
+            LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
+        LAGER_FWD(without_effect_handler)();
+        return new_model;
     }
-    return std::move(new_model);
-}
-
-template <
-    typename Deps = lager::deps<>,
-    typename Reducer,
-    typename Model,
-    typename Action,
-    typename EffectHandler,
-    std::enable_if_t<!has_effect_v<Reducer, Model, Action, Deps>, int> = 0>
-auto invoke_reducer(Reducer&& reducer,
-                    Model&& model,
-                    Action&& action,
-                    EffectHandler &&) -> std::decay_t<Model>
-{
-    return std::invoke(LAGER_FWD(reducer), LAGER_FWD(model), LAGER_FWD(action));
 }
 
 /*!

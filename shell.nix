@@ -35,6 +35,7 @@ theStdenv.mkDerivation rec {
     ccache
     ncurses
     boost
+    pkgconfig
     libiconvReal
     glibcLocales
     deps.libhttpserver
@@ -51,9 +52,6 @@ theStdenv.mkDerivation rec {
     qt5.qtquickcontrols
     qt5.qtquickcontrols2
     qt5.qtgraphicaleffects
-    old-nixpkgs.elmPackages.elm-reactor
-    old-nixpkgs.elmPackages.elm-make
-    old-nixpkgs.elmPackages.elm-package
     (python3.withPackages (pkgs: with pkgs; [
       click
       requests
@@ -63,7 +61,11 @@ theStdenv.mkDerivation rec {
       ps.sphinx
       docs.breathe
       docs.recommonmark
-    ]))
+      ]))
+  ] ++ lib.optionals stdenv.isLinux [
+    old-nixpkgs.elmPackages.elm-reactor
+    old-nixpkgs.elmPackages.elm-make
+    old-nixpkgs.elmPackages.elm-package
   ];
   shellHook = ''
     export LAGER_ROOT=`dirname ${toString ./shell.nix}`

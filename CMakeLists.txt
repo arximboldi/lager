@@ -48,7 +48,8 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Boost 1.56 COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
-  find_package(LibHttpServer REQUIRED)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
   add_library(lager-debugger INTERFACE)
   target_include_directories(lager-debugger INTERFACE
     $<BUILD_INTERFACE:${lager_BINARY_DIR}/>

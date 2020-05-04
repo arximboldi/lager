@@ -4,11 +4,11 @@
 #include <type_traits>
 #include <utility>
 
-#include <zug/compose.hpp>
-#include <zug/meta/util.hpp>
-#include <zug/meta/detected.hpp>
-#include <lager/util.hpp>
 #include <lager/lenses.hpp>
+#include <lager/util.hpp>
+#include <zug/compose.hpp>
+#include <zug/meta/detected.hpp>
+#include <zug/meta/util.hpp>
 
 namespace lager {
 namespace lenses {
@@ -16,7 +16,8 @@ namespace lenses {
 namespace detail {
 
 template <template <typename> typename PartMeta, typename Lens>
-auto opt_impl(Lens&& lens) {
+auto opt_impl(Lens&& lens)
+{
     return zug::comp([lens = std::forward<Lens>(lens)](auto&& f) {
         return [&, f = LAGER_FWD(f)](auto&& whole) {
             using Part = typename PartMeta<std::decay_t<decltype(::lager::view(
@@ -27,10 +28,10 @@ auto opt_impl(Lens&& lens) {
                 return f(Part{::lager::view(lens, LAGER_FWD(whole).value())})(
                     [&](Part part) {
                         if (part.has_value()) {
-                            return std::decay_t<decltype(whole)>{::lager::set(
-                                lens,
-                                LAGER_FWD(whole).value(),
-                                std::move(part).value())};
+                            return std::decay_t<decltype(whole)>{
+                                ::lager::set(lens,
+                                             LAGER_FWD(whole).value(),
+                                             std::move(part).value())};
                         } else {
                             return LAGER_FWD(whole);
                         }
@@ -43,15 +44,28 @@ auto opt_impl(Lens&& lens) {
     });
 }
 
-template <typename T> struct remove_opt { using type = T; };
-template <typename T> struct remove_opt<std::optional<T>> { using type = T; };
-template <typename T> using remove_opt_t = typename remove_opt<T>::type;
+template <typename T>
+struct remove_opt
+{
+    using type = T;
+};
+template <typename T>
+struct remove_opt<std::optional<T>>
+{
+    using type = T;
+};
+template <typename T>
+using remove_opt_t = typename remove_opt<T>::type;
 
-template <typename T> struct to_opt {
+template <typename T>
+struct to_opt
+{
     using type = std::optional<remove_opt_t<std::decay_t<T>>>;
 };
 
-template <typename T> struct add_opt {
+template <typename T>
+struct add_opt
+{
     using type = std::optional<std::decay_t<T>>;
 };
 
@@ -61,7 +75,8 @@ template <typename T> struct add_opt {
  * `Lens<W, P> -> Lens<[W], [P]>`
  */
 template <typename Lens>
-auto map_opt(Lens&& lens) {
+auto map_opt(Lens&& lens)
+{
     return detail::opt_impl<detail::add_opt>(std::forward<Lens>(lens));
 }
 
@@ -69,7 +84,8 @@ auto map_opt(Lens&& lens) {
  * `Lens<W, [P]> -> Lens<[W], [P]>`
  */
 template <typename Lens>
-auto bind_opt(Lens&& lens) {
+auto bind_opt(Lens&& lens)
+{
     return detail::opt_impl<zug::meta::identity>(std::forward<Lens>(lens));
 }
 
@@ -77,7 +93,8 @@ auto bind_opt(Lens&& lens) {
  * `(Lens<W, P> | Lens<W, [P]>) -> Lens<[W], [P]>`
  */
 template <typename Lens>
-auto with_opt(Lens&& lens) {
+auto with_opt(Lens&& lens)
+{
     return detail::opt_impl<detail::to_opt>(std::forward<Lens>(lens));
 }
 
@@ -85,7 +102,8 @@ auto with_opt(Lens&& lens) {
  * `X -> Lens<[X], X>`
  */
 template <typename T>
-auto value_or(T&& t) {
+auto value_or(T&& t)
+{
     return zug::comp([t = std::forward<T>(t)](auto&& f) {
         return [&, f = LAGER_FWD(f)](auto&& whole) {
             return f(LAGER_FWD(whole).value_or(std::move(t)))(
@@ -97,7 +115,8 @@ auto value_or(T&& t) {
 /*!
  * `() -> Lens<[X], X>`
  */
-ZUG_INLINE_CONSTEXPR auto value_or() {
+ZUG_INLINE_CONSTEXPR auto value_or()
+{
     return zug::comp([](auto&& f) {
         return [&, f = LAGER_FWD(f)](auto&& whole) {
             using T = std::decay_t<decltype(whole.value())>;
@@ -106,6 +125,11 @@ ZUG_INLINE_CONSTEXPR auto value_or() {
         };
     });
 }
+
+/*!
+ * `() -> Lens<[X], X>`
+ */
+ZUG_INLINE_CONSTEXPR auto or_default = value_or();
 
 /*!
  * `Lens<T, [T]>`

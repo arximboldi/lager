@@ -27,12 +27,13 @@ namespace lager {
 namespace detail {
 
 template <typename Action, typename Model>
-struct store_node_base : public state_node<Model>
+struct store_node_base : public reader_node<Model>
 {
-    using action_t = Action;
-    using model_t  = Model;
+    using action_t   = Action;
+    using model_t    = Model;
+    using value_type = Model;
 
-    using state_node<Model>::state_node;
+    using reader_node<Model>::reader_node;
 
     virtual void dispatch(action_t action) = 0;
 };
@@ -54,6 +55,9 @@ class store
     using reader_t  = reader_base<detail::store_node_base<Action, Model>>;
     using context_t = context<Action, Dependencies>;
 
+    friend class detail::access;
+    auto roots() const { return detail::access::node(*this); }
+
 public:
     using action_t = Action;
     using model_t  = Model;
@@ -61,9 +65,13 @@ public:
 
     using reader_t::get;
 
-    template <typename ReducerFn, typename EventLoop, typename Deps>
-    store(model_t init, ReducerFn reducer, EventLoop loop, Deps dependencies)
-        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps>>(
+    template <typename ReducerFn,
+              typename EventLoop,
+              typename Deps,
+              typename Tag>
+    store(
+        model_t init, ReducerFn reducer, EventLoop loop, Deps dependencies, Tag)
+        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps, Tag>>(
               std::move(init),
               std::move(reducer),
               std::move(loop),
@@ -96,7 +104,10 @@ private:
     template <typename A, typename M, typename D>
     friend class store;
 
-    template <typename ReducerFn, typename EventLoop, typename Deps>
+    template <typename ReducerFn,
+              typename EventLoop,
+              typename Deps,
+              typename Tag>
     struct store_node final : detail::store_node_base<Action, Model>
     {
         using base_t             = detail::store_node_base<Action, Model>;
@@ -124,21 +135,36 @@ private:
         void dispatch(action_t action) override
         {
             loop.post([=] {
-                base_t::send_up(invoke_reducer<deps_t>(
+                base_t::push_down(invoke_reducer<deps_t>(
                     reducer,
                     base_t::current(),
                     std::move(action),
                     [&](auto&& effect) {
-                        loop.post([this, effect] { effect(ctx); });
+                        loop.post([this, effect = LAGER_FWD(effect)] {
+                            if constexpr (std::is_same_v<Tag, automatic_tag>) {
+                                base_t::send_down();
+                                base_t::notify();
+                            }
+                            effect(ctx);
+                        });
+                    },
+                    [&] {
+                        if constexpr (std::is_same_v<Tag, automatic_tag>) {
+                            loop.post([this] {
+                                base_t::send_down();
+                                base_t::notify();
+                            });
+                        }
                     }));
-                base_t::send_down();
-                loop.post([this] { base_t::notify(); });
             });
         }
     };
 
-    template <typename ReducerFn, typename EventLoop, typename Deps>
-    store(std::shared_ptr<store_node<ReducerFn, EventLoop, Deps>> node)
+    template <typename ReducerFn,
+              typename EventLoop,
+              typename Deps,
+              typename Tag>
+    store(std::shared_ptr<store_node<ReducerFn, EventLoop, Deps, Tag>> node)
         : context_t{node->ctx}
         , reader_t{std::move(node)}
     {}
@@ -179,6 +205,11 @@ auto with_deps(Args&&... args)
  * @tparam Action Value type that represents an event (an interaction) happening
  *         in the application.
  *
+ * @tparam Tag Use `automatic_tag` to indicate that the store should
+ *         automatically make changes visible notified after every action is
+ *         processed.  Use `transactional_tag` to require a `lager::commit`
+ *         call for that.
+ *
  * @param init Initial value of the data-model.  It should be a value-type.
  *
  * @param reducer
@@ -217,6 +248,7 @@ auto with_deps(Args&&... args)
  * @endrst
  */
 template <typename Action,
+          typename Tag = automatic_tag,
           typename Model,
           typename ReducerFn,
           typename EventLoop,
@@ -235,10 +267,12 @@ auto make_store(Model&& init,
         using action_t = typename decltype(action)::type;
         using model_t  = std::decay_t<decltype(model)>;
         using deps_t   = std::decay_t<decltype(deps)>;
+        using tag_t    = Tag;
         return store<action_t, model_t, deps_t>{LAGER_FWD(model),
                                                 LAGER_FWD(reducer),
                                                 LAGER_FWD(loop),
-                                                LAGER_FWD(deps)};
+                                                LAGER_FWD(deps),
+                                                tag_t{}};
     });
     return store_creator(type_<Action>{},
                          std::forward<Model>(init),
@@ -248,15 +282,16 @@ auto make_store(Model&& init,
 }
 
 template <typename Action,
+          typename Tag = automatic_tag,
           typename Model,
           typename ReducerFn,
           typename EventLoop>
 auto make_store(Model&& init, ReducerFn&& reducer, EventLoop&& loop)
 {
-    return make_store<Action>(std::forward<Model>(init),
-                              std::forward<ReducerFn>(reducer),
-                              std::forward<EventLoop>(loop),
-                              identity);
+    return make_store<Action, Tag>(std::forward<Model>(init),
+                                   std::forward<ReducerFn>(reducer),
+                                   std::forward<EventLoop>(loop),
+                                   identity);
 }
 
 //! @} group: make_store

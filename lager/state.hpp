@@ -17,14 +17,10 @@
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
 
+#include <lager/tags.hpp>
 #include <lager/util.hpp>
 
 namespace lager {
-
-struct transactional_tag
-{};
-struct automatic_tag
-{};
 
 namespace detail {
 

@@ -58,7 +58,7 @@ after_success:
   - |
     ! coverage-p || with-nix "
         cd build
-        find . -name \"*.gcno\" | xargs gcov -bcprs ${PWD}
+        find . -name \"*.gcno\" | xargs gcov -bcprs ${PWD} &> /dev/null
         bash <(curl -s https://codecov.io/bash) -x gcov
     "
     if upload-p; then

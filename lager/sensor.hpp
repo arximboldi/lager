@@ -19,16 +19,26 @@ namespace lager {
 
 namespace detail {
 
+template <typename T>
+class sensor_node_base : public reader_node<T>
+{
+    using base_t = reader_node<T>;
+
+public:
+    using base_t::base_t;
+};
+
 template <typename SensorFnT>
 class sensor_node
-    : public reader_node<std::decay_t<std::result_of_t<SensorFnT()>>>
+    : public sensor_node_base<std::decay_t<std::result_of_t<SensorFnT()>>>
 {
-    using base_t = reader_node<std::decay_t<std::result_of_t<SensorFnT()>>>;
+    using base_t =
+        sensor_node_base<std::decay_t<std::result_of_t<SensorFnT()>>>;
 
 public:
     sensor_node(SensorFnT sensor)
-        : base_t(sensor())
-        , sensor_(std::move(sensor))
+        : base_t{sensor()}
+        , sensor_{std::move(sensor)}
     {}
 
     void recompute() final { this->push_down(sensor_()); }
@@ -46,22 +56,21 @@ auto make_sensor_node(SensorFnT&& fn)
 
 } // namespace detail
 
-template <typename SensorFnT>
-class sensor : public reader_base<detail::sensor_node<SensorFnT>>
+template <typename T>
+class sensor : public reader_base<detail::sensor_node_base<T>>
 {
-    using base_t = reader_base<detail::sensor_node<SensorFnT>>;
-    using signal_ptr_t =
-        decltype(detail::make_sensor_node(std::declval<SensorFnT>()));
+    using base_t = reader_base<detail::sensor_node_base<T>>;
 
 public:
-    using value_type = std::decay_t<std::result_of_t<SensorFnT()>>;
-    using base_t::base_t;
+    using value_type = T;
 
-    sensor()
-        : base_t{detail::make_sensor_node(SensorFnT())}
-    {}
-    sensor(SensorFnT fn)
-        : base_t{detail::make_sensor_node(std::move(fn))}
+    template <
+        typename Fn,
+        std::enable_if_t<
+            std::is_same_v<std::decay_t<std::result_of_t<Fn()>>, value_type>,
+            int> = 0>
+    sensor(Fn&& fn)
+        : base_t{detail::make_sensor_node(std::forward<Fn>(fn))}
     {}
 
 private:
@@ -70,9 +79,10 @@ private:
 };
 
 template <typename SensorFnT>
-sensor<SensorFnT> make_sensor(SensorFnT fn)
+auto make_sensor(SensorFnT&& fn)
+    -> sensor<std::decay_t<std::result_of_t<SensorFnT()>>>
 {
-    return fn;
+    return std::forward<SensorFnT>(fn);
 }
 
 } // namespace lager

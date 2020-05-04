@@ -28,9 +28,11 @@ struct counter
 TEST_CASE("sensor, basic")
 {
     auto x = make_sensor([] { return 42; });
+    auto y = reader<int>{x};
     CHECK(42 == x.get());
     commit(x);
     CHECK(42 == x.get());
+    CHECK(42 == y.get());
 }
 
 TEST_CASE("sensor, looks up only on commit")
