@@ -63,47 +63,21 @@ auto update(UpdateT&& updater)
 
 namespace detail {
 
-template <template <class> class Result>
-struct is_reader_base : std::false_type
-{};
-
-template <>
-struct is_reader_base<reader_base> : std::true_type
-{};
-
-template <bool IsReader, typename Expr>
-struct get_node_type_aux
-{
-    using type = typename decltype(
-        std::declval<Expr>().make_reader_node_())::element_type;
-};
-template <typename Expr>
-struct get_node_type_aux<false, Expr>
-{
-    using type = typename decltype(
-        std::declval<Expr>().make_cursor_node_())::element_type;
-};
-
-template <template <class> class Result, typename Expr>
-using get_node_type =
-    typename get_node_type_aux<is_reader_base<Result>::value,
-                               typename Expr::template apply<Result>>::type;
-
-template <template <class> class Result, typename Expr>
-class with_expr_builder;
-
-template <typename... Nodes>
-struct with_expr;
+template <template <class> class Result, typename... Nodes>
+class with_expr;
 template <typename Xform, typename... Nodes>
-struct with_xform_expr;
-template <typename Xform, typename WXform, typename... Nodes>
-struct with_wxform_expr;
-template <typename Lens, typename... Nodes>
-struct with_lens_expr;
+class with_xform_expr;
+template <template <class> class Result,
+          typename Xform,
+          typename WXform,
+          typename... Nodes>
+class with_wxform_expr;
+template <template <class> class Result, typename Lens, typename... Nodes>
+class with_lens_expr;
 
 template <template <typename Node> class Result, typename... Nodes>
 auto make_with_expr(std::tuple<std::shared_ptr<Nodes>...> nodes)
-    -> with_expr_builder<Result, with_expr<Nodes...>>
+    -> with_expr<Result, Nodes...>
 {
     return {std::move(nodes)};
 }
@@ -111,7 +85,7 @@ auto make_with_expr(std::tuple<std::shared_ptr<Nodes>...> nodes)
 template <typename Xform, typename... Nodes>
 auto make_with_xform_expr(Xform xform,
                           std::tuple<std::shared_ptr<Nodes>...> nodes)
-    -> with_expr_builder<reader_base, with_xform_expr<Xform, Nodes...>>
+    -> with_xform_expr<Xform, Nodes...>
 {
     return {std::move(xform), std::move(nodes)};
 }
@@ -123,279 +97,272 @@ template <template <class> class Result,
 auto make_with_wxform_expr(Xform xform,
                            WXform wxform,
                            std::tuple<std::shared_ptr<Nodes>...> nodes)
-    -> with_expr_builder<Result, with_wxform_expr<Xform, WXform, Nodes...>>
+    -> with_wxform_expr<Result, Xform, WXform, Nodes...>
 {
     return {std::move(xform), std::move(wxform), std::move(nodes)};
 }
 
 template <template <class> class Result, typename Lens, typename... Nodes>
 auto make_with_lens_expr(Lens lens, std::tuple<std::shared_ptr<Nodes>...> nodes)
-    -> with_expr_builder<Result, with_lens_expr<Lens, Nodes...>>
+    -> with_lens_expr<Result, Lens, Nodes...>
 {
     return {std::move(lens), std::move(nodes)};
 }
 
-template <typename... Nodes>
-struct with_expr
+template <typename Result>
+struct is_reader_base : std::false_type
+{};
+
+template <typename T>
+struct is_reader_base<reader_base<T>> : std::true_type
+{};
+
+template <typename Deriv>
+class with_expr_base
 {
-    template <template <class> class Result>
-    class apply
-    {
-        template <template <class> class T, typename E>
-        friend class with_expr_builder;
-        template <bool IsReader, typename Expr>
-        friend struct get_node_type_aux;
-
-        std::tuple<std::shared_ptr<Nodes>...> nodes_;
-
-        auto make_reader_node_() &&
-        {
-            return make_merge_reader_node(std::move(nodes_));
-        }
-
-        auto make_cursor_node_() &&
-        {
-            return make_merge_cursor_node(std::move(nodes_));
-        }
-
-    public:
-        apply(std::tuple<std::shared_ptr<Nodes>...>&& n)
-            : nodes_{std::move(n)}
-        {}
-
-        template <typename Xf>
-        auto xform(Xf&& xf) &&
-        {
-            return make_with_xform_expr(std::forward<Xf>(xf),
-                                        std::move(nodes_));
-        }
-
-        template <typename Xf, typename WXf>
-        auto xform(Xf&& xf, WXf&& wxf) &&
-        {
-            return make_with_wxform_expr<Result>(std::forward<Xf>(xf),
-                                                 std::forward<WXf>(wxf),
-                                                 std::move(nodes_));
-        }
-
-        template <typename Lens>
-        auto zoom(Lens&& l) &&
-        {
-            return make_with_lens_expr<Result>(std::forward<Lens>(l),
-                                               std::move(nodes_));
-        }
-    };
-};
-
-template <typename Xform, typename... Nodes>
-struct with_xform_expr
-{
-    template <template <class> class Result>
-    class apply
-    {
-        template <template <class> class T, typename E>
-        friend class with_expr_builder;
-        template <bool IsReader, typename Expr>
-        friend struct get_node_type_aux;
-
-        Xform xform_;
-        std::tuple<std::shared_ptr<Nodes>...> nodes_;
-
-        auto make_reader_node_() &&
-        {
-            return make_xform_reader_node(std::move(xform_), std::move(nodes_));
-        }
-
-    public:
-        template <typename Xf, typename Ns>
-        apply(Xf&& xf, Ns&& n)
-            : xform_{std::forward<Xf>(xf)}
-            , nodes_{std::forward<Ns>(n)}
-        {}
-
-        template <typename Xf>
-        auto xform(Xf&& xf) &&
-        {
-            return make_with_xform_expr(zug::comp(std::move(xform_), xf),
-                                        std::move(nodes_));
-        }
-
-        template <typename Lens>
-        auto zoom(Lens&& l) &&
-        {
-            return std::move(*this).xform(zug::map([l](auto&&... xs) {
-                return view(l, zug::tuplify(LAGER_FWD(xs)...));
-            }));
-        }
-    };
-};
-
-template <typename Xform, typename WXform, typename... Nodes>
-struct with_wxform_expr
-{
-    template <template <class> class Result>
-    class apply
-    {
-        template <template <class> class T, typename E>
-        friend class with_expr_builder;
-        template <bool IsReader, typename Expr>
-        friend struct get_node_type_aux;
-
-        Xform xform_;
-        WXform wxform_;
-        std::tuple<std::shared_ptr<Nodes>...> nodes_;
-
-        auto make_reader_node_() &&
-        {
-            return make_xform_reader_node(std::move(xform_), nodes_);
-        }
-
-        auto make_cursor_node_() &&
-        {
-            return make_xform_cursor_node(
-                std::move(xform_), std::move(wxform_), nodes_);
-        }
-
-    public:
-        template <typename Xf, typename WXf, typename Ns>
-        apply(Xf&& xf, WXf&& wxf, Ns&& n)
-            : xform_{std::forward<Xf>(xf)}
-            , wxform_{std::forward<WXf>(wxf)}
-            , nodes_{std::forward<Ns>(n)}
-        {}
-
-        template <typename Xf>
-        auto xform(Xf&& xf) &&
-        {
-            return make_with_xform_expr(
-                zug::comp(std::move(xform_), std::forward<Xf>(xf)),
-                std::move(nodes_));
-        }
-
-        template <typename Xf, typename WXf>
-        auto xform(Xf&& xf, WXf&& wxf) &&
-        {
-            return make_with_wxform_expr<Result>(
-                zug::comp(std::move(xform_), std::forward<Xf>(xf)),
-                zug::comp(std::forward<WXf>(wxf), std::move(wxform_)),
-                std::move(nodes_));
-        }
-
-        template <typename Lens>
-        auto zoom(Lens&& l) &&
-        {
-            return std::move(*this).make().zoom(std::forward<Lens>(l));
-        }
-    };
-};
-
-template <typename Lens, typename... Nodes>
-struct with_lens_expr
-{
-    template <template <class> class Result>
-    class apply
-    {
-        template <template <class> class T, typename E>
-        friend class with_expr_builder;
-        template <bool IsReader, typename Expr>
-        friend struct get_node_type_aux;
-
-        Lens lens_;
-        std::tuple<std::shared_ptr<Nodes>...> nodes_;
-
-        auto make_reader_node_() &&
-        {
-            return make_lens_reader_node(std::move(lens_), nodes_);
-        }
-
-        auto make_cursor_node_() &&
-        {
-            return make_lens_cursor_node(std::move(lens_), nodes_);
-        }
-
-    public:
-        template <typename L, typename Ns>
-        apply(L&& l, Ns&& n)
-            : lens_{std::forward<L>(l)}
-            , nodes_{std::forward<Ns>(n)}
-        {}
-
-        template <typename Xf>
-        auto xform(Xf&& xf) &&
-        {
-            return make_with_xform_expr(
-                zug::comp(zug::map([l = std::move(lens_)](auto&&... xs) {
-                              return view(l, zug::tuplify(LAGER_FWD(xs)...));
-                          }),
-                          std::forward<Xf>(xf)),
-                std::move(nodes_));
-        }
-
-        template <typename Xf, typename WXf>
-        auto xform(Xf&& xf, WXf&& wxf) &&
-        {
-            return std::move(*this).make().xform(std::forward<Xf>(xf),
-                                                 std::forward<WXf>(wxf));
-        }
-
-        template <typename Lens2>
-        auto zoom(Lens2&& l) &&
-        {
-            return make_with_lens_expr<Result>(
-                zug::comp(std::move(lens_), std::forward<Lens2>(l)),
-                std::move(nodes_));
-        }
-    };
-};
-
-template <template <class> class Result, typename Expr>
-class with_expr_builder : public Expr::template apply<Result>
-{
-    using base_t = typename Expr::template apply<Result>;
-
-    using node_t   = get_node_type<Result, Expr>;
-    using cursor_t = Result<node_t>;
-
-    std::shared_ptr<node_t> make_node_() &&
-    {
-        if constexpr (is_reader_base<Result>::value) {
-            return std::move(*this).make_reader_node_();
-        } else {
-            return std::move(*this).make_cursor_node_();
-        }
-    }
+    Deriv&& deriv_() { return std::move(static_cast<Deriv&>(*this)); }
 
 public:
-    using base_t::base_t;
-
     template <typename T>
     auto operator[](T&& k) &&
     {
-        using value_t = typename decltype(std::move(*this).make())::value_type;
+        using value_t = typename decltype(deriv_().make())::value_type;
         auto lens     = smart_lens<value_t>::make(std::forward<T>(k));
-        return std::move(*this).zoom(lens);
+        return deriv_().zoom(lens);
     }
-
-    cursor_t make() && { return std::move(*this).make_node_(); }
-
-    operator cursor_t() && { return std::move(*this).make(); }
 
     template <typename T>
     operator reader<T>() &&
     {
         return std::move(*this).make();
     }
-
     template <typename T>
     operator writer<T>() &&
     {
         return std::move(*this).make();
     }
-
     template <typename T>
     operator cursor<T>() &&
     {
         return std::move(*this).make();
+    }
+
+    auto make() &&
+    {
+        auto node      = deriv_().make_node_();
+        using node_t   = typename decltype(node)::element_type;
+        using cursor_t = typename Deriv::template result_t<node_t>;
+        return cursor_t{node};
+    }
+
+    auto make_node_() &&
+    {
+        using cursor_t = typename Deriv::template result_t<cursor_node<int>>;
+        if constexpr (is_reader_base<cursor_t>::value) {
+            return std::move(static_cast<Deriv&>(*this)).make_reader_node_();
+        } else {
+            return std::move(static_cast<Deriv&>(*this)).make_cursor_node_();
+        }
+    }
+};
+
+template <template <class> class Result, typename... Nodes>
+class with_expr : public with_expr_base<with_expr<Result, Nodes...>>
+{
+    friend class with_expr_base<with_expr>;
+
+    std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
+
+    auto make_reader_node_() &&
+    {
+        return make_merge_reader_node(std::move(nodes_));
+    }
+
+    auto make_cursor_node_() &&
+    {
+        return make_merge_cursor_node(std::move(nodes_));
+    }
+
+public:
+    with_expr(std::tuple<std::shared_ptr<Nodes>...>&& n)
+        : nodes_{std::move(n)}
+    {}
+
+    template <typename Xf>
+    auto xform(Xf&& xf) &&
+    {
+        return make_with_xform_expr(std::forward<Xf>(xf), std::move(nodes_));
+    }
+
+    template <typename Xf, typename WXf>
+    auto xform(Xf&& xf, WXf&& wxf) &&
+    {
+        return make_with_wxform_expr<Result>(
+            std::forward<Xf>(xf), std::forward<WXf>(wxf), std::move(nodes_));
+    }
+
+    template <typename Lens>
+    auto zoom(Lens&& l) &&
+    {
+        return make_with_lens_expr<Result>(std::forward<Lens>(l),
+                                           std::move(nodes_));
+    }
+};
+
+template <typename Xform, typename... Nodes>
+class with_xform_expr : public with_expr_base<with_xform_expr<Xform, Nodes...>>
+{
+    friend class with_expr_base<with_xform_expr>;
+
+    Xform xform_;
+    std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = reader_base<T>;
+
+    auto make_reader_node_() &&
+    {
+        return make_xform_reader_node(std::move(xform_), std::move(nodes_));
+    }
+
+public:
+    template <typename Xf, typename Ns>
+    with_xform_expr(Xf&& xf, Ns&& n)
+        : xform_{std::forward<Xf>(xf)}
+        , nodes_{std::forward<Ns>(n)}
+    {}
+
+    template <typename Xf>
+    auto xform(Xf&& xf) &&
+    {
+        return make_with_xform_expr(zug::comp(std::move(xform_), xf),
+                                    std::move(nodes_));
+    }
+
+    template <typename Lens>
+    auto zoom(Lens&& l) &&
+    {
+        return std::move(*this).xform(zug::map([l](auto&&... xs) {
+            return view(l, zug::tuplify(LAGER_FWD(xs)...));
+        }));
+    }
+};
+
+template <template <class> class Result,
+          typename Xform,
+          typename WXform,
+          typename... Nodes>
+class with_wxform_expr
+    : public with_expr_base<with_wxform_expr<Result, Xform, WXform, Nodes...>>
+{
+    friend class with_expr_base<with_wxform_expr>;
+
+    Xform xform_;
+    WXform wxform_;
+    std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
+
+    auto make_reader_node_() &&
+    {
+        return make_xform_reader_node(std::move(xform_), nodes_);
+    }
+
+    auto make_cursor_node_() &&
+    {
+        return make_xform_cursor_node(
+            std::move(xform_), std::move(wxform_), nodes_);
+    }
+
+public:
+    template <typename Xf, typename WXf, typename Ns>
+    with_wxform_expr(Xf&& xf, WXf&& wxf, Ns&& n)
+        : xform_{std::forward<Xf>(xf)}
+        , wxform_{std::forward<WXf>(wxf)}
+        , nodes_{std::forward<Ns>(n)}
+    {}
+
+    template <typename Xf>
+    auto xform(Xf&& xf) &&
+    {
+        return make_with_xform_expr(
+            zug::comp(std::move(xform_), std::forward<Xf>(xf)),
+            std::move(nodes_));
+    }
+
+    template <typename Xf, typename WXf>
+    auto xform(Xf&& xf, WXf&& wxf) &&
+    {
+        return make_with_wxform_expr<Result>(
+            zug::comp(std::move(xform_), std::forward<Xf>(xf)),
+            zug::comp(std::forward<WXf>(wxf), std::move(wxform_)),
+            std::move(nodes_));
+    }
+
+    template <typename Lens>
+    auto zoom(Lens&& l) &&
+    {
+        return std::move(*this).make().zoom(std::forward<Lens>(l));
+    }
+};
+
+template <template <class> class Result, typename Lens, typename... Nodes>
+class with_lens_expr
+    : public with_expr_base<with_lens_expr<Result, Lens, Nodes...>>
+{
+    friend class with_expr_base<with_lens_expr>;
+
+    Lens lens_;
+    std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
+
+    auto make_reader_node_() &&
+    {
+        return make_lens_reader_node(std::move(lens_), nodes_);
+    }
+
+    auto make_cursor_node_() &&
+    {
+        return make_lens_cursor_node(std::move(lens_), nodes_);
+    }
+
+public:
+    template <typename L, typename Ns>
+    with_lens_expr(L&& l, Ns&& n)
+        : lens_{std::forward<L>(l)}
+        , nodes_{std::forward<Ns>(n)}
+    {}
+
+    template <typename Xf>
+    auto xform(Xf&& xf) &&
+    {
+        return make_with_xform_expr(
+            zug::comp(zug::map([l = std::move(lens_)](auto&&... xs) {
+                          return view(l, zug::tuplify(LAGER_FWD(xs)...));
+                      }),
+                      std::forward<Xf>(xf)),
+            std::move(nodes_));
+    }
+
+    template <typename Xf, typename WXf>
+    auto xform(Xf&& xf, WXf&& wxf) &&
+    {
+        return std::move(*this).make().xform(std::forward<Xf>(xf),
+                                             std::forward<WXf>(wxf));
+    }
+
+    template <typename Lens2>
+    auto zoom(Lens2&& l) &&
+    {
+        return make_with_lens_expr<Result>(
+            zug::comp(std::move(lens_), std::forward<Lens2>(l)),
+            std::move(nodes_));
     }
 };
 
