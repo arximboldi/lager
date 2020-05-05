@@ -56,7 +56,8 @@ struct writer_mixin
         return with(deriv_()).zoom(std::forward<Lens>(l));
     }
 
-    auto make() && { return std::move(static_cast<DerivT&>(*this)); }
+    const DerivT& make() const& { return static_cast<const DerivT&>(*this); }
+    DerivT&& make() && { return static_cast<DerivT&&>(*this); }
 
 protected:
     ~writer_mixin() = default;
@@ -79,7 +80,9 @@ class writer_base : public writer_mixin<writer_base<NodeT>>
 
     using node_ptr_t = std::shared_ptr<NodeT>;
     node_ptr_t node_;
-    const node_ptr_t& node() const { return node_; }
+
+    const node_ptr_t& node() const& { return node_; }
+    node_ptr_t&& node() && { return std::move(node_); }
 
 public:
     using value_type = zug::meta::value_t<NodeT>;

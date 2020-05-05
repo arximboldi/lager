@@ -33,7 +33,8 @@ class watchable_base
     signal_t signal_;
     connection_t conn_;
 
-    const node_ptr_t& node() const { return node_; }
+    const node_ptr_t& node() const& { return node_; }
+    node_ptr_t&& node() && { return std::move(node_); }
 
     friend class detail::access;
     template <typename T>

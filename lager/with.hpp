@@ -109,15 +109,15 @@ auto make_with_lens_expr(Lens lens, std::tuple<std::shared_ptr<Nodes>...> nodes)
     return {std::move(lens), std::move(nodes)};
 }
 
-template <template <class> class Result>
+template <typename Result>
 struct is_reader_base : std::false_type
 {};
 
-template <>
-struct is_reader_base<reader_base> : std::true_type
+template <typename T>
+struct is_reader_base<reader_base<T>> : std::true_type
 {};
 
-template <template <class> class Result, typename Deriv>
+template <typename Deriv>
 class with_expr_base
 {
     Deriv&& deriv_() { return std::move(static_cast<Deriv&>(*this)); }
@@ -136,13 +136,11 @@ public:
     {
         return std::move(*this).make();
     }
-
     template <typename T>
     operator writer<T>() &&
     {
         return std::move(*this).make();
     }
-
     template <typename T>
     operator cursor<T>() &&
     {
@@ -151,14 +149,16 @@ public:
 
     auto make() &&
     {
-        auto node    = deriv_().make_node_();
-        using node_t = typename decltype(node)::element_type;
-        return Result<node_t>{node};
+        auto node      = deriv_().make_node_();
+        using node_t   = typename decltype(node)::element_type;
+        using cursor_t = typename Deriv::template result_t<node_t>;
+        return cursor_t{node};
     }
 
     auto make_node_() &&
     {
-        if constexpr (is_reader_base<Result>::value) {
+        using cursor_t = typename Deriv::template result_t<cursor_node<int>>;
+        if constexpr (is_reader_base<cursor_t>::value) {
             return std::move(static_cast<Deriv&>(*this)).make_reader_node_();
         } else {
             return std::move(static_cast<Deriv&>(*this)).make_cursor_node_();
@@ -167,10 +167,14 @@ public:
 };
 
 template <template <class> class Result, typename... Nodes>
-class with_expr : public with_expr_base<Result, with_expr<Result, Nodes...>>
+class with_expr : public with_expr_base<with_expr<Result, Nodes...>>
 {
-    friend class with_expr_base<Result, with_expr>;
+    friend class with_expr_base<with_expr>;
+
     std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
 
     auto make_reader_node_() &&
     {
@@ -209,12 +213,15 @@ public:
 };
 
 template <typename Xform, typename... Nodes>
-class with_xform_expr
-    : public with_expr_base<reader_base, with_xform_expr<Xform, Nodes...>>
+class with_xform_expr : public with_expr_base<with_xform_expr<Xform, Nodes...>>
 {
-    friend class with_expr_base<reader_base, with_xform_expr>;
+    friend class with_expr_base<with_xform_expr>;
+
     Xform xform_;
     std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = reader_base<T>;
 
     auto make_reader_node_() &&
     {
@@ -249,13 +256,16 @@ template <template <class> class Result,
           typename WXform,
           typename... Nodes>
 class with_wxform_expr
-    : public with_expr_base<Result,
-                            with_wxform_expr<Result, Xform, WXform, Nodes...>>
+    : public with_expr_base<with_wxform_expr<Result, Xform, WXform, Nodes...>>
 {
-    friend class with_expr_base<Result, with_wxform_expr>;
+    friend class with_expr_base<with_wxform_expr>;
+
     Xform xform_;
     WXform wxform_;
     std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
 
     auto make_reader_node_() &&
     {
@@ -302,11 +312,15 @@ public:
 
 template <template <class> class Result, typename Lens, typename... Nodes>
 class with_lens_expr
-    : public with_expr_base<Result, with_lens_expr<Result, Lens, Nodes...>>
+    : public with_expr_base<with_lens_expr<Result, Lens, Nodes...>>
 {
-    friend class with_expr_base<Result, with_lens_expr>;
+    friend class with_expr_base<with_lens_expr>;
+
     Lens lens_;
     std::tuple<std::shared_ptr<Nodes>...> nodes_;
+
+    template <typename T>
+    using result_t = Result<T>;
 
     auto make_reader_node_() &&
     {
@@ -352,6 +366,27 @@ public:
     }
 };
 
+template <typename... ReaderTs>
+auto with_aux(reader_base<ReaderTs>... ins)
+{
+    return detail::make_with_expr<reader_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
+template <typename... WriterTs>
+auto with_aux(writer_base<WriterTs>... ins)
+{
+    return detail::make_with_expr<writer_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
+template <typename... CursorTs>
+auto with_aux(cursor_base<CursorTs>... ins)
+{
+    return detail::make_with_expr<cursor_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
 } // namespace detail
 
 /*!
@@ -366,25 +401,10 @@ public:
  * associated node, by using the `make` method or by converting it to a
  * `cursor<T>` type.
  */
-template <typename... ReaderTs>
-auto with(const reader_mixin<ReaderTs>&... ins)
+template <typename... Cursors>
+auto with(Cursors&&... ins)
 {
-    return detail::make_with_expr<reader_base>(std::make_tuple(
-        detail::access::node(static_cast<const ReaderTs&>(ins))...));
-}
-
-template <typename... WriterTs>
-auto with(const writer_mixin<WriterTs>&... ins)
-{
-    return detail::make_with_expr<writer_base>(std::make_tuple(
-        detail::access::node(static_cast<const WriterTs&>(ins))...));
-}
-
-template <typename... CursorTs>
-auto with(const cursor_mixin<CursorTs>&... ins)
-{
-    return detail::make_with_expr<cursor_base>(std::make_tuple(
-        detail::access::node(static_cast<const CursorTs&>(ins))...));
+    return detail::with_aux(std::forward<Cursors>(ins).make()...);
 }
 
 } // namespace lager
