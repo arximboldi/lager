@@ -367,24 +367,24 @@ public:
  * `cursor<T>` type.
  */
 template <typename... ReaderTs>
-auto with(const reader_mixin<ReaderTs>&... ins)
+auto with(reader_base<ReaderTs>... ins)
 {
-    return detail::make_with_expr<reader_base>(std::make_tuple(
-        detail::access::node(static_cast<const ReaderTs&>(ins))...));
+    return detail::make_with_expr<reader_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
 }
 
 template <typename... WriterTs>
-auto with(const writer_mixin<WriterTs>&... ins)
+auto with(writer_base<WriterTs>... ins)
 {
-    return detail::make_with_expr<writer_base>(std::make_tuple(
-        detail::access::node(static_cast<const WriterTs&>(ins))...));
+    return detail::make_with_expr<writer_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
 }
 
 template <typename... CursorTs>
-auto with(const cursor_mixin<CursorTs>&... ins)
+auto with(cursor_base<CursorTs>... ins)
 {
-    return detail::make_with_expr<cursor_base>(std::make_tuple(
-        detail::access::node(static_cast<const CursorTs&>(ins))...));
+    return detail::make_with_expr<cursor_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
 }
 
 } // namespace lager
