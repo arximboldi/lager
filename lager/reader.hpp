@@ -51,7 +51,8 @@ struct reader_mixin
         return with(deriv_()).zoom(std::forward<Lens>(l));
     }
 
-    auto make() { return static_cast<DerivT&>(*this); }
+    const DerivT& make() const& { return static_cast<const DerivT&>(*this); }
+    DerivT&& make() && { return static_cast<DerivT&&>(*this); }
 
 protected:
     ~reader_mixin() = default;

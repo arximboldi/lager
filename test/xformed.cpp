@@ -407,3 +407,13 @@ TEST_CASE("accessing keys with square brackets")
     CHECK(42 == x.get());
     CHECK(42 == y.get());
 }
+
+TEST_CASE("mixing keys from expressions")
+{
+    using map_t = std::map<std::string, int>;
+    auto st     = make_state(map_t{{"john", 12}, {"peter", 42}});
+    auto x      = st["john"];
+    auto y      = st["peter"];
+    auto z      = with(std::move(x), std::move(y)).make();
+    CHECK(z.get() == std::make_tuple(12, 42));
+}

@@ -366,6 +366,27 @@ public:
     }
 };
 
+template <typename... ReaderTs>
+auto with_aux(reader_base<ReaderTs>... ins)
+{
+    return detail::make_with_expr<reader_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
+template <typename... WriterTs>
+auto with_aux(writer_base<WriterTs>... ins)
+{
+    return detail::make_with_expr<writer_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
+template <typename... CursorTs>
+auto with_aux(cursor_base<CursorTs>... ins)
+{
+    return detail::make_with_expr<cursor_base>(
+        std::make_tuple(detail::access::node(std::move(ins))...));
+}
+
 } // namespace detail
 
 /*!
@@ -380,25 +401,10 @@ public:
  * associated node, by using the `make` method or by converting it to a
  * `cursor<T>` type.
  */
-template <typename... ReaderTs>
-auto with(reader_base<ReaderTs>... ins)
+template <typename... Cursors>
+auto with(Cursors&&... ins)
 {
-    return detail::make_with_expr<reader_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
-}
-
-template <typename... WriterTs>
-auto with(writer_base<WriterTs>... ins)
-{
-    return detail::make_with_expr<writer_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
-}
-
-template <typename... CursorTs>
-auto with(cursor_base<CursorTs>... ins)
-{
-    return detail::make_with_expr<cursor_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
+    return detail::with_aux(std::forward<Cursors>(ins).make()...);
 }
 
 } // namespace lager
