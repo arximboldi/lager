@@ -15,8 +15,8 @@
 
 #include "../counter.hpp"
 #include <lager/event_loop/sdl.hpp>
-#include <lager/store.hpp>
 #include <lager/resources_path.hpp>
+#include <lager/store.hpp>
 
 #include <iostream>
 #include <string>
@@ -96,7 +96,7 @@ int main()
     auto store = lager::make_store<counter::action>(
         counter::model{}, counter::update, lager::with_sdl_event_loop{loop});
 
-    watch(store, [&](auto&&, auto&& val) { draw(view, val); });
+    watch(store, [&](auto&& val) { draw(view, val); });
     draw(view, store.get());
 
     loop.run([&](const SDL_Event& ev) {

@@ -55,7 +55,7 @@ auto update(UpdateT&& updater)
 {
     return [=](auto&& step) {
         return [=](auto s, auto&&... is) mutable {
-            s->recompute_deep();
+            s->refresh();
             return step(s, updater(current_from(s->parents()), ZUG_FWD(is)...));
         };
     };

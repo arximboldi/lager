@@ -73,11 +73,8 @@ TEST_CASE("node, sending down")
 TEST_CASE("node, notifies new and previous value after send down")
 {
     auto x = make_state_node(5);
-    auto s = testing::spy([](int last, int next) {
-        CHECK(5 == last);
-        CHECK(42 == next);
-    });
-    x->observe(s);
+    auto s = testing::spy([](int next) { CHECK(42 == next); });
+    auto c = x->observers().connect(s);
 
     x->send_up(42);
     CHECK(0 == s.count());
@@ -94,18 +91,22 @@ TEST_CASE("node, lifetime of observer")
 {
     auto x = make_state_node(5);
     auto s = testing::spy();
-    auto c = boost::signals2::connection{};
+
+    using signal_t = typename decltype(x)::element_type::signal_type;
+    using slot_t   = signal_t::slot<decltype(s)>;
+
+    auto c = slot_t{s};
     {
         auto y = make_xform_reader_node(identity, std::make_tuple(x));
-        c      = y->observe(s);
-        CHECK(c.connected());
+        y->observers().add(c);
+        CHECK(c.is_linked());
 
         x->push_down(56);
         x->send_down();
         x->notify();
         CHECK(1 == s.count());
     }
-    CHECK(!c.connected());
+    CHECK(!c.is_linked());
 
     x->push_down(26);
     x->send_down();
@@ -117,7 +118,7 @@ TEST_CASE("node, notify idempotence")
 {
     auto x = make_state_node(5);
     auto s = testing::spy();
-    x->observe(s);
+    auto c = x->observers().connect(s);
 
     x->send_up(42);
     CHECK(0 == s.count());
@@ -141,8 +142,7 @@ TEST_CASE("node, observing is consistent")
     auto z = make_xform_reader_node(identity, std::make_tuple(x));
     auto w = make_xform_reader_node(identity, std::make_tuple(y));
 
-    auto s = testing::spy([&](int last_value, int new_value) {
-        CHECK(5 == last_value);
+    auto s = testing::spy([&](int new_value) {
         CHECK(42 == new_value);
         CHECK(42 == x->last());
         CHECK(42 == y->last());
@@ -150,10 +150,10 @@ TEST_CASE("node, observing is consistent")
         CHECK(42 == w->last());
     });
 
-    x->observe(s);
-    y->observe(s);
-    z->observe(s);
-    w->observe(s);
+    auto xc = x->observers().connect(s);
+    auto yc = y->observers().connect(s);
+    auto zc = z->observers().connect(s);
+    auto wc = w->observers().connect(s);
 
     x->send_up(42);
     x->send_down();
@@ -249,9 +249,8 @@ TEST_CASE("node, one node two parents")
     auto y    = make_state_node(12);
     auto z    = make_xform_reader_node(map([](int a, int b) { return a + b; }),
                                     std::make_tuple(x, y));
-    auto s =
-        testing::spy([&](int, int r) { CHECK(r == x->last() + y->last()); });
-    z->observe(s);
+    auto s    = testing::spy([&](int r) { CHECK(r == x->last() + y->last()); });
+    auto c    = z->observers().connect(s);
     CHECK(12 == z->last());
 
     // Commit first root individually

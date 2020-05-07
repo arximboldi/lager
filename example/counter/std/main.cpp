@@ -15,9 +15,8 @@
 #include <lager/event_loop/manual.hpp>
 #include <lager/store.hpp>
 
-void draw(counter::model prev, counter::model curr)
+void draw(counter::model curr)
 {
-    std::cout << "last value: " << prev.value << '\n';
     std::cout << "current value: " << curr.value << '\n';
 }
 

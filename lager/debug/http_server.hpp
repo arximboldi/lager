@@ -13,11 +13,13 @@
 #pragma once
 
 #include <lager/context.hpp>
-#include <lager/debug/cereal/variant_with_name.hpp>
+#include <lager/reader.hpp>
 
 #include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
+#include <lager/debug/cereal/variant_with_name.hpp>
+
 #include <httpserver.hpp>
 
 #include <atomic>
@@ -55,14 +57,10 @@ public:
         using action      = typename Debugger::action;
         using model       = typename Debugger::model;
         using context_t   = context<action>;
+        using reader_t    = reader<model>;
 
         void set_context(context_t ctx) { context_ = std::move(ctx); }
-
-        void view(const model& m)
-        {
-            std::atomic_store(&model_, std::make_shared<const model>(m));
-        }
-
+        void set_reader(reader_t data) { data_ = std::move(data); }
         std::string const& resources_path() { return resources_path_; }
 
     private:
@@ -71,11 +69,17 @@ public:
         handle(int argc, const char** argv, std::string resources_path)
             : program_{join_args_(argc, argv)}
             , resources_path_(std::move(resources_path))
-        {}
+        {
+            data_.watch([this](auto&& v) {
+                std::atomic_store(&model_,
+                                  std::make_shared<const model>(LAGER_FWD(v)));
+            });
+        }
 
         std::string program_        = {};
         std::string resources_path_ = {};
         context_t context_          = {};
+        reader_t data_              = {};
         std::shared_ptr<const model> model_{nullptr};
 
         static std::string join_args_(int argc, const char** argv)

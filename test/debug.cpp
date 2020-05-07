@@ -26,8 +26,8 @@ struct dummy_debugger
         template <typename Context>
         void set_context(Context&&)
         {}
-        template <typename Model>
-        void view(const Model& m)
+        template <typename Reader>
+        void set_reader(Reader&&)
         {}
     };
 
@@ -50,7 +50,7 @@ TEST_CASE("basic")
                                            counter::update,
                                            lager::with_manual_event_loop{},
                                            lager::with_debugger(debugger));
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    watch(store, [&](auto&& v) { view(v); });
     store.dispatch(counter::increment_action{});
 
     CHECK(viewed);
@@ -64,14 +64,14 @@ TEST_CASE("effect as a result")
     auto view     = [&](auto model) { viewed = model; };
     auto called   = 0;
     auto effect   = [&](lager::context<int> ctx) { ++called; };
-    auto store =
-        lager::make_store<int>(0,
-                               [=](int model, int action) {
-                                   return std::pair{model + action, effect};
-                               },
-                               lager::with_manual_event_loop{},
-                               lager::with_debugger(debugger));
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    auto store    = lager::make_store<int>(
+        0,
+        [=](int model, int action) {
+            return std::pair{model + action, effect};
+        },
+        lager::with_manual_event_loop{},
+        lager::with_debugger(debugger));
+    watch(store, [&](auto&& v) { view(v); });
 
     store.dispatch(2);
     CHECK(viewed);
@@ -97,16 +97,16 @@ TEST_CASE("effect with dependencies")
         CHECK(lager::get<services::foo>(ctx).x == 42);
         ++called;
     };
-    auto store =
-        lager::make_store<int>(0,
-                               [=](int model, int action) {
-                                   return std::pair{model + action, effect};
-                               },
-                               lager::with_manual_event_loop{},
-                               lager::with_deps(std::ref(f)),
-                               // important: debugger must be last so it can
-                               // forward the deps properly
-                               lager::with_debugger(debugger));
+    auto store = lager::make_store<int>(
+        0,
+        [=](int model, int action) {
+            return std::pair{model + action, effect};
+        },
+        lager::with_manual_event_loop{},
+        lager::with_deps(std::ref(f)),
+        // important: debugger must be last so it can
+        // forward the deps properly
+        lager::with_debugger(debugger));
     f.x = 42;
     store.dispatch(2);
     CHECK(called == 1);

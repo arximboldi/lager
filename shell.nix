@@ -26,6 +26,8 @@ let
   theStdenv     = if compilerPkg.isClang
                   then clangStdenv
                   else stdenv;
+  qt            = qt5;
+  qtver         = qt.qtbase.version;
 
 in
 theStdenv.mkDerivation rec {
@@ -47,11 +49,11 @@ theStdenv.mkDerivation rec {
     SDL2
     SDL2_ttf
     emscripten
-    qt5.qtbase
-    qt5.qtdeclarative
-    qt5.qtquickcontrols
-    qt5.qtquickcontrols2
-    qt5.qtgraphicaleffects
+    qt.qtbase
+    qt.qtdeclarative
+    qt.qtquickcontrols
+    qt.qtquickcontrols2
+    qt.qtgraphicaleffects
     (python3.withPackages (pkgs: with pkgs; [
       click
       requests
@@ -73,12 +75,11 @@ theStdenv.mkDerivation rec {
     addToSearchPath PATH "$LAGER_ROOT/build"
     addToSearchPath PATH "$LAGER_ROOT/build/example"
     addToSearchPath PATH "$LAGER_ROOT/build/test"
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtdeclarative.bin}/lib/qt-5.11/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols}/lib/qt-5.11/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols2.bin}/lib/qt-5.11/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtgraphicaleffects}/lib/qt-5.11/qml
-    addToSearchPath QT_PLUGIN_PATH ${qt5.qtsvg.bin}/lib/qt-5.11/plugins
-    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt5.qtbase}/lib/qt-5.11/plugins
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols2.bin}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtgraphicaleffects}/lib/qt-${qtver}/qml
+    addToSearchPath QT_PLUGIN_PATH ${qt512.qtsvg.bin}/lib/qt-${qtver}/plugins
+    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt512.qtbase}/lib/qt-${qtver}/plugins
     export IMGUI_SOURCE_DIR=${deps.imgui}
   '';
 }

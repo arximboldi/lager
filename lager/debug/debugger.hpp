@@ -23,6 +23,8 @@
 #include <lager/debug/cereal/struct.hpp>
 #include <lager/debug/cereal/variant_with_name.hpp>
 
+#include <zug/transducer/map.hpp>
+
 #include <functional>
 #include <variant>
 
@@ -204,15 +206,9 @@ auto with_debugger(Server& serv)
                 LAGER_FWD(loop),
                 LAGER_FWD(deps));
             handle.set_context(store);
-            // Note: there are two problems with this. 1) we are using the
-            // private API, it should be possible for enhancers to add observers
-            // without relying on these tricks, and 2) if the node outlives the
-            // server we have have dangling references and potential crashes.
-            // This can be solved by making the `watchable` API more versatile.
-            detail::access::node(store)->observers().connect(
-                [&handle](auto&&, auto&& val) {
-                    debugger_t::view(handle, LAGER_FWD(val));
-                });
+            handle.set_reader(store.xform(zug::map([](auto&& x) {
+                return static_cast<typename debugger_t::model>(x);
+            })));
             return store;
         };
     };

@@ -18,14 +18,13 @@
 #include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
 #include <lager/event_loop/sdl.hpp>
-#include <lager/store.hpp>
 #include <lager/resources_path.hpp>
+#include <lager/store.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <string>
 #include <variant>
-
 
 constexpr auto font_size = 32;
 
@@ -145,7 +144,8 @@ int main(int argc, const char** argv)
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #ifdef DEBUGGER
-    auto debugger = lager::http_debug_server{argc, argv, 8080, lager::resources_path()};
+    auto debugger =
+        lager::http_debug_server{argc, argv, 8080, lager::resources_path()};
 #endif
     auto view = sdl_view{};
     auto loop = lager::sdl_event_loop{};
@@ -159,7 +159,7 @@ int main(int argc, const char** argv)
                                             lager::identity
 #endif
         );
-    watch(store, [&](auto&&, auto&& val) { draw(view, LAGER_FWD(val)); });
+    watch(store, [&](auto&& val) { draw(view, LAGER_FWD(val)); });
     loop.run(
         [&](const SDL_Event& ev) {
             if (auto act = intent(ev))

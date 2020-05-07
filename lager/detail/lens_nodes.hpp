@@ -84,13 +84,13 @@ public:
 
     void send_up(const value_type& value) final
     {
-        this->recompute_deep();
+        this->refresh();
         this->push_up(set(this->lens_, current_from(this->parents()), value));
     }
 
     void send_up(value_type&& value) final
     {
-        this->recompute_deep();
+        this->refresh();
         this->push_up(
             set(this->lens_, current_from(this->parents()), std::move(value)));
     }

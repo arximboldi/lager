@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <boost/signals2/signal.hpp>
+#include <lager/detail/signal.hpp>
 
 #include <zug/meta/value_type.hpp>
 
@@ -21,17 +21,15 @@
 namespace lager {
 
 template <typename NodeT>
-class watchable_base
+class watchable_base : private NodeT::signal_type::forwarder_type
 {
-    using node_ptr_t = std::shared_ptr<NodeT>;
-    using value_t    = zug::meta::value_t<NodeT>;
-    using signal_t =
-        boost::signals2::signal<void(const value_t&, const value_t&)>;
-    using connection_t = boost::signals2::scoped_connection;
+    using node_ptr_t   = std::shared_ptr<NodeT>;
+    using value_t      = zug::meta::value_t<NodeT>;
+    using base_t       = typename NodeT::signal_type::forwarder_type;
+    using connection_t = typename base_t::connection;
 
     node_ptr_t node_;
-    signal_t signal_;
-    connection_t conn_;
+    std::vector<connection_t> conns_;
 
     const node_ptr_t& node() const& { return node_; }
     node_ptr_t&& node() && { return std::move(node_); }
@@ -67,28 +65,28 @@ public:
 
     watchable_base& operator=(const watchable_base& other) noexcept
     {
+        base_t::unlink();
         node_ = other.node_;
-        if (!signal_.empty() && node_) {
-            conn_ = node_->observers().connect(signal_);
-        }
+        if (!base_t::empty() && node_)
+            node_->observers().add(*this);
         return *this;
     }
 
     watchable_base& operator=(watchable_base&& other) noexcept
     {
+        base_t::unlink();
         node_ = std::move(other.node_);
-        if (!signal_.empty() && node_) {
-            conn_ = node_->observers().connect(signal_);
-        }
+        if (!base_t::empty() && node_)
+            node_->observers().add(*this);
         return *this;
     }
 
     template <typename CallbackT>
-    auto watch(CallbackT&& callback)
+    void watch(CallbackT&& callback)
     {
-        if (signal_.empty() && node_)
-            conn_ = node_->observers().connect(signal_);
-        return signal_.connect(std::forward<CallbackT>(callback));
+        if (base_t::empty() && node_)
+            node_->observers().add(*this);
+        conns_.push_back(base_t::connect(std::forward<CallbackT>(callback)));
     }
 };
 

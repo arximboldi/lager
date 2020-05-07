@@ -44,10 +44,9 @@ struct qt_helper
 #define LAGER_QT_SIGNAL_DETAIL(type, name)                                     \
     Q_SIGNAL void name##Changed(const type& name);                             \
     ::lager::detail::qt_helper funq__##name##__initHelper__ = [this] {         \
-        ::lager::watch(LAGER_QT(name),                                         \
-                       [this](const type& /*old*/, const type& curr) {         \
-                           this->name##Changed(curr);                          \
-                       });                                                     \
+        ::lager::watch(LAGER_QT(name), [this](const type& curr) {              \
+            this->name##Changed(curr);                                         \
+        });                                                                    \
         return ::lager::detail::qt_helper{};                                   \
     }() /**/
 

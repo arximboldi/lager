@@ -7,7 +7,6 @@ cc_library(
     ]),
     deps = [
         "@boost//:hana",
-        "@boost//:signals2",
         "@zug//:zug",
     ],
     includes = [".", "lager/"],
