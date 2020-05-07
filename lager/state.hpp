@@ -25,12 +25,16 @@ namespace lager {
 namespace detail {
 
 template <typename T, typename TagT = transactional_tag>
-class state_node : public cursor_node<T>
+class state_node : public root_node<T, cursor_node>
 {
+    using base_t = root_node<T, cursor_node>;
+
 public:
     using value_type = T;
 
-    using cursor_node<T>::cursor_node;
+    using base_t::base_t;
+
+    virtual void recompute() final {}
 
     void send_up(const value_type& value) final
     {

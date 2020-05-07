@@ -20,12 +20,14 @@ namespace lager {
 namespace detail {
 
 template <typename T>
-class constant_node : public reader_node<T>
+class constant_node : public root_node<T, reader_node>
 {
-    using base_t = reader_node<T>;
+    using base_t = root_node<T, reader_node>;
 
 public:
     using base_t::base_t;
+
+    virtual void recompute() final {}
 };
 
 template <typename T>

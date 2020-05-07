@@ -27,14 +27,15 @@ namespace lager {
 namespace detail {
 
 template <typename Action, typename Model>
-struct store_node_base : public reader_node<Model>
+struct store_node_base : public root_node<Model, reader_node>
 {
     using action_t   = Action;
     using model_t    = Model;
     using value_type = Model;
+    using base_t     = root_node<Model, reader_node>;
+    using base_t::base_t;
 
-    using reader_node<Model>::reader_node;
-
+    virtual void recompute() final {}
     virtual void dispatch(action_t action) = 0;
 };
 

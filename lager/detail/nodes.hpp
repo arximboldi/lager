@@ -118,6 +118,13 @@ auto has_changed(const T&, const T&)
 template <typename T>
 class reader_node : public reader_node_base
 {
+    enum flags_t
+    {
+        no_flag              = 0,
+        needs_send_down_flag = 1 << 0,
+        needs_notify_flag    = 1 << 1,
+    };
+
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
@@ -127,8 +134,8 @@ public:
         , last_(current_)
     {}
 
-    virtual void recompute() {}
-    virtual void recompute_deep() {}
+    virtual void recompute() = 0;
+    virtual void refresh()   = 0;
 
     const value_type& current() const { return current_; }
     const value_type& last() const { return last_; }
@@ -148,19 +155,17 @@ public:
     void push_down(U&& value)
     {
         if (has_changed(value, current_)) {
-            current_         = std::forward<U>(value);
-            needs_send_down_ = true;
+            current_ = std::forward<U>(value);
+            flags_ |= needs_send_down_flag;
         }
     }
 
     void send_down() final
     {
         recompute();
-        if (needs_send_down_) {
-            last_            = current_;
-            needs_send_down_ = false;
-            needs_notify_    = true;
-
+        if (flags_ & needs_send_down_flag) {
+            last_  = current_;
+            flags_ = needs_notify_flag;
             for (auto& wchild : children_) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
@@ -172,10 +177,9 @@ public:
     void notify() final
     {
         using namespace std;
-        if (!needs_send_down_ && needs_notify_) {
-            needs_notify_ = false;
+        if (flags_ == needs_notify_flag) {
+            flags_ = no_flag;
             observers_(last_);
-
             auto garbage = false;
             for (std::size_t i = 0, size = children_.size(); i < size; ++i) {
                 if (auto child = children_[i].lock()) {
@@ -184,7 +188,6 @@ public:
                     garbage = true;
                 }
             }
-
             if (garbage) {
                 collect();
             }
@@ -203,8 +206,7 @@ private:
                         end(children_));
     }
 
-    bool needs_send_down_ = false;
-    bool needs_notify_    = false;
+    int flags_ = no_flag;
     value_type current_;
     value_type last_;
     std::vector<std::weak_ptr<reader_node_base>> children_;
@@ -241,9 +243,9 @@ public:
         , parents_{std::move(parents)}
     {}
 
-    void recompute_deep() final
+    void refresh() final
     {
-        std::apply([&](auto&&... ps) { noop((ps->recompute_deep(), 0)...); },
+        std::apply([&](auto&&... ps) { noop((ps->refresh(), 0)...); },
                    parents_);
         this->recompute();
     }
@@ -275,6 +277,15 @@ private:
     {
         std::get<0>(this->parents())->send_up(std::forward<T>(value));
     }
+};
+
+template <typename T, template <class> class Base = reader_node>
+struct root_node : Base<T>
+{
+    using base_t = Base<T>;
+    using base_t::base_t;
+
+    void refresh() final {}
 };
 
 template <typename... Nodes>
