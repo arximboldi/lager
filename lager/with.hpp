@@ -367,24 +367,42 @@ public:
 };
 
 template <typename... ReaderTs>
-auto with_aux(reader_base<ReaderTs>... ins)
+auto with_aux(reader_mixin<ReaderTs>&&... ins)
 {
     return detail::make_with_expr<reader_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
+        std::make_tuple(access::node(std::move(ins).make())...));
+}
+template <typename... ReaderTs>
+auto with_aux(const reader_mixin<ReaderTs>&... ins)
+{
+    return detail::make_with_expr<reader_base>(
+        std::make_tuple(access::node(ins.make())...));
 }
 
 template <typename... WriterTs>
-auto with_aux(writer_base<WriterTs>... ins)
+auto with_aux(writer_mixin<WriterTs>&&... ins)
 {
     return detail::make_with_expr<writer_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
+        std::make_tuple(access::node(std::move(ins).make())...));
+}
+template <typename... WriterTs>
+auto with_aux(const writer_mixin<WriterTs>&... ins)
+{
+    return detail::make_with_expr<writer_base>(
+        std::make_tuple(access::node(std::move(ins))...));
 }
 
 template <typename... CursorTs>
-auto with_aux(cursor_base<CursorTs>... ins)
+auto with_aux(cursor_mixin<CursorTs>&&... ins)
 {
     return detail::make_with_expr<cursor_base>(
-        std::make_tuple(detail::access::node(std::move(ins))...));
+        std::make_tuple(access::node(std::move(ins).make())...));
+}
+template <typename... CursorTs>
+auto with_aux(const cursor_mixin<CursorTs>&... ins)
+{
+    return detail::make_with_expr<cursor_base>(
+        std::make_tuple(access::node(ins.make())...));
 }
 
 } // namespace detail

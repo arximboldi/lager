@@ -12,6 +12,7 @@
 
 #include <catch.hpp>
 
+#include <lager/constant.hpp>
 #include <lager/state.hpp>
 #include <lager/with.hpp>
 
@@ -416,4 +417,11 @@ TEST_CASE("mixing keys from expressions")
     auto y      = st["peter"];
     auto z      = with(std::move(x), std::move(y)).make();
     CHECK(z.get() == std::make_tuple(12, 42));
+}
+
+TEST_CASE("mix cursor and reader")
+{
+    auto c                                 = make_constant(42);
+    auto i                                 = make_state(std::string{"john"});
+    reader<std::tuple<int, std::string>> r = with(c, i);
 }
