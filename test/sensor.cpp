@@ -49,18 +49,14 @@ TEST_CASE("sensor, looks up only on commit")
 
 TEST_CASE("sensor, watching")
 {
-    auto expected_old  = 0;
-    auto expected_curr = 1;
-    auto x             = make_sensor(counter{});
-    auto s             = testing::spy([&](std::size_t old, std::size_t curr) {
-        CHECK(expected_old == old);
-        CHECK(expected_curr == curr);
-    });
+    auto expected = 1;
+    auto x        = make_sensor(counter{});
+    auto s = testing::spy([&](std::size_t curr) { CHECK(expected == curr); });
     watch(x, s);
     CHECK(0 == s.count());
     commit(x);
     CHECK(1 == s.count());
-    ++expected_curr, ++expected_old;
+    ++expected;
     commit(x);
     CHECK(2 == s.count());
 }

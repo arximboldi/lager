@@ -36,8 +36,7 @@ int main(int argc, char** argv)
         std::move(initial_state), update, lager::with_qt_event_loop{app});
 
     Game game{store};
-    watch(store,
-          [&](auto&& /*old*/, auto&& state) { game.setModel(state.game); });
+    watch(store, [&](auto&& state) { game.setModel(state.game); });
     game.setModel(store.get().game);
 
     auto* qmlContext = engine.rootContext();

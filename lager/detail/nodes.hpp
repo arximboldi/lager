@@ -120,12 +120,11 @@ class reader_node : public reader_node_base
 {
 public:
     using value_type  = T;
-    using signal_type = signal<const value_type&, const value_type&>;
+    using signal_type = signal<const value_type&>;
 
     reader_node(T value)
         : current_(std::move(value))
         , last_(current_)
-        , last_notified_(current_)
     {}
 
     virtual void recompute() {}
@@ -175,8 +174,7 @@ public:
         using namespace std;
         if (!needs_send_down_ && needs_notify_) {
             needs_notify_ = false;
-            observers_(last_notified_, last_);
-            last_notified_ = last_;
+            observers_(last_);
 
             auto garbage = false;
             for (std::size_t i = 0, size = children_.size(); i < size; ++i) {
@@ -209,7 +207,6 @@ private:
     bool needs_notify_    = false;
     value_type current_;
     value_type last_;
-    value_type last_notified_;
     std::vector<std::weak_ptr<reader_node_base>> children_;
     signal_type observers_;
 };

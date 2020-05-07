@@ -73,10 +73,7 @@ TEST_CASE("node, sending down")
 TEST_CASE("node, notifies new and previous value after send down")
 {
     auto x = make_state_node(5);
-    auto s = testing::spy([](int last, int next) {
-        CHECK(5 == last);
-        CHECK(42 == next);
-    });
+    auto s = testing::spy([](int next) { CHECK(42 == next); });
     auto c = x->observers().connect(s);
 
     x->send_up(42);
@@ -145,8 +142,7 @@ TEST_CASE("node, observing is consistent")
     auto z = make_xform_reader_node(identity, std::make_tuple(x));
     auto w = make_xform_reader_node(identity, std::make_tuple(y));
 
-    auto s = testing::spy([&](int last_value, int new_value) {
-        CHECK(5 == last_value);
+    auto s = testing::spy([&](int new_value) {
         CHECK(42 == new_value);
         CHECK(42 == x->last());
         CHECK(42 == y->last());
@@ -253,9 +249,8 @@ TEST_CASE("node, one node two parents")
     auto y    = make_state_node(12);
     auto z    = make_xform_reader_node(map([](int a, int b) { return a + b; }),
                                     std::make_tuple(x, y));
-    auto s =
-        testing::spy([&](int, int r) { CHECK(r == x->last() + y->last()); });
-    auto c = z->observers().connect(s);
+    auto s    = testing::spy([&](int r) { CHECK(r == x->last() + y->last()); });
+    auto c    = z->observers().connect(s);
     CHECK(12 == z->last());
 
     // Commit first root individually

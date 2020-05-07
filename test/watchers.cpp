@@ -19,7 +19,7 @@ TEST_CASE("watch before assign")
     auto c      = lager::cursor<int>{};
     auto called = 0;
     auto value  = -1;
-    watch(c, [&](auto, auto x) {
+    watch(c, [&](auto x) {
         ++called;
         value = x;
     });

@@ -24,7 +24,7 @@ TEST_CASE("automatic")
     auto view   = [&](auto model) { viewed = model; };
     auto store  = lager::make_store<counter::action>(
         counter::model{}, counter::update, lager::with_manual_event_loop{});
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
     CHECK(viewed->value == 0);
@@ -42,7 +42,7 @@ TEST_CASE("basic")
     auto view   = [&](auto model) { viewed = model; };
     auto store  = lager::make_store<counter::action, lager::transactional_tag>(
         counter::model{}, counter::update, lager::with_manual_event_loop{});
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
     CHECK(viewed->value == 0);
@@ -70,7 +70,7 @@ TEST_CASE("effect as a result")
             return std::pair{model + action, effect};
         },
         lager::with_manual_event_loop{});
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    watch(store, [&](auto&& v) { view(v); });
 
     store.dispatch(2);
     CHECK(viewed);
@@ -105,7 +105,7 @@ TEST_CASE("store type erasure")
     lager::store<counter::action, counter::model> store =
         lager::make_store<counter::action>(
             counter::model{}, counter::update, lager::with_manual_event_loop{});
-    watch(store, [&](auto&&, auto&& v) { view(v); });
+    watch(store, [&](auto&& v) { view(v); });
     CHECK(!viewed);
 
     store.dispatch(counter::increment_action{});

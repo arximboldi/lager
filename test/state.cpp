@@ -114,14 +114,12 @@ TEST_CASE("state, watches always view consistent state")
 {
     auto x  = make_state(42);
     auto y  = make_state(35);
-    auto sx = testing::spy([&](int old, int curr) {
-        CHECK(42 == old);
+    auto sx = testing::spy([&](int curr) {
         CHECK(84 == curr);
         CHECK(x.get() == 84);
         CHECK(y.get() == 70);
     });
-    auto sy = testing::spy([&](int old, int curr) {
-        CHECK(35 == old);
+    auto sy = testing::spy([&](int curr) {
         CHECK(70 == curr);
         CHECK(x.get() == 84);
         CHECK(y.get() == 70);
@@ -144,14 +142,12 @@ TEST_CASE("state, watches automatic can show inconsistent state")
 {
     auto x  = make_state(42, automatic_tag{});
     auto y  = make_state(35, automatic_tag{});
-    auto sx = testing::spy([&](int old, int curr) {
-        CHECK(42 == old);
+    auto sx = testing::spy([&](int curr) {
         CHECK(84 == curr);
         CHECK(x.get() == 84);
         CHECK(y.get() == 35);
     });
-    auto sy = testing::spy([&](int old, int curr) {
-        CHECK(35 == old);
+    auto sy = testing::spy([&](int curr) {
         CHECK(70 == curr);
         CHECK(x.get() == 84);
         CHECK(y.get() == 70);
