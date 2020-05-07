@@ -38,9 +38,8 @@
 
 #pragma once
 
+#include <lager/detail/signal.hpp>
 #include <lager/util.hpp>
-
-#include <boost/signals2/signal.hpp>
 
 #include <zug/meta/pack.hpp>
 #include <zug/tuplify.hpp>
@@ -120,7 +119,8 @@ template <typename T>
 class reader_node : public reader_node_base
 {
 public:
-    using value_type = T;
+    using value_type  = T;
+    using signal_type = signal<const value_type&, const value_type&>;
 
     reader_node(T value)
         : current_(std::move(value))
@@ -193,17 +193,7 @@ public:
         }
     }
 
-    template <typename Fn>
-    auto observe(Fn&& f) -> boost::signals2::connection
-    {
-        return observers_.connect(std::forward<Fn>(f));
-    }
-
-    auto observers()
-        -> boost::signals2::signal<void(const value_type&, const value_type&)>&
-    {
-        return observers_;
-    }
+    auto observers() -> signal_type& { return observers_; }
 
 private:
     void collect()
@@ -221,8 +211,7 @@ private:
     value_type last_;
     value_type last_notified_;
     std::vector<std::weak_ptr<reader_node_base>> children_;
-    boost::signals2::signal<void(const value_type&, const value_type&)>
-        observers_;
+    signal_type observers_;
 };
 
 /*!
