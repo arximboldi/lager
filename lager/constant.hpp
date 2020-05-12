@@ -38,6 +38,9 @@ auto make_constant_node(T&& v)
 
 } // namespace detail
 
+//! @defgroup cursors
+//! @{
+
 template <typename T>
 class constant : public reader_base<detail::constant_node<T>>
 {
@@ -60,5 +63,7 @@ auto make_constant(T&& v) -> constant<std::decay_t<T>>
 {
     return std::forward<T>(v);
 }
+
+//! @}
 
 } // namespace lager

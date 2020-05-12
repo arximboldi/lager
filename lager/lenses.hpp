@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include <zug/compose.hpp>
 #include <lager/util.hpp>
+#include <zug/compose.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -25,16 +25,19 @@ template <typename T>
 struct const_functor;
 
 template <typename T>
-auto make_const_functor(T&& x) -> const_functor<T> {
+auto make_const_functor(T&& x) -> const_functor<T>
+{
     return {std::forward<T>(x)};
 }
 
 template <typename T>
-struct const_functor {
+struct const_functor
+{
     T value;
 
     template <typename Fn>
-    const_functor operator()(Fn&&) && {
+    const_functor operator()(Fn&&) &&
+    {
         return std::move(*this);
     }
 };
@@ -43,21 +46,27 @@ template <typename T>
 struct identity_functor;
 
 template <typename T>
-auto make_identity_functor(T&& x) -> identity_functor<T> {
+auto make_identity_functor(T&& x) -> identity_functor<T>
+{
     return {std::forward<T>(x)};
 }
 
 template <typename T>
-struct identity_functor {
+struct identity_functor
+{
     T value;
 
     template <typename Fn>
-    auto operator()(Fn&& f) && {
+    auto operator()(Fn&& f) &&
+    {
         return make_identity_functor(
             std::forward<Fn>(f)(std::forward<T>(value)));
     }
 };
 } // namespace detail
+
+//! @defgroup lenses-api
+//! @{
 
 template <typename LensT, typename T>
 decltype(auto) view(LensT&& lens, T&& x)
@@ -86,7 +95,12 @@ decltype(auto) over(LensT&& lens, T&& x, Fn&& fn)
         .value;
 }
 
+//! @}
+
 namespace lenses {
+
+//! @defgroup lenses
+//! @{
 
 template <typename Getter, typename Setter>
 auto getset(Getter&& getter, Setter&& setter)
@@ -102,5 +116,7 @@ auto getset(Getter&& getter, Setter&& setter)
 }
 
 } // namespace lenses
+
+//! @}
 
 } // namespace lager

@@ -22,6 +22,9 @@
 
 namespace lager {
 
+//! @defgroup cursors
+//! @{
+
 template <typename DerivT>
 struct cursor_mixin
     : writer_mixin<DerivT>
@@ -64,8 +67,6 @@ public:
 
 /*!
  * Provides access to reading and writing values of type `T`.
- * Model of `cursor_value`.
- * @see `cursor_value`
  */
 template <typename T>
 class cursor : public cursor_base<detail::cursor_node<T>>
@@ -75,5 +76,7 @@ class cursor : public cursor_base<detail::cursor_node<T>>
 public:
     using base_t::base_t;
 };
+
+//! @}
 
 } // namespace lager

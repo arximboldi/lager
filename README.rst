@@ -32,9 +32,12 @@ via pure functions.  And you get time-travel for free!
 
 * **Documentation** (Contents_)
 * **Code** (GitHub_)
+* **CppRussia-Piter 2019 Talk**: *Squaring the circle* (`YouTube
+  <https://www.youtube.com/watch?v=e2-FRFEx8CA>`_, `Slides
+  <https://sinusoid.es/talks/cpprussia19-piter>`_)
 * **CppCon 2018 Talk**: *The most valuable values* (`YouTube
   <https://www.youtube.com/watch?v=_oBx_NbLghY>`_, `Slides
-  <https://public.sinusoid.es/talks/cppcon18>`_)
+  <https://sinusoid.es/talks/cppcon18>`_)
 * **C++ on Sea 2019 Talk**: *Postmodern immutable data-structures*
   (`YouTube <https://www.youtube.com/watch?v=y_m0ce1rzRI>`_, `Slides
   <https://sinusoid.es/talks/cpponsea19>`_)
@@ -116,29 +119,24 @@ This library is written in **C++17** and a compliant compiler and
 standard library necessary.  It is `continuously tested`_ with GCC 7,
 but it might work with other compilers and versions.
 
-It also depends on `Boost Hana`_. Some optional extensions and modules
+It also depends on `Zug`_ and `Boost Hana`_. Some optional extensions and modules
 may have other dependencies documented in their respective sections.
 
+.. _Zug: https://github.com/arximboldi/zug/
 .. _Boost Hana: https://boostorg.github.io/hana
 .. _continuously tested: https://travis-ci.org/arximboldi/immer
 
 Usage
 -----
 
-This is a **header only** library but to be configured correctly you need
-to run `CMake`_ first::
-
-    mkdir -p build && cd build
-    cmake .. -D lager_BUILD_DEBUGGER=OFF -D lager_BUILD_TESTS=OFF -D lager_BUILD_EXAMPLES=OFF -D lager_BUILD_DOCS=OFF
-
-Now you can just copy the ``lager``
-subfolder somewhere in your *include path*.
+This is a **header only** you can just copy the ``lager`` subfolder
+somewhere in your *include path*.
 
 Some components, like the time-travelling debugger, also require the
 installation of extra files.
 
-You can use `CMake`_ to install the library in your
-system once you have manually cloned the repository::
+You can use `CMake`_ to install the library in your system once you
+have manually cloned the repository::
 
     mkdir -p build && cd build
     cmake .. && sudo make install

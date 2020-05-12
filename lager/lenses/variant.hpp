@@ -1,11 +1,11 @@
 #pragma once
 
+#include <optional>
 #include <utility>
 #include <variant>
-#include <optional>
 
-#include <zug/compose.hpp>
 #include <lager/util.hpp>
+#include <zug/compose.hpp>
 
 namespace lager {
 namespace lenses {
@@ -14,10 +14,12 @@ namespace detail {
 // due to some obscure behavior on MSVC, this has to be implemented in a
 // manually defined function object
 template <typename T>
-struct alternative_t : zug::detail::pipeable {
+struct alternative_t : zug::detail::pipeable
+{
     using Part = std::optional<T>;
     template <typename F>
-    auto operator()(F&& f) const {
+    auto operator()(F&& f) const
+    {
         return [f = std::forward<F>(f)](auto&& p) {
             using Whole = std::decay_t<decltype(p)>;
             return f([&]() -> Part {
@@ -38,8 +40,13 @@ struct alternative_t : zug::detail::pipeable {
 };
 } // namespace detail
 
+//! @defgroup lenses
+//! @{
+
 template <typename T>
 auto alternative = detail::alternative_t<T>{};
+
+//! @}
 
 } // namespace lenses
 } // namespace lager

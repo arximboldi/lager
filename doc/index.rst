@@ -17,6 +17,8 @@ Contents
    effects
    views
    modularity
+   cursors
+   lenses
    time-travel
 
 .. toctree::
@@ -24,9 +26,11 @@ Contents
    :maxdepth: 3
 
    context
+   cursor
    debug
    deps
    event_loop
+   lens
    store
    util
 

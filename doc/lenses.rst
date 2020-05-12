@@ -1,7 +1,7 @@
-.. _cursors:
+.. _lenses:
 
-Cursors
-=======
+Lenses
+======
 
 .. admonition:: Work in progress
    :class: danger

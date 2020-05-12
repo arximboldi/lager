@@ -55,6 +55,9 @@ std::decay_t<Whole> at_setter_impl(Whole&& whole, Part&& part, Key&& key)
 
 } // namespace detail
 
+//! @defgroup lenses
+//! @{
+
 /*!
  * `Key -> Lens<{X}, [X]>`
  */
@@ -77,6 +80,8 @@ auto at(Key key)
         };
     });
 }
+
+//! @}
 
 } // namespace lenses
 } // namespace lager

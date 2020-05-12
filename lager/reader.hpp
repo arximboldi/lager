@@ -26,6 +26,9 @@ namespace lager {
 template <typename NodeT>
 class cursor_base;
 
+//! @defgroup cursors
+//! @{
+
 template <typename DerivT>
 struct reader_mixin
 {
@@ -100,8 +103,6 @@ public:
 
 /*!
  * Provides access to reading values of type `T`.
- * Model of `Reader_value`.
- * @see `Reader_value`
  */
 template <typename T>
 class reader : public reader_base<detail::reader_node<T>>
@@ -111,5 +112,7 @@ class reader : public reader_base<detail::reader_node<T>>
 public:
     using base_t::base_t;
 };
+
+//! @}
 
 } // namespace lager
