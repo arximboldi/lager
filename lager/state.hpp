@@ -64,6 +64,9 @@ auto make_state_node(T&& value)
 
 } // namespace detail
 
+//! @defgroup cursors
+//! @{
+
 template <typename T, typename TagT = transactional_tag>
 class state : public cursor_base<detail::state_node<T, TagT>>
 {
@@ -101,5 +104,7 @@ state<T, TagT> make_state(T value, TagT)
 {
     return value;
 }
+
+//! @}
 
 } // namespace lager

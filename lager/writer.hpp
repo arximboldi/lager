@@ -22,6 +22,9 @@ namespace lager {
 template <typename NodeT>
 class cursor_base;
 
+//! @defgroup cursors
+//! @{
+
 template <typename DerivT>
 struct writer_mixin
 {
@@ -106,8 +109,6 @@ public:
 
 /*!
  * Provides access to writing values of type `T`.
- * Model of `Writer_value`.
- * @see `Writer_value`
  */
 template <typename T>
 class writer : public writer_base<detail::cursor_node<T>>
@@ -117,5 +118,7 @@ class writer : public writer_base<detail::cursor_node<T>>
 public:
     using base_t::base_t;
 };
+
+//! @}
 
 } // namespace lager

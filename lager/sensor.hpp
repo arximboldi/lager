@@ -56,6 +56,9 @@ auto make_sensor_node(SensorFnT&& fn)
 
 } // namespace detail
 
+//! @defgroup cursors
+//! @{
+
 template <typename T>
 class sensor : public reader_base<detail::sensor_node_base<T>>
 {
@@ -84,5 +87,7 @@ auto make_sensor(SensorFnT&& fn)
 {
     return std::forward<SensorFnT>(fn);
 }
+
+//! @}
 
 } // namespace lager

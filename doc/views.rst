@@ -124,12 +124,10 @@ with a widget tree UI, by breaking the circle as follows:
 .. admonition:: Library support
 
    This diffing mechanism can be a bit cumbersome, and sometimes error
-   prone. At `Sinusoidal Engineering`_ we are developing a new library
-   to aid this particular use-case.  It will be first presented at the
-   `C++ Russia Piter`_ and `Meeting C++`_ conferences in Autumn 2019.
-
-.. _C++ Russia Piter: https://cppconf-piter.ru/en/
-.. _Meeting C++: http://meetingcpp.com/
+   prone. :ref:`cursors` can do it for you automatically.  They can
+   also do much more, and are an invaluable tool when `interfacing a
+   value-oriented data model with an object-oriented
+   UI<https://www.youtube.com/watch?v=e2-FRFEx8CA>`.
 
 Observables
 -----------

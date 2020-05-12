@@ -41,6 +41,9 @@ struct cursor_mixin;
 template <typename T>
 struct reader_mixin;
 
+//! @defgroup cursors
+//! @{
+
 /*!
  * Returns a transducer for updating the parent values via a up-node. It
  * processes the input with the function `updater`, passing to it a value or
@@ -60,6 +63,8 @@ auto update(UpdateT&& updater)
         };
     };
 }
+
+//! @}
 
 namespace detail {
 
@@ -407,6 +412,9 @@ auto with_aux(const cursor_mixin<CursorTs>&... ins)
 
 } // namespace detail
 
+//! @defgroup cursors
+//! @{
+
 /*!
  * Returns a temporary object that can be used to describe transformations over
  * the given set of cursors.
@@ -424,5 +432,7 @@ auto with(Cursors&&... ins)
 {
     return detail::with_aux(std::forward<Cursors>(ins).make()...);
 }
+
+//! @}
 
 } // namespace lager

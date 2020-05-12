@@ -71,6 +71,9 @@ struct add_opt
 
 } // namespace detail
 
+//! @defgroup lenses
+//! @{
+
 /*!
  * `Lens<W, P> -> Lens<[W], [P]>`
  */
@@ -141,6 +144,8 @@ ZUG_INLINE_CONSTEXPR auto force_opt = zug::comp([](auto&& f) {
             [&](auto&& x) { return LAGER_FWD(x).value_or(LAGER_FWD(p)); });
     };
 });
+
+//! @}
 
 } // namespace lenses
 } // namespace lager

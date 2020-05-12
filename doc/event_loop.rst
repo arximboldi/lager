@@ -25,3 +25,14 @@ sdl
 
 .. doxygenstruct:: lager::sdl_event_loop
 .. doxygenstruct:: lager::with_sdl_event_loop
+
+qt
+----
+
+.. doxygenstruct:: lager::with_qt_event_loop
+
+qml
+----
+
+.. doxygenclass:: lager::event_loop_quick_item
+.. doxygenstruct:: lager::with_qml_event_loop
