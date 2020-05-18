@@ -12,8 +12,9 @@
 
 #pragma once
 
-#include <QCoreApplication>
-#include <QMetaObject>
+#include <QObject>
+#include <QThreadPool>
+#include <QtConcurrent>
 
 #include <functional>
 #include <utility>
@@ -23,11 +24,16 @@ namespace lager {
 struct with_qt_event_loop
 {
     std::reference_wrapper<QObject> obj;
+    std::reference_wrapper<QThreadPool> thread_pool = *QThreadPool::globalInstance();
+
+    ~with_qt_event_loop() {
+        thread_pool.get().waitForDone();
+    }
 
     template <typename Fn>
     void async(Fn&& fn)
     {
-        throw std::runtime_error{"not implemented!"};
+        QtConcurrent::run(&thread_pool.get(), std::forward<Fn>(fn));
     }
 
     template <typename Fn>
