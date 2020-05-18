@@ -12,54 +12,35 @@
 
 #pragma once
 
-#include <lager/util.hpp>
-
-#include <QCoreApplication>
-#include <QMetaObject>
-#include <QtConcurrent>
+#include <QObject>
 #include <QThreadPool>
+#include <QtConcurrent>
 
 #include <functional>
 #include <utility>
-#include <variant>
 
 namespace lager {
 
 struct with_qt_event_loop
 {
-    using qt_obj_ref_variant_t = std::variant<std::reference_wrapper<QObject>,
-                                              std::reference_wrapper<QThreadPool>>;
-    qt_obj_ref_variant_t obj_ref_variant;
-
-    static QThreadPool *get_thread_pool_ptr(qt_obj_ref_variant_t obj_ref_variant) {
-            return std::visit(lager::visitor{
-                       [](std::reference_wrapper<QObject>) {
-                           return QThreadPool::globalInstance();
-                       },
-                       [](std::reference_wrapper<QThreadPool> thread_pool) {
-                           return &thread_pool.get();
-                       }
-                },
-                obj_ref_variant);
-        }
+    std::reference_wrapper<QObject> obj;
+    std::reference_wrapper<QThreadPool> thread_pool = *QThreadPool::globalInstance();
 
     ~with_qt_event_loop() {
-        get_thread_pool_ptr(obj_ref_variant)->waitForDone();
+        thread_pool.get().waitForDone();
     }
 
     template <typename Fn>
     void async(Fn&& fn)
     {
-        auto thread_pool_ptr = get_thread_pool_ptr(obj_ref_variant);
-        QtConcurrent::run(thread_pool_ptr, std::forward<Fn>(fn));
+        QtConcurrent::run(&thread_pool.get(), std::forward<Fn>(fn));
     }
 
     template <typename Fn>
     void post(Fn&& fn)
     {
-        auto obj_ptr = get_thread_pool_ptr(obj_ref_variant);
         QMetaObject::invokeMethod(
-            obj_ptr, std::forward<Fn>(fn), Qt::QueuedConnection);
+            &obj.get(), std::forward<Fn>(fn), Qt::QueuedConnection);
     }
 
     void finish() { QCoreApplication::instance()->quit(); }

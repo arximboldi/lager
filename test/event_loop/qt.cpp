@@ -72,6 +72,6 @@ TEST_CASE("manualy defined thread pool")
     auto store = lager::make_store<loop::action>(
         loop::model{},
         loop::update,
-        lager::with_qt_event_loop{std::ref(thread_pool)});
+        lager::with_qt_event_loop{app, thread_pool});
     run_test(store, store);
 }
