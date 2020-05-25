@@ -7,6 +7,8 @@ cc_library(
     ]),
     deps = [
         "@boost//:hana",
+        "@boost//:intrusive",
+        "@boost//:intrusive_ptr",
         "@zug//:zug",
     ],
     includes = [".", "lager/"],
