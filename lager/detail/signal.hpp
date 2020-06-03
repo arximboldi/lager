@@ -14,6 +14,8 @@
 
 #include <boost/intrusive/list.hpp>
 
+#include <memory>
+
 namespace lager {
 namespace detail {
 
