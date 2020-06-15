@@ -80,6 +80,12 @@ common patterns:
 ``attr`` will generate a lens from a pointer to member.
 We will go over the rest of these generators later on.
 
+.. admonition:: Note
+   :class: note
+
+   The main takeaway from this is that lenses are just
+   *pure funtions*.
+
 .. _van Laarhoven lens: https://www.twanvl.nl/blog/haskell/cps-functional-references
 
 .. _composition:
@@ -230,8 +236,8 @@ as a representation of the absence of focus, you can use ``at_or``:
    auto firstWhisker = withDefault;
    Whisker whisker = view(firstWhisker, mouse);
 
-This is *usually* not recommended, please use at and handle optionals
-properly.
+This is *usually* not recommended, please use ``at`` and handle
+optionals properly.
 
 Then there's handling variants:
 
@@ -420,7 +426,8 @@ lenses at compile time, but here's the catch:
    auto lens1 = tail | position;        // lens<Tail, int>
    auto lens2 = tail | tail | position; // lens<Tail, int>
     
-   static_assert(std::is_same_v<decltype(lens1), decltype(lens2)>, "Not the same types!");
+   static_assert(std::is_same_v<decltype(lens1), decltype(lens2)>,
+                 "Not the same types!");
 
 This means that you can't have this kind of pattern:
 
@@ -466,7 +473,8 @@ implementing ``std::function``.
    time**. (``std::function`` suffers from similar limitations, and as
    such follows the same recommendations)
 
-Let's reimplement that last function one last time, with proper handling of optionals this time:
+Let's reimplement that last function one last time, with proper
+handling of optionals this time:
 
 .. code-block:: c++
 
