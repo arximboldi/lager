@@ -127,10 +127,10 @@ through ``zug::comp``:
 
 .. admonition:: Zug
 
-   `Zug`_ is a C++ transducer implementation. It is used behind the scenes
-   in Lager, but you can also use it for writing cursor transformations.
-   It also has a few utilities you might find useful. ``zug::comp`` is
-   one of those.
+   `Zug`_ is a C++ transducer implementation. It is used behind the
+   scenes in Lager, but you can also use it for writing cursor
+   transformations. It also has a few utilities you might find useful.
+   ``zug::comp`` is one of those.
    
 
 ``zug::comp`` does two things: it is able to compose any number of
@@ -287,7 +287,8 @@ that focuses on an optional with a lens that expects a value. But you
 can *turn a lens that expects a value into a lens that expects an
 optional!*
 
-We provide three ways of doing this. Assume the following is available:
+We provide three ways of doing this. Assume the following is
+available:
 
 .. code-block:: c++
 
