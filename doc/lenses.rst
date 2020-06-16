@@ -317,8 +317,8 @@ The first one is ``map_opt``:
    auto leg_position = attr(&leg::position);
    auto first = at(0);
    auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                            // optional<leg>
-           | map_opt(leg_position);            // optional<int>
+           | first                              // optional<leg>
+           | map_opt(leg_position);             // optional<int>
     
    std::optional<int> position = view(first_leg_position, mouse);
 
@@ -334,9 +334,9 @@ Now, what happens if we try to do the same thing to get the first
    auto digits = attr(&leg::digits);
    auto first = at(0);
    auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                      // optional<leg>
-           | map_opt(digits)            // optional<vector<digit>>
-           | map_opt(first);            // optional<optional<digit>>
+           | first                       // optional<leg>
+           | map_opt(digits)             // optional<vector<digit>>
+           | map_opt(first);             // optional<optional<digit>>
     
    std::optional<std::optional<digit>> digit = view(first_digit, mouse);
 
@@ -349,9 +349,9 @@ For this, we have ``bind_opt``:
 .. code-block:: c++
 
    auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                      // optional<leg>
-           | map_opt(digits)            // optional<vector<digit>>
-           | bind_opt(first);           // optional<digit>
+           | first                       // optional<leg>
+           | map_opt(digits)             // optional<vector<digit>>
+           | bind_opt(first);            // optional<digit>
     
    std::optional<digit> digit = view(first_digit, mouse);
 
@@ -360,8 +360,8 @@ Note that you can lift composed lenses too!
 .. code-block:: c++
 
    auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                      // optional<leg>
-           | bind_opt(digits | first);  // optional<digit>
+           | first                       // optional<leg>
+           | bind_opt(digits | first);   // optional<digit>
 
 ``bind_opt`` collapses two levels of optional into one, much like the
 monadic bind of the `Maybe Monad`_ (don't think too much about it).
@@ -373,13 +373,13 @@ any:
 .. code-block:: c++
 
    auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                      // optional<leg>
-           | with_opt(digits | first);  // optional<digit>
+           | first                       // optional<leg>
+           | with_opt(digits | first);   // optional<digit>
    std::optional<digit> digit = view(first_digit, mouse);
     
    auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                            // optional<leg>
-           | with_opt(leg_position);           // optional<int>
+           | first                              // optional<leg>
+           | with_opt(leg_position);            // optional<int>
    std::optional<int> position = view(first_leg_position, mouse);
 
 This should be safe to use, but be weary of using it with models that
@@ -393,10 +393,10 @@ default constructed value or a fallback value with ``value_or`` and
 .. code-block:: c++
 
    auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                            // optional<leg>
-           | map_opt(leg_position);            // optional<int>
+           | first                              // optional<leg>
+           | map_opt(leg_position);             // optional<int>
     
-   auto with_default = first_leg_position | or_default; // default constructed
+   auto with_default = first_leg_position | or_default;    // default constructed
    // auto with_default = first_leg_position | value_or(); // equivalent
    auto with_fallback = first_leg_position | value_or(-1); // fallback to -1
  
