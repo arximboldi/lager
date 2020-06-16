@@ -99,10 +99,12 @@ programming. One of the main struggles functional programmers faced
 with them is composition: back when lenses were known as `Accessors`_,
 lens composition was a mess to write...
 Thankfully, functional programmers have since found increasingly clean
-ways of doing lens composition, starting with Twan van Laarhoven's
-implementation, and many more to come. If you're curious about the
+ways of doing lens composition, starting with `Twan van Laarhoven's
+implementation`__, and many more to come. If you're curious about the
 canonical way of doing "Optics" (a superset of lenses), I invite you
 to read about `Profunctor Optics`_.
+
+__ `van Laarhoven lens`_
 
 So how does all of this affect us? Simple: **lens composition** with
 VLLs (van Laarhoven lenses) **is function composition**!
@@ -444,8 +446,8 @@ This means that you can't have this kind of pattern:
    }
 
 We need a way to store ``lens1`` and ``lens2`` in the same type,
-because they satisfy the same interface that we defined earlier (they
-are both, conceptually, ``lens<tail, int>``).
+because they satisfy the same interface that we defined in
+`Making a lens`_ (they are both, conceptually, ``lens<tail, int>``).
 
 This is where *type erasure* comes in:
 
