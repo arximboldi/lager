@@ -97,7 +97,7 @@ Composition
 Lenses are a fairly "new" (2007) concept, even in functional
 programming. One of the main struggles functional programmers faced
 with them is composition: back when lenses were known as `Accessors`_,
-Lens composition was a mess to write...
+lens composition was a mess to write...
 Thankfully, functional programmers have since found increasingly clean
 ways of doing lens composition, starting with Twan van Laarhoven's
 implementation, and many more to come. If you're curious about the
