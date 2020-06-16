@@ -59,10 +59,10 @@ this kind of construct with a pair of functions:
 .. code-block:: c++
 
    auto eyes = lager::lenses::getset(
-       // the getter (mouse -> eyes)
-       [](mouse mouse) { return mouse.eyes; },
-       // the setter (mouse, eyes -> mouse)
-       [](mouse mouse, pair<eye, eye> eyes) {
+       // the getter (Mouse -> Eyes)
+       [](Mouse mouse) { return mouse.eyes; },
+       // the setter (Mouse, Eyes -> Mouse)
+       [](Mouse mouse, pair<eye, eye> eyes) {
            mouse.eyes = eyes;
            return mouse;
        });
