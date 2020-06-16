@@ -62,7 +62,7 @@ this kind of construct with a pair of functions:
        // the getter (Mouse -> Eyes)
        [](Mouse mouse) { return mouse.eyes; },
        // the setter (Mouse, Eyes -> Mouse)
-       [](Mouse mouse, pair<eye, eye> eyes) {
+       [](Mouse mouse, pair<Eye, Eye> eyes) {
            mouse.eyes = eyes;
            return mouse;
        });
