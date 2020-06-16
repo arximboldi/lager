@@ -31,12 +31,12 @@ Let's use this mouse as our model:
 
 .. code-block:: c++
 
-   struct mouse {
-       mouth mouth;
-       pair<eye, eye> eyes;
-       vector<leg> legs;
-       vector<whisker> whiskers;
-       tail tail;
+   struct Mouse {
+       Mouth mouth;
+       pair<Eye, Eye> eyes;
+       vector<Leg> legs;
+       vector<Whisker> whiskers;
+       Tail tail;
    };
 
 So, how do we make a lens, say, to access the eyes of a mouse?
@@ -44,8 +44,8 @@ So, how do we make a lens, say, to access the eyes of a mouse?
 .. code-block:: c++
 
    auto eyes = [](auto f) {
-       return [f](mouse mouse) {
-           return f(mouse.eyes)([&](pair<eye, eye> eyes) {
+       return [f](Mouse mouse) {
+           return f(mouse.eyes)([&](pair<Eye, Eye> eyes) {
                mouse.eyes = eyes;
                return mouse;
            });
@@ -75,7 +75,7 @@ common patterns:
 .. code-block:: c++
 
    #include <lager/lenses/attr.hpp>
-   auto eyes = lager::lenses::attr(&mouse::eyes);
+   auto eyes = lager::lenses::attr(&Mouse::eyes);
 
 ``attr`` will generate a lens from a pointer to member.
 We will go over the rest of these generators later on.
@@ -111,8 +111,8 @@ VLLs (van Laarhoven lenses) **is function composition**!
 .. code-block:: c++
 
    #include <lager/lenses/attr.hpp>
-   auto eyes = lager::lenses::attr(&mouse::eyes);
-   auto first = lager::lenses::attr(&pair<eye, eye>::first);
+   auto eyes = lager::lenses::attr(&Mouse::eyes);
+   auto first = lager::lenses::attr(&pair<Eye, Eye>::first);
    auto first_eye = [=](auto f){ return eyes(first(f)); };
 
 Now, because doing function composition in C++ is unfortunately
@@ -146,20 +146,20 @@ our mouse's mouth has four incisors!
 
 .. code-block:: c++
 
-   struct mouth {
-       using tooth_pair = pair<tooth, tooth>;
+   struct Mouth {
+       using ToothPair = pair<Tooth, Tooth>;
        // lower pair and upper pair!
-       pair<tooth_pair, tooth_pair> incisors;
+       pair<ToothPair, ToothPair> incisors;
    };
 
 Say our mouse has a bad tooth, and we need to replace it.
 
 .. code-block:: c++
 
-   mouse replace_tooth(mouse mouse, tooth tooth) {
-       auto tooth_lens = attr(&mouse::mouth)
-           | attr(&decltype(mouth::incisors)::first)
-           | attr(&mouth::tooth_pair::first);
+   Mouse replace_tooth(Mouse mouse, Tooth tooth) {
+       auto tooth_lens = attr(&Mouse::mouth)
+           | attr(&decltype(Mouth::incisors)::first)
+           | attr(&Mouth::ToothPair::first);
        return set(tooth_lens, mouse, tooth);
    }
 
@@ -172,9 +172,9 @@ composition is the identity function!*
    over([](auto f) { return f; }, 11, add4) // using our own identity function
    over(zug::indentity, 11, add4) // using zug's identity function
     
-   struct foo { int value; };
-   view(zug::identity | attr(&foo::value), foo{42});
-   view(attr(&foo::value) | zug::identity, foo{42});
+   struct Foo { int value; };
+   view(zug::identity | attr(&Foo::value), Foo{42});
+   view(attr(&Foo::value) | zug::identity, Foo{42});
 
 .. _zug: https://sinusoid.es/zug/
 .. _accessors: http://web.archive.org/web/20071023064034/http://luqui.org/blog/archives/2007/08/05/haskell-state-accessors-second-attempt-composability/
@@ -194,17 +194,17 @@ Assume the following is available:
    using namespace lager;
    using namespace lager::lenses;
    
-   mouse mouse; // our instance of a mouse
+   Mouse mouse; // our instance of a mouse
 
 We've already seen ``attr``:
 
 .. code-block:: c++
 
    #include <lager/lenses/attr.hpp>
-   auto first_eye = attr(&mouse::eyes)
-           | attr(&pair<eye, eye>::first);
+   auto first_eye = attr(&Mouse::eyes)
+           | attr(&pair<Eye, Eye>::first);
    
-   eye eye = view(first_eye, mouse);
+   Eye eye = view(first_eye, mouse);
 
 ``at`` is an accessor for an element of a collection at an index
 (integers for sequences like ``vector``, keys for associative
@@ -213,9 +213,9 @@ collections like ``map``):
 .. code-block:: c++
 
    #include <lager/lenses/at.hpp>
-   auto first_whisker = attr(&mouse::whiskers) | at(0);
+   auto first_whisker = attr(&Mouse::whiskers) | at(0);
    
-   optional<whisker> maybe_whisker = view(first_whisker, mouse);
+   optional<Whisker> maybe_whisker = view(first_whisker, mouse);
 
 Note that the focus (``part``) of at is an optional. That's because
 *the focused element might be absent* (out of bounds, no value at key,
@@ -226,17 +226,17 @@ as a representation of the absence of focus, you can use ``at_or``:
 .. code-block:: c++
 
    #include <lager/lenses/at_or.hpp>
- 
+   
    // default constructing a value if none is present:
-   auto with_default = attr(&mouse::whiskers) | at_or(0);
-    
+   auto with_default = attr(&Mouse::whiskers) | at_or(0);
+   
    // using a fallback value:
-   whisker fallback_whisker;
-   auto with_fallback = attr(&mouse::whiskers)
+   Whisker fallback_whisker;
+   auto with_fallback = attr(&Mouse::whiskers)
            | at_or(0, fallback_whisker);
-    
+   
    auto first_whisker = with_default;
-   whisker whisker = view(first_whisker, mouse);
+   Whisker whisker = view(first_whisker, mouse);
 
 This is *usually* not recommended, please use ``at`` and handle
 optionals properly.
@@ -247,10 +247,10 @@ Then there's handling variants:
 
    #include <lager/lenses/variant.hpp>
     
-   variant<mouse, rat> rodent;
-   auto the_mouse = alternative<mouse>;
+   variant<Mouse, Rat> rodent;
+   auto the_mouse = alternative<Mouse>;
     
-   optional<mouse> maybe_mouse = view(the_mouse, rodent);
+   optional<Mouse> maybe_mouse = view(the_mouse, rodent);
 
 Similarly to ``at``, ``alternative``'s focus is an optional.
 
@@ -262,18 +262,18 @@ Finally because `recursive types should be implemented with boxes
    #include <lager/lenses/unbox.hpp>
     
    // a tail node has a position and maybe another tail node
-   struct tail {
+   struct Tail {
        int position;
-       box<optional<tail>> tail;
+       box<optional<Tail>> tail;
    };
     
-   auto tail = attr(&mouse::tail)
-           | attr(&tail::tail)
+   auto tail = attr(&Mouse::tail)
+           | attr(&Tail::tail)
            | unbox;
     
-   optional<tail> maybe_tail = view(tail, mouse);
+   optional<Tail> maybe_tail = view(tail, mouse);
 
-Note that tail really should be of type ``optional<box<tail>>``, but
+Note that tail really should be of type ``optional<box<Tail>>``, but
 for that we'd need to handle composing with optionals.
 
 .. _handling-optionals:
@@ -301,67 +301,67 @@ available:
    using namespace lager;
    using namespace lager::lenses;
     
-   struct mouse; // from earlier
-   struct digit { int position; };
-   struct leg {
+   struct Mouse; // from earlier
+   struct Digit { int position; };
+   struct Leg {
        int position;
-       vector<digit> digits;
+       vector<Digit> digits;
    };
     
-   mouse mouse; // our instance of a mouse
+   Mouse mouse; // our instance of a mouse
 
 The first one is ``map_opt``:
 
 .. code-block:: c++
 
-   auto leg_position = attr(&leg::position);
+   auto leg_position = attr(&Leg::position);
    auto first = at(0);
-   auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                              // optional<leg>
+   auto first_leg_position = attr(&Mouse::legs) // vector<Leg>
+           | first                              // optional<Leg>
            | map_opt(leg_position);             // optional<int>
     
    optional<int> position = view(first_leg_position, mouse);
 
-``map_opt`` turned our ``lens<leg, int>`` into a
-``lens<optional<leg>, optional<int>>``. This is one way to lift
+``map_opt`` turned our ``lens<Leg, int>`` into a
+``lens<optional<Leg>, optional<int>>``. This is one way to lift
 lenses to handle optionals.
 
 Now, what happens if we try to do the same thing to get the first
-``digit`` of the first ``leg``?
+``Digit`` of the first ``Leg``?
 
 .. code-block:: c++
 
-   auto digits = attr(&leg::digits);
+   auto digits = attr(&Leg::digits);
    auto first = at(0);
-   auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                       // optional<leg>
-           | map_opt(digits)             // optional<vector<digit>>
-           | map_opt(first);             // optional<optional<digit>>
+   auto first_digit = attr(&Mouse::legs) // vector<Leg>
+           | first                       // optional<Leg>
+           | map_opt(digits)             // optional<vector<Digit>>
+           | map_opt(first);             // optional<optional<Digit>>
     
-   optional<optional<digit>> digit = view(first_digit, mouse);
+   optional<optional<Digit>> digit = view(first_digit, mouse);
 
 Oh no. We got an optional of optional, which is not what we wanted.
-We wanted to turn our ``lens<vector<digit>, optional<digit>>`` into a
-``lens<optional<vector<digit>>, optional<digit>>``.
+We wanted to turn our ``lens<vector<Digit>, optional<Digit>>`` into a
+``lens<optional<vector<Digit>>, optional<Digit>>``.
 
 For this, we have ``bind_opt``:
 
 .. code-block:: c++
 
-   auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                       // optional<leg>
-           | map_opt(digits)             // optional<vector<digit>>
-           | bind_opt(first);            // optional<digit>
+   auto first_digit = attr(&Mouse::legs) // vector<Leg>
+           | first                       // optional<Leg>
+           | map_opt(digits)             // optional<vector<Digit>>
+           | bind_opt(first);            // optional<Digit>
     
-   optional<digit> digit = view(first_digit, mouse);
+   optional<Digit> digit = view(first_digit, mouse);
 
 Note that you can lift composed lenses too!
 
 .. code-block:: c++
 
-   auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                       // optional<leg>
-           | bind_opt(digits | first);   // optional<digit>
+   auto first_digit = attr(&Mouse::legs) // vector<Leg>
+           | first                       // optional<Leg>
+           | bind_opt(digits | first);   // optional<Digit>
 
 ``bind_opt`` collapses two levels of optional into one, much like the
 monadic bind of the `Maybe Monad`_ (don't think too much about it).
@@ -372,13 +372,13 @@ any:
 
 .. code-block:: c++
 
-   auto first_digit = attr(&mouse::legs) // vector<leg>
-           | first                       // optional<leg>
-           | with_opt(digits | first);   // optional<digit>
-   optional<digit> digit = view(first_digit, mouse);
+   auto first_digit = attr(&Mouse::legs) // vector<Leg>
+           | first                       // optional<Leg>
+           | with_opt(digits | first);   // optional<Digit>
+   optional<Digit> digit = view(first_digit, mouse);
     
-   auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                              // optional<leg>
+   auto first_leg_position = attr(&Mouse::legs) // vector<Leg>
+           | first                              // optional<Leg>
            | with_opt(leg_position);            // optional<int>
    optional<int> position = view(first_leg_position, mouse);
 
@@ -392,14 +392,14 @@ default constructed value or a fallback value with ``value_or`` and
 
 .. code-block:: c++
 
-   auto first_leg_position = attr(&mouse::legs) // vector<leg>
-           | first                              // optional<leg>
+   auto first_leg_position = attr(&Mouse::legs) // vector<Leg>
+           | first                              // optional<Leg>
            | map_opt(leg_position);             // optional<int>
     
-   auto with_default = first_leg_position | or_default;    // default constructed
+   auto with_default = first_leg_position | or_default; // default constructed
    // auto with_default = first_leg_position | value_or(); // equivalent
    auto with_fallback = first_leg_position | value_or(-1); // fallback to -1
- 
+    
    int position = view(with_fallback, mouse);
 
 
@@ -418,16 +418,16 @@ lenses at compile time, but here's the catch:
 
 .. code-block:: c++
 
-   struct tail {
+   struct Tail {
        int position;
-       optional<box<tail>> tail;
+       optional<box<Tail>> tail;
    };
     
-   auto tail = attr(&tail::tail) | value_or() | unbox;
-   auto position = attr(&tail::position);
+   auto tail = attr(&Tail::tail) | value_or() | unbox;
+   auto position = attr(&Tail::position);
     
-   auto lens1 = tail | position;        // lens<tail, int>
-   auto lens2 = tail | tail | position; // lens<tail, int>
+   auto lens1 = tail | position;        // lens<Tail, int>
+   auto lens2 = tail | tail | position; // lens<Tail, int>
     
    static_assert(std::is_same_v<decltype(lens1), decltype(lens2)>,
                  "Not the same types!");
@@ -446,7 +446,7 @@ This means that you can't have this kind of pattern:
 
 We need a way to store ``lens1`` and ``lens2`` in the same type,
 because they satisfy the same interface that we defined in
-`Making a lens`_ (they are both, conceptually, ``lens<tail, int>``).
+`Making a lens`_ (they are both, conceptually, ``lens<Tail, int>``).
 
 This is where *type erasure* comes in:
 
@@ -454,8 +454,8 @@ This is where *type erasure* comes in:
 
    #include <lager/lens.hpp> // type erased lenses
     
-   lens<tail, int> tail_position_at(int index) {
-       lens<tail, int> result_lens = position;
+   lens<Tail, int> tail_position_at(int index) {
+       lens<Tail, int> result_lens = position;
        while (index-- > 0) {
            result_lens = tail | result_lens; // this works now
        }
@@ -481,11 +481,11 @@ handling of optionals this time:
 
 .. code-block:: c++
 
-   auto tail = attr(&tail::tail) | map_opt(unbox);
-   auto position = attr(&tail::position) | force_opt;
+   auto tail = attr(&Tail::tail) | map_opt(unbox);
+   auto position = attr(&Tail::position) | force_opt;
     
-   lens<tail, optional<int>> tail_position_at(int index) {
-       lens<tail, optional<int>> result_lens = position;
+   lens<Tail, optional<int>> tail_position_at(int index) {
+       lens<Tail, optional<int>> result_lens = position;
        while (index-- > 0) {
            result_lens = tail | bind_opt(result_lens);
        }
@@ -493,6 +493,6 @@ handling of optionals this time:
    }
 
 Notice that we introduced ``force_opt``. This is so that we can keep
-the return type as ``lens<tail, optional<int>>``, even in the case of
+the return type as ``lens<Tail, optional<int>>``, even in the case of
 a single node tail.
 
