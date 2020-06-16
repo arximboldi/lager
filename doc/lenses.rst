@@ -39,8 +39,6 @@ Let's use this mouse as our model:
        tail tail;
    };
 
-(We'll define the various substructures later on)
-
 So, how do we make a lens, say, to access the eyes of a mouse?
 
 .. code-block:: c++
