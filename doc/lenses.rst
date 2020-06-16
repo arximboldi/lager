@@ -215,7 +215,7 @@ collections like ``map``):
    #include <lager/lenses/at.hpp>
    auto first_whisker = attr(&mouse::whiskers) | at(0);
    
-   std::optional<whisker> maybe_whisker = view(first_whisker, mouse);
+   optional<whisker> maybe_whisker = view(first_whisker, mouse);
 
 Note that the focus (``part``) of at is an optional. That's because
 *the focused element might be absent* (out of bounds, no value at key,
@@ -250,7 +250,7 @@ Then there's handling variants:
    variant<mouse, rat> rodent;
    auto the_mouse = alternative<mouse>;
     
-   std::optional<mouse> maybe_mouse = view(the_mouse, rodent);
+   optional<mouse> maybe_mouse = view(the_mouse, rodent);
 
 Similarly to ``at``, ``alternative``'s focus is an optional.
 
@@ -271,7 +271,7 @@ Finally because `recursive types should be implemented with boxes
            | attr(&tail::tail)
            | unbox;
     
-   std::optional<tail> maybe_tail = view(tail, mouse);
+   optional<tail> maybe_tail = view(tail, mouse);
 
 Note that tail really should be of type ``optional<box<tail>>``, but
 for that we'd need to handle composing with optionals.
@@ -320,7 +320,7 @@ The first one is ``map_opt``:
            | first                              // optional<leg>
            | map_opt(leg_position);             // optional<int>
     
-   std::optional<int> position = view(first_leg_position, mouse);
+   optional<int> position = view(first_leg_position, mouse);
 
 ``map_opt`` turned our ``lens<leg, int>`` into a
 ``lens<optional<leg>, optional<int>>``. This is one way to lift
@@ -338,7 +338,7 @@ Now, what happens if we try to do the same thing to get the first
            | map_opt(digits)             // optional<vector<digit>>
            | map_opt(first);             // optional<optional<digit>>
     
-   std::optional<std::optional<digit>> digit = view(first_digit, mouse);
+   optional<optional<digit>> digit = view(first_digit, mouse);
 
 Oh no. We got an optional of optional, which is not what we wanted.
 We wanted to turn our ``lens<vector<digit>, optional<digit>>`` into a
@@ -353,7 +353,7 @@ For this, we have ``bind_opt``:
            | map_opt(digits)             // optional<vector<digit>>
            | bind_opt(first);            // optional<digit>
     
-   std::optional<digit> digit = view(first_digit, mouse);
+   optional<digit> digit = view(first_digit, mouse);
 
 Note that you can lift composed lenses too!
 
@@ -375,12 +375,12 @@ any:
    auto first_digit = attr(&mouse::legs) // vector<leg>
            | first                       // optional<leg>
            | with_opt(digits | first);   // optional<digit>
-   std::optional<digit> digit = view(first_digit, mouse);
+   optional<digit> digit = view(first_digit, mouse);
     
    auto first_leg_position = attr(&mouse::legs) // vector<leg>
            | first                              // optional<leg>
            | with_opt(leg_position);            // optional<int>
-   std::optional<int> position = view(first_leg_position, mouse);
+   optional<int> position = view(first_leg_position, mouse);
 
 This should be safe to use, but be weary of using it with models that
 have optionals as legitimate values. Using the less ambiguous
