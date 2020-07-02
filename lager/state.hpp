@@ -24,10 +24,13 @@ namespace lager {
 
 namespace detail {
 
+template <typename T>
+using state_base = root_node<T, cursor_node>;
+
 template <typename T, typename TagT = transactional_tag>
-class state_node : public root_node<T, cursor_node>
+class state_node : public state_base<T>
 {
-    using base_t = root_node<T, cursor_node>;
+    using base_t = state_base<T>;
 
 public:
     using value_type = T;
