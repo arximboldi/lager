@@ -238,7 +238,7 @@ class inner_node<ValueT, zug::meta::pack<Parents...>, Base>
     std::tuple<std::shared_ptr<Parents>...> parents_;
 
 public:
-    inner_node(ValueT init, std::tuple<std::shared_ptr<Parents>...> parents)
+    inner_node(ValueT init, std::tuple<std::shared_ptr<Parents>...>&& parents)
         : base_t{std::move(init)}
         , parents_{std::move(parents)}
     {}

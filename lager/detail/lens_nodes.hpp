@@ -70,12 +70,14 @@ template <typename Lens        = zug::identity_t,
           typename ParentsPack = zug::meta::pack<>>
 class lens_cursor_node;
 
+template <typename Lens, typename ParentsPack>
+using lens_cursor_base = lens_reader_node<Lens, ParentsPack, cursor_node>;
+
 template <typename Lens, typename... Parents>
 class lens_cursor_node<Lens, zug::meta::pack<Parents...>>
-    : public lens_reader_node<Lens, zug::meta::pack<Parents...>, cursor_node>
+    : public lens_cursor_base<Lens, zug::meta::pack<Parents...>>
 {
-    using base_t =
-        lens_reader_node<Lens, zug::meta::pack<Parents...>, cursor_node>;
+    using base_t = lens_cursor_base<Lens, zug::meta::pack<Parents...>>;
 
 public:
     using value_type = typename base_t::value_type;

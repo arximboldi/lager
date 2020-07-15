@@ -53,9 +53,12 @@ public:
 };
 
 template <typename Parents>
-class merge_cursor_node : public merge_reader_node<Parents, cursor_node>
+using merge_reader_base = merge_reader_node<Parents, cursor_node>;
+
+template <typename Parents>
+class merge_cursor_node : public merge_reader_base<Parents>
 {
-    using base_t = merge_reader_node<Parents, cursor_node>;
+    using base_t = merge_reader_base<Parents>;
 
 public:
     using value_type = typename base_t::value_type;
