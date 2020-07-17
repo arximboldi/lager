@@ -425,17 +425,17 @@ TEST_CASE("lenses::zip pair", "[lenses][zip][pair]")
 {
     struct foo
     {
-        int bar;
+        int value;
     };
 
     std::pair<foo, int> baz{{42}, 256};
-    auto zipped = zip(attr(&foo::bar), lager::identity);
+    auto zipped = zip(attr(&foo::value), lager::identity);
 
     baz = over(zipped, baz, [](auto x) {
         return std::pair{x.second, x.first};
     });
 
-    CHECK(baz.first.bar == 256);
+    CHECK(baz.first.value == 256);
     CHECK(baz.second == 42);
 }
 
@@ -443,17 +443,17 @@ TEST_CASE("lenses::zip tuple", "[lenses][zip][tuple]")
 {
     struct foo
     {
-        int bar;
+        int value;
     };
     struct bar
     {
-        foo foo;
+        foo f;
     };
 
     std::tuple<foo, bar, int> baz{{42}, {{1115}}, 256};
 
     auto zipped = zip(
-        attr(&foo::bar), attr(&bar::foo) | attr(&foo::bar), lager::identity);
+        attr(&foo::value), attr(&bar::f) | attr(&foo::value), lager::identity);
 
     baz = over(zipped, baz, [](auto x) {
         auto [a, b, c] = x;
@@ -471,14 +471,14 @@ TEST_CASE("lenses::explode", "[lenses][explode]")
     };
     struct bar
     {
-        foo foo;
+        foo f;
         int value;
     };
 
     auto baz = bar{{42}, 256};
 
     auto exploded =
-        lenses::explode(attr(&bar::foo) | attr(&foo::value), attr(&bar::value));
+        lenses::explode(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
 
     baz = over(exploded, baz, [](auto x) {
         auto [a, b] = x;
@@ -498,14 +498,14 @@ TEST_CASE("lenses::explode use after move edge case", "[lenses][explode]")
     };
     struct bar
     {
-        foo foo;
+        foo f;
         string value;
     };
 
     auto baz = bar{{"42"}, "256"};
 
     auto exploded =
-        lenses::explode(attr(&bar::foo) | attr(&foo::value), attr(&bar::value));
+        lenses::explode(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
 
     baz = over(exploded, std::move(baz), [](auto x) {
         auto [a, b] = x;
@@ -524,13 +524,13 @@ TEST_CASE("lenses::explode composed with lenses::zip", "[lenses][explode][zip]")
     };
     struct bar
     {
-        foo foo;
+        foo f;
         int value;
     };
 
     auto baz = bar{{42}, 256};
 
-    auto exploded = lenses::explode(attr(&bar::foo), attr(&bar::value));
+    auto exploded = lenses::explode(attr(&bar::f), attr(&bar::value));
     auto zipped   = lenses::zip(attr(&foo::value), lager::identity);
 
     baz = over(exploded | zipped, baz, [](auto x) {
@@ -549,13 +549,13 @@ TEST_CASE("lenses::attr multiple", "[lenses][attr][explode]")
     };
     struct bar
     {
-        foo foo;
+        foo f;
         int value;
     };
 
     auto baz = bar{{42}, 256};
 
-    auto exploded = lenses::attr(&bar::foo, &bar::value);
+    auto exploded = lenses::attr(&bar::f, &bar::value);
     auto zipped   = lenses::zip(attr(&foo::value), lager::identity);
 
     baz = over(exploded | zipped, baz, [](auto x) {
@@ -579,7 +579,7 @@ TEST_CASE("lenses::element tuple", "[lenses][element][tuple]")
     CHECK(view(first, foo) == 1);
     CHECK(view(second, foo) == 2);
 
-    CHECK(over(element<1>, foo, increment) == std::tuple{1, 3, 3});
+    CHECK(over(element<1>, foo, increment) == std::tuple(1, 3, 3));
 }
 
 TEST_CASE("lenses::element pair", "[lenses][element][pair]")
@@ -592,7 +592,7 @@ TEST_CASE("lenses::element pair", "[lenses][element][pair]")
     CHECK(view(first, foo) == 1);
     CHECK(view(second, foo) == 2);
 
-    CHECK(over(element<1>, foo, increment) == std::pair{1, 3});
+    CHECK(over(element<1>, foo, increment) == std::pair(1, 3));
 }
 
 TEST_CASE("lenses::element array", "[lenses][element][array]")
@@ -606,5 +606,5 @@ TEST_CASE("lenses::element array", "[lenses][element][array]")
     CHECK(view(first, foo) == 1);
     CHECK(view(second, foo) == 2);
 
-    CHECK(over(element<1>, foo, increment) == std::array{1, 3, 3});
+    CHECK(over(element<1>, foo, increment) == (std::array{1, 3, 3}));
 }
