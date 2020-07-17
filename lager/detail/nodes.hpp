@@ -178,17 +178,19 @@ public:
     {
         using namespace std;
         if (flags_ == needs_notify_flag) {
-            flags_ = no_flag;
+            flags_         = no_flag;
+            bool outermost = outermost_;
+            outermost_     = false;
             observers_(last_);
-            auto garbage = false;
             for (std::size_t i = 0, size = children_.size(); i < size; ++i) {
                 if (auto child = children_[i].lock()) {
                     child->notify();
                 } else {
-                    garbage = true;
+                    garbage_ = true;
                 }
             }
-            if (garbage) {
+            if (outermost) {
+                outermost_ = true;
                 collect();
             }
         }
@@ -200,17 +202,24 @@ private:
     void collect()
     {
         using namespace std;
-        children_.erase(remove_if(begin(children_),
-                                  end(children_),
-                                  mem_fn(&weak_ptr<reader_node_base>::expired)),
-                        end(children_));
+        if (garbage_) {
+            children_.erase(
+                remove_if(begin(children_),
+                          end(children_),
+                          mem_fn(&weak_ptr<reader_node_base>::expired)),
+                end(children_));
+            garbage_ = false;
+        }
     }
 
-    int flags_ = no_flag;
     value_type current_;
     value_type last_;
     std::vector<std::weak_ptr<reader_node_base>> children_;
     signal_type observers_;
+
+    char flags_     = no_flag;
+    bool outermost_ = true;
+    bool garbage_   = false;
 };
 
 /*!
