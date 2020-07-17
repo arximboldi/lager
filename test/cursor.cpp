@@ -178,7 +178,7 @@ TEST_CASE("automatic_tag edge case")
 
     lager::state<vec_t, lager::automatic_tag> st;
     std::vector<cur_t> cursors;
-    spy_t spy;
+    auto spy = testing::spy();
 
     st.watch([&](vec_t const& vec) {
         cursors.clear();
