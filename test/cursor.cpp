@@ -22,6 +22,7 @@
 #include <boost/fusion/include/comparison.hpp>
 
 #include <immer/vector.hpp>
+#include <vector>
 
 #include "spies.hpp"
 
@@ -168,4 +169,32 @@ TEST_CASE("in, constant")
 
     CHECK(*c == 42);
     CHECK(*i == 42);
+}
+
+TEST_CASE("automatic_tag edge case")
+{
+    using vec_t = std::vector<int>;
+    using cur_t = lager::cursor<std::optional<int>>;
+
+    lager::state<vec_t, lager::automatic_tag> st;
+    std::vector<cur_t> cursors;
+    spy_t spy;
+
+    st.watch([&](vec_t const& vec) {
+        cursors.clear();
+        for (size_t i = 0; i < vec.size(); ++i) {
+            cursors.push_back(st[i]);
+            cursors[i].watch(spy);
+        }
+    });
+
+    st.set(vec_t{1, 2, 3, 4, 5, 6, 7, 8});
+    cur_t cur = st[0];
+    cur.watch([&](auto const& optint) {
+        if (optint.value_or(0) > 10) {
+            st.set(vec_t{});
+        }
+    });
+
+    cur.set(42); // this would cause a crash before commit aefd37b
 }
