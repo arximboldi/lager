@@ -44,7 +44,7 @@ struct alternative_t : zug::detail::pipeable
 //! @{
 
 template <typename T>
-auto alternative = detail::alternative_t<T>{};
+inline auto alternative = detail::alternative_t<T>{};
 
 //! @}
 

@@ -183,7 +183,7 @@ auto attr(Member... member)
  * Note: works for pairs, tuples, arrays. don't use on variants.
  */
 template <size_t N>
-auto element = detail::element_t<N>{};
+inline auto element = detail::element_t<N>{};
 
 inline auto first  = element<0>;
 inline auto second = element<1>;
