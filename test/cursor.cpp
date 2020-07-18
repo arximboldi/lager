@@ -197,4 +197,6 @@ TEST_CASE("automatic_tag edge case")
     });
 
     cur.set(42); // this would cause a crash before commit aefd37b
+
+    st.set(vec_t{1, 2, 3, 4}); // this will collect garbage
 }
