@@ -1,10 +1,10 @@
 #pragma once
 
-#include <tuple>
-#include <type_traits>
-
 #include <lager/lenses.hpp>
 #include <lager/lenses/attr.hpp>
+
+#include <tuple>
+#include <type_traits>
 
 namespace lager {
 namespace lenses {

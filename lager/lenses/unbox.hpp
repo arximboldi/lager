@@ -1,9 +1,9 @@
 #pragma once
 
-#include <utility>
-
 #include <lager/util.hpp>
 #include <zug/compose.hpp>
+
+#include <utility>
 
 namespace lager {
 namespace lenses {
