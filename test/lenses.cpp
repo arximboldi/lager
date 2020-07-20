@@ -463,7 +463,7 @@ TEST_CASE("lenses::zip tuple", "[lenses][zip][tuple]")
     CHECK(view(zipped, baz) == std::tuple(1115, 256, 42));
 }
 
-TEST_CASE("lenses::explode", "[lenses][explode]")
+TEST_CASE("lenses::fan", "[lenses][fan]")
 {
     struct foo
     {
@@ -478,7 +478,7 @@ TEST_CASE("lenses::explode", "[lenses][explode]")
     auto baz = bar{{42}, 256};
 
     auto exploded =
-        lenses::explode(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
+        lenses::fan(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
 
     baz = over(exploded, baz, [](auto x) {
         auto [a, b] = x;
@@ -488,7 +488,7 @@ TEST_CASE("lenses::explode", "[lenses][explode]")
     CHECK(view(exploded, baz) == std::tuple(256, 42));
 }
 
-TEST_CASE("lenses::explode use after move edge case", "[lenses][explode]")
+TEST_CASE("lenses::fan use after move edge case", "[lenses][fan]")
 {
     using std::string;
 
@@ -505,7 +505,7 @@ TEST_CASE("lenses::explode use after move edge case", "[lenses][explode]")
     auto baz = bar{{"42"}, "256"};
 
     auto exploded =
-        lenses::explode(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
+        lenses::fan(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
 
     baz = over(exploded, std::move(baz), [](auto x) {
         auto [a, b] = x;
@@ -516,7 +516,7 @@ TEST_CASE("lenses::explode use after move edge case", "[lenses][explode]")
     CHECK(view(exploded, std::move(baz)) == std::tuple("256", "42"));
 }
 
-TEST_CASE("lenses::explode composed with lenses::zip", "[lenses][explode][zip]")
+TEST_CASE("lenses::fan composed with lenses::zip", "[lenses][fan][zip]")
 {
     struct foo
     {
@@ -530,7 +530,7 @@ TEST_CASE("lenses::explode composed with lenses::zip", "[lenses][explode][zip]")
 
     auto baz = bar{{42}, 256};
 
-    auto exploded = lenses::explode(attr(&bar::f), attr(&bar::value));
+    auto exploded = lenses::fan(attr(&bar::f), attr(&bar::value));
     auto zipped   = lenses::zip(attr(&foo::value), lager::identity);
 
     baz = over(exploded | zipped, baz, [](auto x) {
@@ -541,7 +541,7 @@ TEST_CASE("lenses::explode composed with lenses::zip", "[lenses][explode][zip]")
     CHECK(view(exploded | zipped, baz) == std::tuple(256, 42));
 }
 
-TEST_CASE("lenses::attr multiple", "[lenses][attr][explode]")
+TEST_CASE("lenses::attr multiple", "[lenses][attr][fan]")
 {
     struct foo
     {

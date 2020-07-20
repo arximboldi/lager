@@ -148,7 +148,7 @@ auto zip(Lenses&&... lenses)
  * overwrite sequential writes to the part. just don't do it.
  */
 template <typename... Lenses>
-auto explode(Lenses&&... lenses)
+auto fan(Lenses&&... lenses)
 {
     return zug::comp([lens_tuple =
                           std::make_tuple(LAGER_FWD(lenses)...)](auto&& f) {
@@ -168,13 +168,13 @@ auto explode(Lenses&&... lenses)
 /**
  * (Part Whole::*)... -> Lens<Whole, (Part...)>
  *
- * Note: for the same reason as detailed in explode, the members
+ * Note: for the same reason as detailed in fan, the members
  * should be distinct from each other.
  */
 template <typename... Member>
 auto attr(Member... member)
 {
-    return explode(attr(member)...);
+    return fan(attr(member)...);
 }
 
 /**
