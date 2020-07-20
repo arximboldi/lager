@@ -118,13 +118,6 @@ auto has_changed(const T&, const T&)
 template <typename T>
 class reader_node : public reader_node_base
 {
-    enum flags_t
-    {
-        no_flag              = 0,
-        needs_send_down_flag = 1 << 0,
-        needs_notify_flag    = 1 << 1,
-    };
-
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
@@ -155,17 +148,18 @@ public:
     void push_down(U&& value)
     {
         if (has_changed(value, current_)) {
-            current_ = std::forward<U>(value);
-            flags_ |= needs_send_down_flag;
+            current_         = std::forward<U>(value);
+            needs_send_down_ = true;
         }
     }
 
     void send_down() final
     {
         recompute();
-        if (flags_ & needs_send_down_flag) {
-            last_  = current_;
-            flags_ = needs_notify_flag;
+        if (needs_send_down_) {
+            last_            = current_;
+            needs_send_down_ = false;
+            needs_notify_    = true;
             for (auto& wchild : children_) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
@@ -177,20 +171,25 @@ public:
     void notify() final
     {
         using namespace std;
-        if (flags_ == needs_notify_flag) {
-            flags_         = no_flag;
+        if (needs_notify_ && !needs_send_down_) {
+            needs_notify_ = false;
+
+            unique_ptr<bool, void (*)(bool*)> outermost_guard{
+                &outermost_, [](bool* flag) { *flag = true; }};
             bool outermost = outermost_;
             outermost_     = false;
+            bool garbage   = false;
+
             observers_(last_);
-            for (std::size_t i = 0, size = children_.size(); i < size; ++i) {
+            for (size_t i = 0, size = children_.size(); i < size; ++i) {
                 if (auto child = children_[i].lock()) {
                     child->notify();
                 } else {
-                    garbage_ = true;
+                    garbage = true;
                 }
             }
-            if (outermost) {
-                outermost_ = true;
+
+            if (outermost && garbage) {
                 collect();
             }
         }
@@ -202,14 +201,10 @@ private:
     void collect()
     {
         using namespace std;
-        if (garbage_) {
-            children_.erase(
-                remove_if(begin(children_),
-                          end(children_),
-                          mem_fn(&weak_ptr<reader_node_base>::expired)),
-                end(children_));
-            garbage_ = false;
-        }
+        children_.erase(remove_if(begin(children_),
+                                  end(children_),
+                                  mem_fn(&weak_ptr<reader_node_base>::expired)),
+                        end(children_));
     }
 
     value_type current_;
@@ -217,9 +212,9 @@ private:
     std::vector<std::weak_ptr<reader_node_base>> children_;
     signal_type observers_;
 
-    char flags_     = no_flag;
-    bool outermost_ = true;
-    bool garbage_   = false;
+    bool needs_send_down_ = false;
+    bool needs_notify_    = false;
+    bool outermost_       = true;
 };
 
 /*!
