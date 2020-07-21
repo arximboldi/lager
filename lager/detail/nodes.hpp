@@ -111,6 +111,21 @@ auto has_changed(const T&, const T&)
     return true;
 }
 
+struct notifying_guard_t
+{
+    notifying_guard_t(bool& target)
+        : value_{target}
+        , target_{target}
+    {
+        target_ = true;
+    }
+
+    ~notifying_guard_t() { target_ = value_; }
+
+    bool value_;
+    bool& target_;
+};
+
 /*!
  * Base class for the various node types.  Provides basic
  * functionality for setting values and propagating them to children.
@@ -118,13 +133,6 @@ auto has_changed(const T&, const T&)
 template <typename T>
 class reader_node : public reader_node_base
 {
-    enum flags_t
-    {
-        no_flag              = 0,
-        needs_send_down_flag = 1 << 0,
-        needs_notify_flag    = 1 << 1,
-    };
-
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
@@ -155,17 +163,18 @@ public:
     void push_down(U&& value)
     {
         if (has_changed(value, current_)) {
-            current_ = std::forward<U>(value);
-            flags_ |= needs_send_down_flag;
+            current_         = std::forward<U>(value);
+            needs_send_down_ = true;
         }
     }
 
     void send_down() final
     {
         recompute();
-        if (flags_ & needs_send_down_flag) {
-            last_  = current_;
-            flags_ = needs_notify_flag;
+        if (needs_send_down_) {
+            last_            = current_;
+            needs_send_down_ = false;
+            needs_notify_    = true;
             for (auto& wchild : children_) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
@@ -177,18 +186,22 @@ public:
     void notify() final
     {
         using namespace std;
-        if (flags_ == needs_notify_flag) {
-            flags_ = no_flag;
+        if (needs_notify_ && !needs_send_down_) {
+            needs_notify_ = false;
+
+            notifying_guard_t notifying_guard(notifying_);
+            bool garbage = false;
+
             observers_(last_);
-            auto garbage = false;
-            for (std::size_t i = 0, size = children_.size(); i < size; ++i) {
+            for (size_t i = 0, size = children_.size(); i < size; ++i) {
                 if (auto child = children_[i].lock()) {
                     child->notify();
                 } else {
                     garbage = true;
                 }
             }
-            if (garbage) {
+
+            if (garbage && !notifying_guard.value_) {
                 collect();
             }
         }
@@ -206,11 +219,14 @@ private:
                         end(children_));
     }
 
-    int flags_ = no_flag;
     value_type current_;
     value_type last_;
     std::vector<std::weak_ptr<reader_node_base>> children_;
     signal_type observers_;
+
+    bool needs_send_down_ = false;
+    bool needs_notify_    = false;
+    bool notifying_       = false;
 };
 
 /*!
