@@ -118,6 +118,21 @@ auto has_changed(const T&, const T&)
 template <typename T>
 class reader_node : public reader_node_base
 {
+    struct notifying_guard_t
+    {
+        notifying_guard_t(bool& target)
+            : value_{target}
+            , target_{target}
+        {
+            target_ = true;
+        }
+        
+        ~notifying_guard_t() { target_ = value_; }
+
+        bool value_;
+        bool& target_;
+    };
+
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
@@ -174,11 +189,8 @@ public:
         if (needs_notify_ && !needs_send_down_) {
             needs_notify_ = false;
 
-            unique_ptr<bool, void (*)(bool*)> outermost_guard{
-                &outermost_, [](bool* flag) { *flag = true; }};
-            bool outermost = outermost_;
-            outermost_     = false;
-            bool garbage   = false;
+            notifying_guard_t notifying_guard(notifying_);
+            bool garbage = false;
 
             observers_(last_);
             for (size_t i = 0, size = children_.size(); i < size; ++i) {
@@ -189,7 +201,7 @@ public:
                 }
             }
 
-            if (outermost && garbage) {
+            if (garbage && !notifying_guard.value_) {
                 collect();
             }
         }
@@ -214,7 +226,7 @@ private:
 
     bool needs_send_down_ = false;
     bool needs_notify_    = false;
-    bool outermost_       = true;
+    bool notifying_       = false;
 };
 
 /*!
