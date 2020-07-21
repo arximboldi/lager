@@ -111,6 +111,21 @@ auto has_changed(const T&, const T&)
     return true;
 }
 
+struct notifying_guard_t
+{
+    notifying_guard_t(bool& target)
+        : value_{target}
+        , target_{target}
+    {
+        target_ = true;
+    }
+
+    ~notifying_guard_t() { target_ = value_; }
+
+    bool value_;
+    bool& target_;
+};
+
 /*!
  * Base class for the various node types.  Provides basic
  * functionality for setting values and propagating them to children.
@@ -118,21 +133,6 @@ auto has_changed(const T&, const T&)
 template <typename T>
 class reader_node : public reader_node_base
 {
-    struct notifying_guard_t
-    {
-        notifying_guard_t(bool& target)
-            : value_{target}
-            , target_{target}
-        {
-            target_ = true;
-        }
-        
-        ~notifying_guard_t() { target_ = value_; }
-
-        bool value_;
-        bool& target_;
-    };
-
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
