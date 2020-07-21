@@ -22,6 +22,7 @@
 #include <lager/lenses/attr.hpp>
 #include <lager/lenses/optional.hpp>
 #include <lager/lenses/variant.hpp>
+#include <lager/lenses/tuple.hpp>
 
 struct yearday
 {
@@ -418,4 +419,192 @@ TEST_CASE("lenses, bind_opt")
         CHECK(view(first_first, v1) == 42);
         CHECK(view(first_first, set(first_first, v1, 256)) == 256);
     }
+}
+
+TEST_CASE("lenses::zip pair", "[lenses][zip][pair]")
+{
+    struct foo
+    {
+        int value;
+    };
+
+    std::pair<foo, int> baz{{42}, 256};
+    auto zipped = zip(attr(&foo::value), lager::identity);
+
+    baz = over(zipped, baz, [](auto x) {
+        return std::pair{x.second, x.first};
+    });
+
+    CHECK(baz.first.value == 256);
+    CHECK(baz.second == 42);
+}
+
+TEST_CASE("lenses::zip tuple", "[lenses][zip][tuple]")
+{
+    struct foo
+    {
+        int value;
+    };
+    struct bar
+    {
+        foo f;
+    };
+
+    std::tuple<foo, bar, int> baz{{42}, {{1115}}, 256};
+
+    auto zipped = zip(
+        attr(&foo::value), attr(&bar::f) | attr(&foo::value), lager::identity);
+
+    baz = over(zipped, baz, [](auto x) {
+        auto [a, b, c] = x;
+        return std::tuple{b, c, a};
+    });
+
+    CHECK(view(zipped, baz) == std::tuple(1115, 256, 42));
+}
+
+TEST_CASE("lenses::fan", "[lenses][fan]")
+{
+    struct foo
+    {
+        int value;
+    };
+    struct bar
+    {
+        foo f;
+        int value;
+    };
+
+    auto baz = bar{{42}, 256};
+
+    auto exploded =
+        lenses::fan(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
+
+    baz = over(exploded, baz, [](auto x) {
+        auto [a, b] = x;
+        return std::tuple{b, a};
+    });
+
+    CHECK(view(exploded, baz) == std::tuple(256, 42));
+}
+
+TEST_CASE("lenses::fan use after move edge case", "[lenses][fan]")
+{
+    using std::string;
+
+    struct foo
+    {
+        string value;
+    };
+    struct bar
+    {
+        foo f;
+        string value;
+    };
+
+    auto baz = bar{{"42"}, "256"};
+
+    auto exploded =
+        lenses::fan(attr(&bar::f) | attr(&foo::value), attr(&bar::value));
+
+    baz = over(exploded, std::move(baz), [](auto x) {
+        auto [a, b] = x;
+        return std::tuple{b, a};
+    });
+
+    CHECK(view(exploded, baz) == std::tuple("256", "42"));
+    CHECK(view(exploded, std::move(baz)) == std::tuple("256", "42"));
+}
+
+TEST_CASE("lenses::fan composed with lenses::zip", "[lenses][fan][zip]")
+{
+    struct foo
+    {
+        int value;
+    };
+    struct bar
+    {
+        foo f;
+        int value;
+    };
+
+    auto baz = bar{{42}, 256};
+
+    auto exploded = lenses::fan(attr(&bar::f), attr(&bar::value));
+    auto zipped   = lenses::zip(attr(&foo::value), lager::identity);
+
+    baz = over(exploded | zipped, baz, [](auto x) {
+        auto [a, b] = x;
+        return std::tuple{b, a};
+    });
+
+    CHECK(view(exploded | zipped, baz) == std::tuple(256, 42));
+}
+
+TEST_CASE("lenses::attr multiple", "[lenses][attr][fan]")
+{
+    struct foo
+    {
+        int value;
+    };
+    struct bar
+    {
+        foo f;
+        int value;
+    };
+
+    auto baz = bar{{42}, 256};
+
+    auto exploded = lenses::attr(&bar::f, &bar::value);
+    auto zipped   = lenses::zip(attr(&foo::value), lager::identity);
+
+    baz = over(exploded | zipped, baz, [](auto x) {
+        auto [a, b] = x;
+        return std::tuple{b, a};
+    });
+
+    CHECK(view(exploded | zipped, baz) == std::tuple(256, 42));
+}
+
+auto inline increment = [](auto x) { return x + 1; };
+
+TEST_CASE("lenses::element tuple", "[lenses][element][tuple]")
+{
+    std::tuple<int, int, int> foo{1, 2, 3};
+
+    CHECK(view(element<0>, foo) == 1);
+    CHECK(view(element<1>, foo) == 2);
+    CHECK(view(element<2>, foo) == 3);
+
+    CHECK(view(first, foo) == 1);
+    CHECK(view(second, foo) == 2);
+
+    CHECK(over(element<1>, foo, increment) == std::tuple(1, 3, 3));
+}
+
+TEST_CASE("lenses::element pair", "[lenses][element][pair]")
+{
+    std::pair<int, int> foo{1, 2};
+
+    CHECK(view(element<0>, foo) == 1);
+    CHECK(view(element<1>, foo) == 2);
+
+    CHECK(view(first, foo) == 1);
+    CHECK(view(second, foo) == 2);
+
+    CHECK(over(element<1>, foo, increment) == std::pair(1, 3));
+}
+
+TEST_CASE("lenses::element array", "[lenses][element][array]")
+{
+    std::array<int, 3> foo{1, 2, 3};
+
+    CHECK(view(element<0>, foo) == 1);
+    CHECK(view(element<1>, foo) == 2);
+    CHECK(view(element<2>, foo) == 3);
+
+    CHECK(view(first, foo) == 1);
+    CHECK(view(second, foo) == 2);
+
+    CHECK(over(element<1>, foo, increment) == (std::array{1, 3, 3}));
 }

@@ -1,14 +1,15 @@
 #pragma once
 
-#include <optional>
-#include <type_traits>
-#include <utility>
-
 #include <lager/lenses.hpp>
 #include <lager/util.hpp>
+
 #include <zug/compose.hpp>
 #include <zug/meta/detected.hpp>
 #include <zug/meta/util.hpp>
+
+#include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace lager {
 namespace lenses {

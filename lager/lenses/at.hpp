@@ -1,13 +1,13 @@
 #pragma once
 
-#include <optional>
-#include <stdexcept>
-#include <utility>
+#include <lager/util.hpp>
 
 #include <zug/compose.hpp>
 #include <zug/meta/detected.hpp>
 
-#include <lager/util.hpp>
+#include <optional>
+#include <stdexcept>
+#include <utility>
 
 namespace lager {
 namespace lenses {
