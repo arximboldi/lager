@@ -4,6 +4,11 @@
 
 #include <QQuickItem>
 
+#include <functional>
+#include <stdexcept>
+#include <thread>
+#include <utility>
+
 namespace lager {
 
 class event_loop_quick_item : public QQuickItem

@@ -12,7 +12,10 @@
 
 #pragma once
 
+#include <functional>
+#include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace lager {
 

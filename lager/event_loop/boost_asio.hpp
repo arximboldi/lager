@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <thread>
+#include <utility>
 
 namespace lager {
 

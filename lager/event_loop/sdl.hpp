@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <atomic>
 #include <functional>
+#include <stdexcept>
+#include <utility>
 
 #include <cassert>
 #include <cstddef>

@@ -17,6 +17,7 @@
 #include <QtConcurrent>
 
 #include <functional>
+#include <stdexcept>
 #include <utility>
 
 namespace lager {
@@ -24,11 +25,10 @@ namespace lager {
 struct with_qt_event_loop
 {
     std::reference_wrapper<QObject> obj;
-    std::reference_wrapper<QThreadPool> thread_pool = *QThreadPool::globalInstance();
+    std::reference_wrapper<QThreadPool> thread_pool =
+        *QThreadPool::globalInstance();
 
-    ~with_qt_event_loop() {
-        thread_pool.get().waitForDone();
-    }
+    ~with_qt_event_loop() { thread_pool.get().waitForDone(); }
 
     template <typename Fn>
     void async(Fn&& fn)
