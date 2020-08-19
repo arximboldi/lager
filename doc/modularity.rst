@@ -323,10 +323,11 @@ the effects returned by the underlying reducer might need.
               return {m, lager::noop};
           },
           [&] (DocumentAction a) {
-              auto doc = static_cast<DocumentModel>(m);
               auto eff = lager::effect<DocumentAction, DocumentDeps>{lager::noop};
-              lager::invoke_reducer<DocumentDeps>(r, doc, a, [&](auto e) {
-                  eff = e;
+              auto doc = lager::invoke_reducer<DocumentDeps>(
+                  r, static_cast<DocumentModel>(m), a,
+                  [&](auto e) {
+                      eff = e;
               });
               m.position = m.history.size();
               m.history = m.history.take(m.position).push_back(doc);
