@@ -136,7 +136,7 @@ struct debugger
                     return {m, noop};
                 },
                 [&](redo_action) -> result_t {
-                    if (m.cursor < m.history.size())
+                    if ((m.cursor) < m.history.size())
                         ++m.cursor;
                     return {m, noop};
                 },
