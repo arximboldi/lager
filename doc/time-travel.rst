@@ -37,6 +37,10 @@ You can enable the debugger by using the
 
 .. code-block:: c++
 
+   #include <lager/debug/http_server.hpp>
+   #include <lager/debug/debugger.hpp>
+   #include <lager/store.hpp>
+
    auto debugger = lager::http_debug_server{argc, argv, 8080};
    auto store    = lager::make_store<...>(
        ...,

@@ -86,6 +86,8 @@ cation.
 
 .. code-block:: c++
 
+   #include <lager/context.hpp>
+
    using action = std::variant<todos_action, todos_command>
 
    using todos_result = std::pair<todos_model, lager::effect<action>>;
