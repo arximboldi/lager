@@ -75,7 +75,7 @@ reducers:
            [=](toggle_light_action) {
                return room{ ! r.light_on };
            }
-       });
+       }, a);
    }
 
    struct house
@@ -105,11 +105,13 @@ reducers:
                // For simplicity we do not add move semantics
                // here, but you should do in your own program
                h.rooms = h.rooms.set(a.id, new_room);
+               return h;
            },
            [&](add_room_action a) {
                h.rooms = h.rooms.set(a.id, a.r);
+               return h;
            }
-       });
+       }, a);
    }
 
 Create the single source of truth
@@ -140,6 +142,8 @@ Here, we will use ``lager::store`` as an example.
    auto store = lager::make_store<house_action>(
        initial_house,
        &update_house,
+       // Be sure to use a suitable event loop
+       // that integrates into the rest of your program
        lager::with_manual_event_loop{});
 
 
@@ -156,13 +160,12 @@ for that:
    #include <lager/lenses/attr.hpp>
    #include <lager/lenses/optional.hpp>
 
-   // The result is lager::reader<room>
-   auto kitchen_cursor = store
+   lager::reader<room> kitchen_cursor = store
        .zoom(lager::lenses::attr(&house::rooms))
        .zoom(lager::lenses::at("kitchen"))
        // maybe you want to use some other
        // approach to deal with this std::optional
-       .zoom(lager::lenses::or_default());
+       .zoom(lager::lenses::or_default);
 
    // You can now query for the state:
    auto kitchen = kitchen_cursor.get();
@@ -191,11 +194,91 @@ room model and watch it for changes:
        room_component(lager::reader<room> r, widget *parent = 0)
            : widget(parent)
            , r(r)
-           , light_on(r.zoom(lager::lenses::attr(&room::light_on)))
+           , light_on(r[&room::light_on])
            , l(light_state(light_on.get()))
        {
            lager::watch(light_on, [&] (bool on) {
                l.set_text(light_state(on));
+           });
+       }
+   };
+
+Dispatching actions
+~~~~~~~~~~~~~~~~~~~
+
+Of course, we do not want the GUI to only display
+the model. Instead, we would like to allow it make changes
+to our model. Here, since we are using ``lager::store`` as
+our single source of truth, we benefit from making changes
+through actions.
+
+We dispatch actions through contexts. Here, ``lager::store``
+is a context. We may directly dispatch actions via the store:
+
+.. code-block:: c++
+
+   store.dispatch(change_room_action{"kitchen",
+                  toogle_light_action{}});
+
+But for the ``room_component`` we have here, it may not be a
+great idea, because it breaks modularity. If we were to
+dispatch an action via ``store``, the room component will
+need to know the room's id. In other words, it has to know
+something about the house, rather than only know about
+the room itself. We would like to have a context that can
+dispatch a ``room_action``, instead of a ``house_action``:
+
+.. code-block:: c++
+
+   ctx.dispatch(toogle_light_action{}); // what should ctx be?
+
+Fortunately, lager provides a context conversion constructor
+that can be used here, and the only thing we would like to do
+is to provide a conversion function that converts a
+``room_action`` into a ``house_action``:
+
+.. code-block:: c++
+
+   std::string room_id = "kitchen";
+   auto ctx = lager::context<room_action>(
+       store,
+       [=](room_action a) -> house_action {
+           return change_room_action{ room_id, a };
+       });
+
+And now we can add a toggle button to our room component
+to control the light:
+
+.. code-block:: c++
+
+   class room_component : public widget
+   {
+       lager::reader<room> r;
+       lager::reader<bool> light_on;
+       lager::context<room_action> ctx;
+       label l;
+       button b;
+
+       static std::string light_state(bool on) {
+           return on ? "light is on" : "light is off";
+       }
+   public:
+       room_component(lager::reader<room> r,
+                      lager::context<room_action> ctx,
+                      widget *parent = 0)
+           : widget(parent)
+           , r(r)
+           , light_on(r.zoom(lager::lenses::attr(&room::light_on)))
+           , ctx(ctx)
+           , l(light_state(light_on.get()))
+           , b("Toogle light")
+       {
+           lager::watch(light_on, [&](bool on) {
+               l.set_text(light_state(on));
+           });
+
+           b.clicked.connect([ctx=this->ctx]() {
+               ctx.dispatch(toogle_light_action{});
            });
        }
    };
