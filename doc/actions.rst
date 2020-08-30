@@ -35,9 +35,9 @@ information needed to perform the operation:
 .. _todo-actions:
 .. code-block:: c++
 
-   struct add_todo { std::string content; }
+   struct add_todo { std::string content; };
    struct remove_todo { std::size_t index; };
-   struct toggle_todo { std::size_t index; }
+   struct toggle_todo { std::size_t index; };
 
 These actions may act on a :ref:`model` like this:
 
