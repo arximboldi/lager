@@ -22,8 +22,6 @@ and (for some types of cursors) replace the model with another version:
    model_type cursor_type<model_type>::get();
    void lager::watch(cursor_type<model_type> cursor,
                      std::function<void(model_type)> callback);
-   auto cursor_type<model_type>::zoom(lens<model_type, model_part>)
-       -> maybe_other_cursor_type<model_part>;
    // for some types only
    void cursor_type<model_type>::set(model_type new_model);
 
@@ -47,6 +45,149 @@ Lager provides four types of cursors:
 ``lager::reader`` and ``lager::cursor`` zoom into themselves, while
 ``lager::state`` zooms into ``lager::cursor`` and ``lager::store``
 zooms into ``lager::reader``.
+
+Toplevel cursors
+----------------
+
+Toplevel cursors are ``lager::state`` or ``lager::store``. They are
+where all other cursors come from. To create a toplevel cursor, use:
+
+.. code-block:: c++
+
+   #include <lager/state.hpp>
+
+   // state defaults to transactional_tag, which means you
+   // need to call `lager::commit(state);` if you want
+   // the values set in one cursor got propagated to
+   // other cursors.
+   auto state = lager::make_state(model);
+   // You will not need to call `lager::commit(state);`
+   // if you use automatic_tag{};
+   // the values will automatically be propagated to
+   // other cursors.
+   auto state = lager::make_state(model, lager::automatic_tag{});
+
+or:
+
+.. code-block:: c++
+
+   #include <lager/store.hpp>
+
+   auto store = lager::make_store<action>(
+       model, update, event_loop, enhancers...);
+
+Zooming with lenses
+-------------------
+
+One can use ``zoom()`` method to zoom a cursor into another:
+
+.. code-block:: c++
+
+   auto cursor_type<model_type>::zoom(lens<model_type, model_part>)
+       -> maybe_other_cursor_type<model_part>;
+
+For example:
+
+.. code-block:: c++
+
+   #include <lager/state.hpp>
+
+   using map_t = immer::map<std::string, int>;
+   using arr_t = immer::array<std::string>;
+   struct whole {
+       part p;
+       map_t m;
+       arr_t a;
+   };
+
+   lager::state<whole> state = lager::make_state(whole{});
+   lager::cursor<part> part_cursor =
+       state.zoom(lager::lenses::attr(&whole::p));
+   lager::cursor<map_t> map_cursor =
+       state.zoom(lager::lenses::attr(&whole::m));
+   lager::cursor<int> int_cursor =
+       map_cursor.zoom(lager::lenses::at("foo"))
+       .zoom(lager::lenses::or_default);
+   lager::cursor<std::string> str_cursor =
+       state.zoom(lager::lenses::attr(&whole::a))
+       .zoom(lager::lenses::at(0))
+       .zoom(lager::lenses::value_or("no value"));
+
+For convenience, one can also use the ``operator[]``, which
+takes a lens, key (index) or pointer to attribute. The latter
+two will be converted into a lens using ``lager::lenses::at``
+and ``lager::lenses::attr`` automatically. The example above
+can also be written as:
+
+.. code-block:: c++
+
+   lager::cursor<part> part_cursor =
+       state[&whole::p];
+   lager::cursor<map_t> map_cursor =
+       state[&whole::m];
+   lager::cursor<int> int_cursor =
+       map_cursor["foo"][lager::lenses::or_default];
+   lager::cursor<std::string> str_cursor =
+       state[&whole::a][0][lager::lenses::value_or("no value")];
+
+Transformations
+---------------
+
+The ``xform()`` function is another way to transform the cursor.
+For read-only cursors (``lager::store`` and ``lager::reader``),
+it takes one transducer; for read-write cursors (``lager::state``
+and ``lager::cursor``), it can take two to transform into another
+read-write cursor, or take one to transform into a read-only
+cursor.
+
+.. code-block:: c++
+
+   lager::reader<std::string> str = ...;
+   // One-way transformation for read-only cursors
+   lager::reader<int> str_length = str.xform(
+       zug::map([](std::string x) { return x.size(); }));
+
+   lager::cursor<std::string> str = ...;
+
+   // Two-way transformation for read-write cursors
+   lager::cursor<int> num = str.xform(
+       zug::map([](std::string x) { return std::stoi(x); }),
+       zug::map([](int x) { return std::to_string(x); })
+   );
+
+   // One-way transformation to make a read-only cursor
+   lager::reader<int> num2 = num.xform(
+       zug::map([](int x) { return 2*x; }));
+
+   str.set("123");
+   // You need `lager::commit(state);`
+   // if you use transactional_tag
+   std::cout << num.get() << std::endl; // 123
+   num.set(42);
+   std::cout << str.get() << std::endl; // 42
+   std::cout << num2.get() << std::endl; // 84
+
+Combinations
+------------
+
+You can combine more than one cursors into one using ``with()``.
+The resulted cursor will be of a ``std::tuple`` containing
+all the value types in the original cursors:
+
+.. code-block:: c++
+
+   #include <lager/with.hpp>
+
+   lager::cursor<int> num = ...;
+   lager::cursor<std::string> str = ...;
+   lager::cursor<std::tuple<int, std::string>> dual =
+       lager::with(num, str);
+
+   // If any of the cursors passed into with() are read-only,
+   // it will result in a read-only cursor.
+   lager::reader<std::string> str_ro = ...;
+   lager::reader<std::tuple<int, std::string>> dual_ro =
+       lager::with(num, str_ro);
 
 .. _using-cursors:
 
