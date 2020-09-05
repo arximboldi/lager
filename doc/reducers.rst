@@ -123,6 +123,8 @@ Lager application:
 
 .. code-block:: c++
 
+   #include <lager/util.hpp>
+
    struct locked {};
    struct unlocked {};
    using model = std::variant<locked, unlocked>;

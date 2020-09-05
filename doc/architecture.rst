@@ -137,6 +137,8 @@ like this:
 .. _pattern-match-example:
 .. code-block:: c++
 
+   #include <lager/util.hpp>
+
    model update(model c, action action)
    {
        return std::visit(lager::visitor{
@@ -325,6 +327,9 @@ With these components, we can finally implement the ``main()``
 procedure of our application:
 
 .. code-block:: c++
+
+   #include <lager/store.hpp>
+   #include <lager/event_loop/manual.hpp>
 
    int main()
    {
