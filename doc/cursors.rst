@@ -3,9 +3,14 @@
 Cursors
 =======
 
-Built upon :ref:`lenses`, cursors are a great way to bridge
-value-oriented designs and object-oriented systems. It also allows
-modularity.
+Built upon `transducers`_ and :ref:`lenses`,
+cursors are a great way to bridge
+value-oriented designs and object-oriented systems. It enables
+modularity by allowing one to write components that reference
+mutable and observable data abstracting away the shape of the
+data storage.
+
+.. _transducers: https://github.com/arximboldi/zug
 
 .. _types-of-cursors:
 
@@ -13,68 +18,166 @@ Types of cursors
 ----------------
 
 Cursors are wrappers for :ref:`models <model>` where you can get the current
-version of a model, watch it for changes, zoom into other cursors
+version of a model, watch it for changes, transform into other cursors
 and (for some types of cursors) replace the model with another version:
 
-.. code-block:: c++
+There are many types of cursors in Lager.
 
-   // Call signatures of cursors
-   model_type cursor_type<model_type>::get();
-   void lager::watch(cursor_type<model_type> cursor,
-                     std::function<void(model_type)> callback);
-   // for some types only
-   void cursor_type<model_type>::set(model_type new_model);
+Based on their interfaces, one can divide cursors into
+read-only cursors, write-only cursors, and read-write cursors.
 
-Lager provides four types of cursors:
+Based on their source of information, one can divide cursors into root
+cursors which directly holds the model, and derived cursors which does
+not directly hold the model.
 
-* ``lager::reader`` provides ``get()`` and ``watch()`` functionalities.
+Interfaces
+~~~~~~~~~~
 
-* ``lager::cursor`` provides all the functionalities ``lager::reader``
-  provides, and also ``set()`` functionality.
+* ``lager::reader`` is the read-only cursor interface in lager. It
+  provides ``get()`` and ``watch()`` functionalities:
 
-* ``lager::state`` provides all the functionalities ``lager::cursor``
-  provides. It also serves as the single source of truth by directly
-  containing the model.
+  .. code-block:: c++
 
-* ``lager::store`` provides all the functionalities ``lager::reader``
-  provides. It also serves as the single source of truth by directly
-  containing the model. Unlike ``lager::cursor`` and ``lager::state``,
-  it makes changes to models by dispatching :ref:`actions`, instead of
-  the ``set()`` function.
+     #include <lager/reader.hpp>
 
-``lager::reader`` and ``lager::cursor`` zoom into themselves, while
-``lager::state`` zooms into ``lager::cursor`` and ``lager::store``
-zooms into ``lager::reader``.
+     // pseudo-code for the call signatures
+     model_type lager::reader<model_type>::get();
+     void lager::watch(lager::reader<model_type> cursor,
+                       std::function<void(model_type)> callback);
 
-Toplevel cursors
-----------------
+  ``get()`` will return the value of the model in the cursor.
+  ``watch()`` will make the cursor call ``callback`` every time
+  the content in it has changed (checked using ``operator==()``).
 
-Toplevel cursors are ``lager::state`` or ``lager::store``. They are
-where all other cursors come from. To create a toplevel cursor, use:
+* ``lager::writer`` is the write-only cursor interface in lager.
+  It provides the ``set()`` and ``update()`` functionalities:
 
-.. code-block:: c++
+  .. code-block:: c++
 
-   #include <lager/state.hpp>
+     #include <lager/writer.hpp>
 
-   // state defaults to transactional_tag, which means you
-   // need to call `lager::commit(state);` if you want
-   // the values set in one cursor got propagated to
-   // other cursors.
-   auto state = lager::make_state(model);
-   // You will not need to call `lager::commit(state);`
-   // if you use automatic_tag{};
-   // the values will automatically be propagated to
-   // other cursors.
-   auto state = lager::make_state(model, lager::automatic_tag{});
+     // pseudo-code for the call signatures
+     void lager::writer<model_type>::set(model_type new_model);
+     void lager::writer<model_type>::update(
+         std::function<model_type(model_type)> callback);
 
-or:
+  ``set()`` will replace the value of the model in the cursor.
+  ``update()`` will call ``callback`` with the current value
+  of the model in the cursor, and replace the value with what
+  ``callback`` returns.
 
-.. code-block:: c++
+* ``lager::cursor`` is the read-write cursor interface in lager.
+  It inherits from ``lager::reader`` and ``lager::writer``, and
+  has the functionalities of both. The ``lager::cursor`` class
+  is can be made available by:
 
-   #include <lager/store.hpp>
+  .. code-block:: c++
 
-   auto store = lager::make_store<action>(
-       model, update, event_loop, enhancers...);
+     #include <lager/cursor.hpp>
+
+Root cursors
+~~~~~~~~~~~~
+
+There are four root cursors in lager. All these cursors can serve
+as the "single source of truth" for other cursors.
+
+* ``lager::state`` is a subclass of ``lager::cursor``.
+  One can create a ``lager::state`` by:
+
+  .. code-block:: c++
+
+     #include <lager/state.hpp>
+
+     auto state = lager::make_state(model_value);
+     // or
+     auto state = lager::make_state(model_value, tag_value);
+
+  ``tag_value`` is a instance of one of ``lager::transactional_tag``
+  and ``lager::automatic_tag``. If it is not provided,
+  ``transactional_tag`` is used.
+
+  The difference between these two are when the value in the
+  state gets propagated (i.e. becomes accessible via ``get()``).
+  ``transactional_tag`` requires a ``lager::commit()`` call
+  before the value gets propagated, while ``automatic_tag``
+  does not:
+
+  .. code-block:: c++
+
+     using model = int;
+
+     auto state = lager::make_state(model{});
+     std::cout << state.get() << std::endl; // 0
+     state.set(1);
+     std::cout << state.get() << std::endl; // 0
+     lager::commit(state);
+     std::cout << state.get() << std::endl; // 1
+
+     auto state2 = lager::make_state(model{}, lager::automatic_tag{});
+     state2.set(2);
+     std::cout << state2.get() << std::endl; // 2
+
+* ``lager::store`` is a subclass of ``lager::reader``.
+  It makes changes to models by dispatching :ref:`actions`, instead of
+  the ``set()`` function. One can create a ``lager::store`` by the
+  following code. For more information, see :ref:`store`.
+
+  .. code-block:: c++
+
+     #include <lager/store.hpp>
+
+     auto store = lager::make_store<action>(
+         model, update, event_loop, enhancers...);
+
+* ``lager::sensor`` is a subclass of ``lager::reader``.
+  It takes a function and use its result as the value of
+  the underlying model.
+
+  .. code-block:: c++
+
+     #include <lager/sensor.hpp>
+
+     int foo = 5;
+     auto func = [&] { return foo; };
+
+     auto sensor = lager::make_sensor(func);
+
+  One can make the sensor re-evaluate the function and update
+  the value inside it. The re-evaluation only happens when
+  ``lager::commit()`` is called on the sensor.
+
+  .. code-block:: c++
+
+     #include <lager/commit.hpp>
+
+     std::cout << sensor.get() << std::endl; // 5
+     foo = 8;
+     std::cout << sensor.get() << std::endl; // 5
+     lager::commit(sensor);
+     std::cout << sensor.get() << std::endl; // 8
+
+* ``lager::constant`` is a subclass of ``lager::reader``.
+  It takes a value and use it as the value of the underlying
+  model. The value cannot be changed later.
+
+  .. code-block:: c++
+
+     #include <lager/constant.hpp>
+
+     int foo = 5;
+     auto constant = lager::make_constant(5);
+
+     // Always prints 5, as long as `constant` is not re-assigned
+     std::cout << constant.get() << std::endl;
+
+Derived cursors
+~~~~~~~~~~~~~~~
+
+Derived cursors are all cursors that are not root cursors. They
+are obtained by transforming other cursors using the methods
+described below.
+
+.. _zooming-with-lenses:
 
 Zooming with lenses
 -------------------
@@ -130,15 +233,19 @@ can also be written as:
    lager::cursor<std::string> str_cursor =
        state[&whole::a][0][lager::lenses::value_or("no value")];
 
+.. _transformations:
+
 Transformations
 ---------------
 
 The ``xform()`` function is another way to transform the cursor.
-For read-only cursors (``lager::store`` and ``lager::reader``),
-it takes one transducer; for read-write cursors (``lager::state``
+For read-only cursors (``lager::reader``), it takes one transducer
+(see `zug`_ for more information); for writable cursors (``lager::writer``
 and ``lager::cursor``), it can take two to transform into another
-read-write cursor, or take one to transform into a read-only
+writable cursor, or take one to transform into a read-only
 cursor.
+
+.. _zug: https://github.com/arximboldi/zug
 
 .. code-block:: c++
 
@@ -149,7 +256,7 @@ cursor.
 
    lager::cursor<std::string> str = ...;
 
-   // Two-way transformation for read-write cursors
+   // Two-way transformation for writable cursors
    lager::cursor<int> num = str.xform(
        zug::map([](std::string x) { return std::stoi(x); }),
        zug::map([](int x) { return std::to_string(x); })
@@ -166,6 +273,8 @@ cursor.
    num.set(42);
    std::cout << str.get() << std::endl; // 42
    std::cout << num2.get() << std::endl; // 84
+
+.. _combinations:
 
 Combinations
 ------------
