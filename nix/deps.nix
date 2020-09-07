@@ -6,12 +6,12 @@ rec {
   libhttpserver = stdenv.mkDerivation rec {
     name = "libhttpserver-${version}";
     version = "git-${commit}";
-    commit = "04a23c871b5358e18dd76a220ac715817934eaa9";
+    commit = "f4caf637090b5ff39bfc146b0ecd633f670c3697";
     src = fetchFromGitHub {
       owner = "etr";
       repo = "libhttpserver";
       rev = commit;
-      sha256 = "0ild7kvq5x960yzlx3hzr7qkgdz80hx4h2xkjl9ycjnsp2hblnf6";
+      sha256 = "0cx928sjnhgg008pvg7n8pqk93bm83gz4a8wpz3dq7356j9qqs1m";
     };
     propagatedBuildInputs = [ gnutls libmicrohttpd ] ++ gnutls.buildInputs;
     nativeBuildInputs = [ autoreconfHook ];
