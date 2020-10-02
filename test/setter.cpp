@@ -21,7 +21,8 @@ TEST_CASE("combine setter with store")
 {
     auto store = lager::make_store<int, lager::transactional_tag>(
         0, [](int s, int a) { return a; }, lager::with_manual_event_loop{});
-    auto cursor = lager::setter<int>(store, [&](int x) { store.dispatch(x); });
+    auto cursor =
+        store.xform(zug::identity).setter([&](int x) { store.dispatch(x); });
 
     CHECK(cursor.get() == 0);
 
