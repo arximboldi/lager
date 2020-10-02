@@ -54,6 +54,12 @@ struct reader_mixin
         return with(deriv_()).zoom(std::forward<Lens>(l));
     }
 
+    template <typename FnT>
+    auto setter(FnT&& fn) const
+    {
+        return with_setter(deriv_(), std::forward<FnT>(fn));
+    }
+
     const DerivT& make() const& { return static_cast<const DerivT&>(*this); }
     DerivT&& make() && { return static_cast<DerivT&&>(*this); }
 

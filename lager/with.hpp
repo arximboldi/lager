@@ -160,6 +160,12 @@ public:
         return cursor_t{node};
     }
 
+    template <typename FnT>
+    auto setter(FnT&& fn) &&
+    {
+        return std::move(*this).make().setter(std::forward<FnT>(fn));
+    }
+
     auto make_node_() &&
     {
         using cursor_t = typename Deriv::template result_t<cursor_node<int>>;
