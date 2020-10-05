@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <lager/lenses.hpp>
 #include <lager/lenses/attr.hpp>
 
