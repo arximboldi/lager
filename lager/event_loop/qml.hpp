@@ -15,13 +15,42 @@ class event_loop_quick_item : public QQuickItem
 {
     lager::queue_event_loop queue_;
     std::thread::id this_id_ = std::this_thread::get_id();
+    bool polished_           = false;
 
 public:
     event_loop_quick_item(QQuickItem* parent = nullptr)
         : QQuickItem{parent}
     {}
 
-    void updatePolish() override { queue_.step(); }
+    virtual void step() { queue_.step(); }
+
+    void updatePolish() override
+    {
+        QQuickItem::updatePolish();
+        if (!polished_) {
+            polished_ = true;
+            step();
+            update();
+        }
+        QCoreApplication::postEvent(this, new QEvent{QEvent::PolishRequest});
+    }
+
+    QSGNode* updatePaintNode(QSGNode*, UpdatePaintNodeData*) override
+    {
+        polished_ = false;
+        return nullptr;
+    }
+
+    bool event(QEvent* event) override
+    {
+        switch (event->type()) {
+        case QEvent::PolishRequest:
+            polish();
+            return true;
+        default:
+            return QQuickItem::event(event);
+        }
+    }
 
     template <typename Fn>
     void post(Fn&& fn)
