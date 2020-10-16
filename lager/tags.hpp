@@ -10,6 +10,8 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#pragma once
+
 namespace lager {
 
 struct transactional_tag
