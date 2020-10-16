@@ -54,10 +54,10 @@ struct reader_mixin
         return with(deriv_()).zoom(std::forward<Lens>(l));
     }
 
-    template <typename FnT>
+    template <typename TagT = transactional_tag, typename FnT>
     auto setter(FnT&& fn) const
     {
-        return with_setter(deriv_(), std::forward<FnT>(fn));
+        return with_setter(deriv_(), std::forward<FnT>(fn), TagT{});
     }
 
     const DerivT& make() const& { return static_cast<const DerivT&>(*this); }

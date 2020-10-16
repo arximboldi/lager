@@ -16,6 +16,8 @@
 #include <lager/detail/merge_nodes.hpp>
 #include <lager/detail/xform_nodes.hpp>
 
+#include <lager/tags.hpp>
+
 #include <zug/transducer/map.hpp>
 
 namespace lager {
@@ -160,10 +162,11 @@ public:
         return cursor_t{node};
     }
 
-    template <typename FnT>
+    template <typename TagT = transactional_tag, typename FnT>
     auto setter(FnT&& fn) &&
     {
-        return std::move(*this).make().setter(std::forward<FnT>(fn));
+        return std::move(*this).make().template setter<TagT>(
+            std::forward<FnT>(fn));
     }
 
     auto make_node_() &&
