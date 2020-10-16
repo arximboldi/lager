@@ -41,3 +41,30 @@ TEST_CASE("combine setter with store")
     CHECK(cursor.get() == 5);
     CHECK(store.get() == 5);
 }
+
+TEST_CASE("combine automatic setter with store")
+{
+    auto store = lager::make_store<int, lager::transactional_tag>(
+        0, [](int s, int a) { return a; }, lager::with_manual_event_loop{});
+    auto cursor =
+        store.xform(zug::identity).setter<lager::automatic_tag>([&](int x) {
+            store.dispatch(x);
+        });
+
+    CHECK(cursor.get() == 0);
+
+    store.dispatch(42);
+    CHECK(cursor.get() == 0);
+
+    lager::commit(store);
+    CHECK(store.get() == 42);
+    CHECK(cursor.get() == 42);
+
+    cursor.set(5);
+    CHECK(cursor.get() == 5);
+    CHECK(store.get() == 42);
+
+    lager::commit(store);
+    CHECK(cursor.get() == 5);
+    CHECK(store.get() == 5);
+}
