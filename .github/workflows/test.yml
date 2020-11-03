@@ -1,0 +1,14 @@
+name: learn-github-actions
+on: [push]
+jobs:
+  make-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v11
+      - uses: workflow/nix-shell-action@v1
+        with:
+          script: |
+            mkdir build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Debug
+            make check
