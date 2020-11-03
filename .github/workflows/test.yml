@@ -6,9 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v11
-      - uses: workflow/nix-shell-action@v1
-        with:
-          script: |
+      - run: |
+          nix-shell --run "set -e;
             mkdir build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=Debug
             make check
+          "
