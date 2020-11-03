@@ -8,9 +8,9 @@ jobs:
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - run: |
-          nix-shell --run "set -e;
+      - uses: workflow/nix-shell-action@v1
+        with:
+          script: |
             mkdir build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=Debug
             make check
-          "
