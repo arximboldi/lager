@@ -12,9 +12,7 @@ jobs:
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - run: |
-          nix-shell --run "set -e;
-            mkdir build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }}
-            make check
-          "
+      - run: mkdir build
+      - run: nix-shell --run "echo ok"
+      - run: nix-shell --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }}"
+      - run: nix-shell --run "cd build && make check"
