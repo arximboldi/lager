@@ -3,6 +3,9 @@ on: [push]
 jobs:
   configure:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v11
@@ -11,7 +14,7 @@ jobs:
       - run: |
           nix-shell --run "set -e;
             mkdir build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Debug
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
           "
   check:
     needs: configure
