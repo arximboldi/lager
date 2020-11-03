@@ -20,15 +20,37 @@ jobs:
       - run: |
           nix-shell --run "set -e;
             mkdir build && cd build
+            cmake ..
+          "
+
+  configure-matrix:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+    steps:
+      - run: |
+          nix-shell --run "set -e;
+            mkdir build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
           "
 
   check:
-    needs: configure
+    needs: configure-matrix
     runs-on: ubuntu-latest
     steps:
       - run: |
           nix-shell --run "set -e;
             cd build
             make check
+          "
+
+  docs:
+    needs: configure
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          nix-shell --run "set -e;
+            make docs
           "
