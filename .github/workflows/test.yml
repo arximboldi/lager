@@ -1,56 +1,20 @@
-name: learn-github-actions
-on: [push]
+name: test
+on: [push, pull_request]
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
+  check:
+    strategy:
+      matrix:
+        type: [Debug, Release]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix-shell --run 'echo ok'
-
-  configure:
-    needs: prepare
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        build-type: [Debug, Release]
-    steps:
       - run: |
           nix-shell --run "set -e;
             mkdir build && cd build
-            cmake ..
-          "
-
-  configure-matrix:
-    needs: prepare
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        build-type: [Debug, Release]
-    steps:
-      - run: |
-          nix-shell --run "set -e;
-            mkdir build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
-          "
-
-  check:
-    needs: configure-matrix
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          nix-shell --run "set -e;
-            cd build
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }}
             make check
-          "
-
-  docs:
-    needs: configure
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          nix-shell --run "set -e;
-            make docs
           "
