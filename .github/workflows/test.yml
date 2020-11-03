@@ -5,14 +5,22 @@ jobs:
     strategy:
       matrix:
         type: [Debug, Release]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+        compiler: [gcc9, clang_10]
+        include:
+          - type: Debug
+            compiler: gcc9
+            coverage: true
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - run: mkdir build
-      - run: nix-shell --run "echo ok"
-      - run: nix-shell --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }}"
-      - run: nix-shell --run "cd build && make check"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "echo ok"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && find . -name \"*.gcno\" | xargs gcov -bcprs ${PWD}"
+        if: ${{ matrix.coverage }}
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash) -x gcov"
+        if: ${{ matrix.coverage }}
