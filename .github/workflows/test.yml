@@ -15,10 +15,10 @@ jobs:
       matrix:
         type: [Debug, Release]
         compiler: [gcc9, clang_10]
-        include:
-          - type: Debug
-            compiler: gcc9
-            coverage: true
+      include:
+        - type: Debug
+          compiler: gcc9
+          coverage: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
