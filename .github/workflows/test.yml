@@ -1,16 +1,23 @@
 name: learn-github-actions
 on: [push]
 jobs:
-  make-check:
+  configure:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - uses: workflow/nix-shell-action@v1
-        with:
-          script: |
+      - run: |
+          nix-shell --run "set -e;
             mkdir build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=Debug
+          "
+  check:
+    needs: configure
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          nix-shell --run "set -e;
             make check
+          "
