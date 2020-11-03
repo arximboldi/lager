@@ -30,7 +30,5 @@ jobs:
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "echo ok"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && find . -name \"*.gcno\" | xargs gcov -bcprs ${PWD}"
-        if: ${{ matrix.coverage }}
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash) -X gcov"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
         if: ${{ matrix.coverage }}
