@@ -15,6 +15,7 @@ jobs:
       matrix:
         type: [Debug, Release]
         compiler: [gcc9, clang_10]
+        coverage: [false]
         include:
           - type: Debug
             compiler: gcc9
