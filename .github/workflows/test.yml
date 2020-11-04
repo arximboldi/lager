@@ -40,7 +40,12 @@ jobs:
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - run: mkdir build
-      - run: nix-shell --run "echo ok"
+      - run: nix-shell --run "mkdir build"
       - run: nix-shell --run "cd build && cmake .."
-      - run: nix-shell --run "cd build && make docs
+      - run: nix-shell --run "cd build && make docs"
+      - uses: shimataro/ssh-key-action@v2
+        # if: github.ref == 'refs/heads/master'
+        with:
+          key: ${{ secrets.SINUSOIDES_SSH_KEY }}
+      - run: nix-shell --run "cd build && make upload-docs"
+        # if: github.ref == 'refs/heads/master'
