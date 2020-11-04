@@ -14,32 +14,6 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-build
 
-  check:
-    strategy:
-      matrix:
-        type: [Debug, Release]
-        compiler: [gcc9]
-        coverage: [false]
-        include:
-          - type: Debug
-            compiler: gcc9
-            coverage: true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v11
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - uses: cachix/cachix-action@v6
-        with:
-          name: arximboldi
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "mkdir build"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
-        if: ${{ matrix.coverage }}
-
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -63,3 +37,35 @@ jobs:
           known_hosts: ${{ secrets.SINUSOIDES_KNOWN_HOSTS }}
       - run: nix-shell --run "cd build && make upload-docs"
         if: github.ref == 'refs/heads/master'
+
+  check:
+    strategy:
+      matrix:
+        type: [Debug, Release]
+        compiler: [gcc9]
+        opts: [[]]
+        include:
+          - type: Debug
+            compiler: gcc9
+            opts: ['coverage']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v11
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v6
+        with:
+          name: arximboldi
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "mkdir build"
+      - name: configure cmake
+        run: |
+          nix-shell --argstr compiler ${{ matrix.compiler }} --run "
+            cd build && cmake .. \
+              -DCMAKE_BUILD_TYPE=${{ matrix.type }} \
+              -DENABLE_COVERAGE=${{ contains(matrix.opts, 'coverage') }}
+          "
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
+        if: ${{ contains(matrix.opts, 'coverage') }}
