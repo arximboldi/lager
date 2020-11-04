@@ -43,11 +43,11 @@ jobs:
       matrix:
         type: [Debug, Release]
         compiler: [gcc9]
-        coverage: [false]
+        opts: [[]]
         include:
           - type: Debug
             compiler: gcc9
-            coverage: true
+            opts: ['coverage']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -59,7 +59,13 @@ jobs:
           name: arximboldi
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "mkdir build"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
+      - name: configure cmake
+        run: |
+          nix-shell --argstr compiler ${{ matrix.compiler }} --run "
+            cd build && cmake .. \
+              -DCMAKE_BUILD_TYPE=${{ matrix.type }} \
+              -DENABLE_COVERAGE=${{ contains(matrix.opts, 'coverage') }}
+          "
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
-        if: ${{ matrix.coverage }}
+        if: ${{ contains(matrix.opts, 'coverage') }}
