@@ -48,5 +48,6 @@ jobs:
         # if: github.ref == 'refs/heads/master'
         with:
           key: ${{ secrets.SINUSOIDES_SSH_KEY }}
+          known_hosts: ${{ secrets.SINUSOIDES_KNOWN_HOSTS }}
       - run: nix-shell --run "cd build && make upload-docs"
         # if: github.ref == 'refs/heads/master'
