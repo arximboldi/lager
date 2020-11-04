@@ -135,7 +135,7 @@ private:
 
         void dispatch(action_t action) override
         {
-            loop.post([this, =] {
+            loop.post([this, action = std::move(action)] {
                 base_t::push_down(invoke_reducer<deps_t>(
                     reducer,
                     base_t::current(),

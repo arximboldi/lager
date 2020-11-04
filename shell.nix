@@ -24,7 +24,7 @@ let
                   then pkgs.${compiler}
                   else stdenv.cc;
   theStdenv     = if compilerPkg.isClang
-                  then clangStdenv
+                  then libcxxStdenv
                   else stdenv;
   qt            = qt5;
   qtver         = qt.qtbase.version;

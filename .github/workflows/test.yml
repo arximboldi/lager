@@ -1,0 +1,53 @@
+name: test
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v11
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: nix-build
+
+  check:
+    strategy:
+      matrix:
+        type: [Debug, Release]
+        compiler: [gcc9]
+        coverage: [false]
+        include:
+          - type: Debug
+            compiler: gcc9
+            coverage: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v11
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "mkdir build"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
+        if: ${{ matrix.coverage }}
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v11
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: nix-shell --run "mkdir build"
+      - run: nix-shell --run "cd build && cmake .."
+      - run: nix-shell --run "cd build && make docs"
+      - uses: shimataro/ssh-key-action@v2
+        if: github.ref == 'refs/heads/master'
+        with:
+          key: ${{ secrets.SINUSOIDES_SSH_KEY }}
+          known_hosts: ${{ secrets.SINUSOIDES_KNOWN_HOSTS }}
+      - run: nix-shell --run "cd build && make upload-docs"
+        if: github.ref == 'refs/heads/master'

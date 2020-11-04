@@ -11,6 +11,7 @@ namespace detail {
 template <typename Whole, typename Part>
 struct lens_i
 {
+    virtual ~lens_i()                                  = default;
     virtual Part view(Whole const&) const              = 0;
     virtual Whole set(Whole const&, Part const&) const = 0;
 };

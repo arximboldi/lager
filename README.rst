@@ -1,6 +1,6 @@
-.. image:: https://travis-ci.org/arximboldi/lager.svg?branch=master
-   :target: https://travis-ci.org/arximboldi/lager
-   :alt: Travis Badge
+.. image:: https://github.com/arximboldi/lager/workflows/test/badge.svg
+   :target: https://github.com/arximboldi/lager/actions?query=workflow%3Atest+branch%3Amaster
+   :alt: Github Actions Badge
 
 .. image:: https://codecov.io/gh/arximboldi/lager/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/arximboldi/lager
