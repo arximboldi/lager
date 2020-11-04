@@ -26,10 +26,9 @@ jobs:
       - uses: cachix/install-nix-action@v11
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - run: mkdir build
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "echo ok"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "mkdir build"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DENABLE_COVERAGE=${{ matrix.coverage }}"
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
         if: ${{ matrix.coverage }}
 
