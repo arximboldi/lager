@@ -45,9 +45,9 @@ jobs:
       - run: nix-shell --run "cd build && cmake .."
       - run: nix-shell --run "cd build && make docs"
       - uses: shimataro/ssh-key-action@v2
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         with:
           key: ${{ secrets.SINUSOIDES_SSH_KEY }}
           known_hosts: ${{ secrets.SINUSOIDES_KNOWN_HOSTS }}
       - run: nix-shell --run "cd build && make upload-docs"
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
