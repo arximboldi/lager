@@ -279,16 +279,25 @@ purposes now:
 
 .. code-block:: c++
 
-    void draw(counter::model prev, counter::model curr)
+    void draw(counter::model curr)
     {
-        std::cout << "last value: " << prev.value << '\n';
         std::cout << "current value: " << curr.value << '\n';
     }
 
-.. tip:: The view function has access to both the last and new value
-         of the application.  This allows the view to decide which
-         parts of the view do need to be updated based on the
-         differences between the old and new models.
+.. tip:: In previous versions of the library, the view function used
+         be provided the previous value of the model too.  This
+         allowed the view to decide which parts of the view do need to
+         be updated based on the differences between the old and new
+         model values.  If this behavior is wanted, it can be
+         simulated by wrapping the view function in a lambda like
+         this.
+
+         .. code-block:: c++
+
+             [prev = store.get()] (auto curr) mutable {
+                 draw(prev, curr);
+                 prev = curr;
+             }
 
 
 Glueing things together
