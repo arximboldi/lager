@@ -40,3 +40,16 @@ TEST_CASE("watch before assign")
     CHECK(value == 4);
     CHECK(c.get() == 4);
 }
+
+TEST_CASE("nudge")
+{
+    auto c      = lager::state<int>(42);
+    auto called = 0;
+    auto value  = -1;
+    c.watch([&](auto x) {
+         ++called;
+         value = x;
+     }).nudge();
+    CHECK(called == 1);
+    CHECK(value == 42);
+}

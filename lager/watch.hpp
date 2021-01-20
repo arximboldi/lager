@@ -82,12 +82,15 @@ public:
     }
 
     template <typename CallbackT>
-    void watch(CallbackT&& callback)
+    auto&& watch(CallbackT&& callback)
     {
         if (base_t::empty() && node_)
             node_->observers().add(*this);
         conns_.push_back(base_t::connect(std::forward<CallbackT>(callback)));
+        return *this;
     }
+
+    void nudge() { base_t::operator()(node()->last()); }
 };
 
 /*!
