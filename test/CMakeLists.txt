@@ -2,6 +2,11 @@
 #  Utils
 #  =====
 
+find_package(Qt5Core)
+find_package(Qt5Concurrent)
+find_package(Qt5Qml)
+find_package(Qt5Quick)
+
 function(lager_target_name_for out_target out_file file)
   get_filename_component(_extension ${_file} EXT)
 
@@ -24,6 +29,14 @@ function(lager_get_qt_libs out_qt_required out_qt_libs target)
     set(${out_qt_required} TRUE PARENT_SCOPE)
     if(${Qt5Core_FOUND} AND ${Qt5Concurrent_FOUND})
       set(${out_qt_libs} PRIVATE Qt5::Core Qt5::Concurrent PARENT_SCOPE)
+    endif()
+  endif()
+
+  string(FIND ${target} "qml" _qml_required)
+  if(${_qml_required} GREATER 0)
+    set(${out_required} TRUE PARENT_SCOPE)
+    if(${Qt5Core_FOUND} AND ${Qt5Quick_FOUND})
+      set(${out_qt_libs} PRIVATE Qt5::Core Qt5::Quick PARENT_SCOPE)
     endif()
   endif()
 endfunction()
