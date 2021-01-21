@@ -34,7 +34,7 @@ struct reader_mixin
 {
     decltype(auto) get() const { return node_()->last(); }
     decltype(auto) operator*() const { return get(); }
-    decltype(auto) operator-> () const { return &get(); }
+    decltype(auto) operator->() const { return &get(); }
 
     template <typename T>
     auto operator[](T&& t) const
@@ -78,6 +78,7 @@ private:
 template <typename NodeT>
 class reader_base
     : public reader_mixin<reader_base<NodeT>>
+    , public xform_mixin<reader_base<NodeT>>
     , public watchable_base<NodeT>
 {
     template <typename T>

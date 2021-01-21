@@ -18,6 +18,7 @@
 
 #include <lager/tags.hpp>
 
+#include <zug/transducer/filter.hpp>
 #include <zug/transducer/map.hpp>
 
 namespace lager {
@@ -65,6 +66,39 @@ auto update(UpdateT&& updater)
         };
     };
 }
+
+/*!
+ * Mixing to get common tranducers applied to `this` via the `xform` method.
+ */
+template <typename Deriv>
+struct xform_mixin
+{
+    template <typename... Args>
+    auto map(Args&&... args) const&
+    {
+        return static_cast<const Deriv&>(*this).xform(
+            zug::map(std::forward<Args>(args))...);
+    }
+    template <typename... Args>
+    auto map(Args&&... args) &&
+    {
+        return static_cast<Deriv&&>(std::move(*this))
+            .xform(zug::map(std::forward<Args>(args))...);
+    }
+
+    template <typename... Args>
+    auto filter(Args&&... args) const&
+    {
+        return static_cast<const Deriv&>(*this).xform(
+            zug::filter(std::forward<Args>(args))...);
+    }
+    template <typename... Args>
+    auto filter(Args&&... args) &&
+    {
+        return static_cast<Deriv&&>(std::move(*this))
+            .xform(zug::filter(std::forward<Args>(args))...);
+    }
+};
 
 //! @}
 
@@ -125,7 +159,7 @@ struct is_reader_base<reader_base<T>> : std::true_type
 {};
 
 template <typename Deriv>
-class with_expr_base
+class with_expr_base : public xform_mixin<Deriv>
 {
     Deriv&& deriv_() { return std::move(static_cast<Deriv&>(*this)); }
 

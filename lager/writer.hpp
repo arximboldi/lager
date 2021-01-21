@@ -75,7 +75,9 @@ private:
 };
 
 template <typename NodeT>
-class writer_base : public writer_mixin<writer_base<NodeT>>
+class writer_base
+    : public writer_mixin<writer_base<NodeT>>
+    , public xform_mixin<writer_base<NodeT>>
 {
     template <typename T>
     friend class writer_base;

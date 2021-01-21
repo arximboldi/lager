@@ -105,11 +105,20 @@ TEST_CASE("xformed, identity two args is zipping")
     CHECK(x.get() == std::make_tuple(42, 13));
 }
 
-TEST_CASE("xformed, one arg mapping")
+TEST_CASE("xformed, one arg mapping, direct")
 {
     auto s = state<int>{42};
-    auto x = s.xform(map([](int a) { return a + 1; })).make();
+    auto x = s.map([](int a) { return a + 1; }).make();
     CHECK(x.get() == 43);
+}
+
+TEST_CASE("xformed, directo composition")
+{
+    auto s = state<int>{42};
+    auto x = s.map([](int a) { return a + 1; })
+                 .map([](int a) { return a * 2; })
+                 .make();
+    CHECK(x.get() == 86);
 }
 
 TEST_CASE("xformed, two arg mapping")
@@ -120,10 +129,25 @@ TEST_CASE("xformed, two arg mapping")
     CHECK(x.get() == 52);
 }
 
+TEST_CASE("xformed, two arg mapping direct")
+{
+    auto s1 = state<int>{42};
+    auto s2 = state<int>{10};
+    auto x  = with(s1, s2).map(std::plus<int>{}).make();
+    CHECK(x.get() == 52);
+}
+
 TEST_CASE("xformed, one arg filter with value")
 {
     auto s = state<int>{42};
     auto x = s.xform(filter([](int a) { return a % 2 == 0; })).make();
+    CHECK(x.get() == 42);
+}
+
+TEST_CASE("xformed, one arg filter with value, direct")
+{
+    auto s = state<int>{42};
+    auto x = s.filter([](int a) { return a % 2 == 0; }).make();
     CHECK(x.get() == 42);
 }
 
@@ -219,6 +243,19 @@ TEST_CASE("xformed, bidirectional")
     auto x  = st.xform(map([](int a) { return a + 2; }),
                       map([](int a) { return a - 2; }))
                  .make();
+    CHECK(2 == x.get());
+
+    x.set(42);
+    commit(st);
+    CHECK(42 == x.get());
+    CHECK(40 == st.get());
+}
+
+TEST_CASE("xformed, bidirectional, direct")
+{
+    auto st = make_state(0);
+    auto x =
+        st.map([](int a) { return a + 2; }, [](int a) { return a - 2; }).make();
     CHECK(2 == x.get());
 
     x.set(42);
