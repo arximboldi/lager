@@ -53,3 +53,16 @@ TEST_CASE("nudge")
     CHECK(called == 1);
     CHECK(value == 42);
 }
+
+TEST_CASE("bind")
+{
+    auto c      = lager::state<int>(42);
+    auto called = 0;
+    auto value  = -1;
+    c.bind([&](auto x) {
+        ++called;
+        value = x;
+    });
+    CHECK(called == 1);
+    CHECK(value == 42);
+}
