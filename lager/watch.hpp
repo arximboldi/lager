@@ -90,6 +90,13 @@ public:
         return *this;
     }
 
+    template <typename CallbackT>
+    auto&& bind(CallbackT&& callback)
+    {
+        callback(node()->last());
+        return watch(std::forward<CallbackT>(callback));
+    }
+
     void nudge() { base_t::operator()(node()->last()); }
 };
 

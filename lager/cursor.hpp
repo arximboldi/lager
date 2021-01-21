@@ -43,6 +43,7 @@ protected:
 template <typename NodeT>
 class cursor_base
     : public cursor_mixin<cursor_base<NodeT>>
+    , public xform_mixin<cursor_base<NodeT>>
     , public watchable_base<NodeT>
 {
     friend class detail::access;
