@@ -365,7 +365,7 @@ It would be nice, however, if we could write instead:
 
    auto store = lager::make_store<doc_action>(
        doc_model,
-       update_doc,
+       lager::with_reducer(update_doc),
        with_history);
 
 We can indeed write such a ``with_history`` construction, my using the

@@ -37,7 +37,7 @@ std::optional<counter::action> intent(char event)
 int main()
 {
     auto store = lager::make_store<counter::action>(
-        counter::model{}, counter::update, lager::with_manual_event_loop{});
+        counter::model{}, lager::with_manual_event_loop{});
     watch(store, draw);
 
     auto event = char{};

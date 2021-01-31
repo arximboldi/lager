@@ -21,7 +21,7 @@ TEST_CASE("basic")
 {
     auto queue = lager::queue_event_loop{};
     auto store = lager::make_store<counter::action>(
-        counter::model{}, counter::update, lager::with_queue_event_loop{queue});
+        counter::model{}, lager::with_queue_event_loop{queue});
 
     store.dispatch(counter::increment_action{});
     CHECK(store->value == 0);

@@ -20,7 +20,9 @@
 TEST_CASE("combine setter with store")
 {
     auto store = lager::make_store<int, lager::transactional_tag>(
-        0, [](int s, int a) { return a; }, lager::with_manual_event_loop{});
+        0,
+        lager::with_manual_event_loop{},
+        lager::with_reducer([](int s, int a) { return a; }));
     auto cursor =
         store.xform(zug::identity).setter([&](int x) { store.dispatch(x); });
 
@@ -45,7 +47,9 @@ TEST_CASE("combine setter with store")
 TEST_CASE("combine automatic setter with store")
 {
     auto store = lager::make_store<int, lager::transactional_tag>(
-        0, [](int s, int a) { return a; }, lager::with_manual_event_loop{});
+        0,
+        lager::with_manual_event_loop{},
+        lager::with_reducer([](int s, int a) { return a; }));
     auto cursor =
         store.xform(zug::identity).setter<lager::automatic_tag>([&](int x) {
             store.dispatch(x);

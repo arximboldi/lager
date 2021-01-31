@@ -71,7 +71,6 @@ int main(int argc, const char** argv)
 #endif
     auto store = lager::make_store<counter::action>(
         counter::model{},
-        counter::update,
         lager::with_boost_asio_event_loop{serv.get_executor()},
         zug::comp(
 #ifdef DEBUGGER

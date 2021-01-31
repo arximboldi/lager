@@ -105,7 +105,7 @@ TEST_CASE("global thread pool")
     int argc = 0;
     QCoreApplication app{argc, nullptr};
     auto store = lager::make_store<loop::action>(
-        loop::model{}, loop::update, lager::with_qt_event_loop{app});
+        loop::model{}, lager::with_qt_event_loop{app});
     run_test(store, store);
 }
 
@@ -115,8 +115,6 @@ TEST_CASE("manualy defined thread pool")
     QCoreApplication app{argc, nullptr};
     QThreadPool thread_pool;
     auto store = lager::make_store<loop::action>(
-        loop::model{},
-        loop::update,
-        lager::with_qt_event_loop{app, thread_pool});
+        loop::model{}, lager::with_qt_event_loop{app, thread_pool});
     run_test(store, store);
 }

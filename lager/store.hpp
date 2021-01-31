@@ -195,6 +195,47 @@ auto with_deps(Args&&... args)
     };
 }
 
+/*!
+ * Replaces the reducer to be used in the store.
+ *
+ * @param reducer
+ *        Pure function that, given the current state of the data-model, and an
+ *        action, returns an updated data-model.  It can have one  one of these
+ *        two signatures:
+ *          1. `(Model, Action) -> Model`
+ *          2. `(Model, Action) -> pair<Model, effect<Model, Action>>`
+ */
+template <typename Reducer>
+auto with_reducer(Reducer&& reducer)
+{
+    return [reducer](auto next) {
+        return [reducer, next](auto action,
+                               auto&& model,
+                               auto&& old_reducer,
+                               auto&& loop,
+                               auto&& deps) {
+            return next(action,
+                        LAGER_FWD(model),
+                        reducer,
+                        LAGER_FWD(loop),
+                        LAGER_FWD(deps));
+        };
+    };
+}
+
+/*!
+ * Default reducer that calls `update` on the model.  Normally this is a
+ * function in the namespace of the model.
+ */
+ZUG_INLINE_CONSTEXPR struct default_reducer_t
+{
+    template <typename Model, typename Action>
+    auto operator()(Model&& s, Action&& a) const
+    {
+        return update(LAGER_FWD(s), LAGER_FWD(a));
+    }
+} default_reducer;
+
 //! @defgroup make_store
 //! @{
 
@@ -212,13 +253,6 @@ auto with_deps(Args&&... args)
  *         call for that.
  *
  * @param init Initial value of the data-model.  It should be a value-type.
- *
- * @param reducer
- *        Pure function that, given the current state of the data-model, and an
- *        action, returns an updated data-model.  It can have one  one of these
- *        two signatures:
- *          1. `(Model, Action) -> Model`
- *          2. `(Model, Action) -> pair<Model, effect<Model, Action>>`
  *
  * @param loop
  *        Event loop in which operations can be scheduled.  This allows
@@ -251,13 +285,9 @@ auto with_deps(Args&&... args)
 template <typename Action,
           typename Tag = automatic_tag,
           typename Model,
-          typename ReducerFn,
           typename EventLoop,
           typename... Enhancers>
-auto make_store(Model&& init,
-                ReducerFn&& reducer,
-                EventLoop&& loop,
-                Enhancers&&... enhancers)
+auto make_store(Model&& init, EventLoop&& loop, Enhancers&&... enhancers)
 {
     auto enhancer      = zug::comp(std::forward<Enhancers>(enhancers)...);
     auto store_creator = enhancer([&](auto action,
@@ -277,7 +307,7 @@ auto make_store(Model&& init,
     });
     return store_creator(type_<Action>{},
                          std::forward<Model>(init),
-                         std::forward<ReducerFn>(reducer),
+                         default_reducer,
                          std::forward<EventLoop>(loop),
                          deps<>{});
 }
@@ -285,14 +315,11 @@ auto make_store(Model&& init,
 template <typename Action,
           typename Tag = automatic_tag,
           typename Model,
-          typename ReducerFn,
           typename EventLoop>
-auto make_store(Model&& init, ReducerFn&& reducer, EventLoop&& loop)
+auto make_store(Model&& init, EventLoop&& loop)
 {
-    return make_store<Action, Tag>(std::forward<Model>(init),
-                                   std::forward<ReducerFn>(reducer),
-                                   std::forward<EventLoop>(loop),
-                                   identity);
+    return make_store<Action, Tag>(
+        std::forward<Model>(init), std::forward<EventLoop>(loop), identity);
 }
 
 //! @} group: make_store

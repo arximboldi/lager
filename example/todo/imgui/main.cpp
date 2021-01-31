@@ -157,7 +157,7 @@ int main()
 
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<todo::action>(
-        todo::model{}, todo::update, lager::with_sdl_event_loop{loop});
+        todo::model{}, lager::with_sdl_event_loop{loop});
     auto state = ui_state{};
 
     loop.run(

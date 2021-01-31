@@ -344,7 +344,6 @@ procedure of our application:
    {
        auto store = lager::make_store<counter::action>(
            model{},
-           update,
            lager::with_manual_event_loop{});
        watch(store, draw);
 

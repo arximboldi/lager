@@ -127,7 +127,7 @@ as the "single source of truth" for other cursors.
      #include <lager/store.hpp>
 
      auto store = lager::make_store<action>(
-         model, update, event_loop, enhancers...);
+         model, event_loop, enhancers...);
 
 * ``lager::sensor`` is a subclass of ``lager::reader``.
   It takes a function and use its result as the value of
@@ -346,7 +346,7 @@ reducers:
    using house_action = std::variant<change_room_action,
                                      add_room_action>;
 
-   house update_house(house h, house_action a)
+   house update(house h, house_action a)
    {
        return std::visit(lager::visitor{
            [&](change_room_action a) {
@@ -391,7 +391,6 @@ Here, we will use ``lager::store`` as an example.
 
    auto store = lager::make_store<house_action>(
        initial_house,
-       &update_house,
        // Be sure to use a suitable event loop
        // that integrates into the rest of your program
        lager::with_manual_event_loop{});
