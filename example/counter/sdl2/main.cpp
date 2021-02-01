@@ -94,7 +94,7 @@ int main()
     auto view  = sdl_view{};
     auto loop  = lager::sdl_event_loop{};
     auto store = lager::make_store<counter::action>(
-        counter::model{}, counter::update, lager::with_sdl_event_loop{loop});
+        counter::model{}, lager::with_sdl_event_loop{loop});
 
     watch(store, [&](auto&& val) { draw(view, val); });
     draw(view, store.get());

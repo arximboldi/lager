@@ -21,9 +21,7 @@ TEST_CASE("basic")
 {
     auto queue = lager::safe_queue_event_loop{};
     auto store = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        lager::with_safe_queue_event_loop{queue});
+        counter::model{}, lager::with_safe_queue_event_loop{queue});
 
     store.dispatch(counter::increment_action{});
     CHECK(store->value == 0);
@@ -36,9 +34,7 @@ TEST_CASE("threads")
 {
     auto queue = lager::safe_queue_event_loop{};
     auto store = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        lager::with_safe_queue_event_loop{queue});
+        counter::model{}, lager::with_safe_queue_event_loop{queue});
     auto threads = std::vector<std::thread>{};
 
     for (auto i = 0; i < 100; ++i) {

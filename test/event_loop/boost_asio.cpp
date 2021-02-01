@@ -22,7 +22,6 @@ TEST_CASE("basic")
     auto ctx   = boost::asio::io_context{};
     auto store = lager::make_store<counter::action>(
         counter::model{},
-        counter::update,
         lager::with_boost_asio_event_loop{ctx.get_executor()});
     store.dispatch(counter::increment_action{});
     ctx.run();
@@ -34,9 +33,7 @@ TEST_CASE("strand")
     auto ctx    = boost::asio::io_context{};
     auto strand = boost::asio::io_context::strand{ctx};
     auto store  = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        lager::with_boost_asio_event_loop{strand});
+        counter::model{}, lager::with_boost_asio_event_loop{strand});
     store.dispatch(counter::increment_action{});
     ctx.run();
     CHECK(store->value == 1);
@@ -48,9 +45,7 @@ TEST_CASE("modern strand")
     auto strand = boost::asio::strand<boost::asio::io_context::executor_type>{
         ctx.get_executor()};
     auto store = lager::make_store<counter::action>(
-        counter::model{},
-        counter::update,
-        lager::with_boost_asio_event_loop{strand});
+        counter::model{}, lager::with_boost_asio_event_loop{strand});
     store.dispatch(counter::increment_action{});
     ctx.run();
     CHECK(store->value == 1);

@@ -26,9 +26,7 @@ class TestApp : public lager::event_loop_quick_item
 
     store_t store_ =
         lager::make_store<counter::action, lager::transactional_tag>(
-            counter::model{},
-            counter::update,
-            lager::with_qml_event_loop{*this});
+            counter::model{}, lager::with_qml_event_loop{*this});
 
 public:
     TestApp(QQuickItem* parent = nullptr)

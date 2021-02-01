@@ -151,7 +151,6 @@ int main(int argc, const char** argv)
     auto loop = lager::sdl_event_loop{};
     auto store =
         lager::make_store<autopong::action>(autopong::model{},
-                                            autopong::update,
                                             lager::with_sdl_event_loop{loop},
 #ifdef DEBUGGER
                                             lager::with_debugger(debugger)

@@ -23,7 +23,7 @@ TEST_CASE("automatic")
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
     auto store  = lager::make_store<counter::action>(
-        counter::model{}, counter::update, lager::with_manual_event_loop{});
+        counter::model{}, lager::with_manual_event_loop{});
     watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
@@ -41,7 +41,7 @@ TEST_CASE("basic")
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
     auto store  = lager::make_store<counter::action, lager::transactional_tag>(
-        counter::model{}, counter::update, lager::with_manual_event_loop{});
+        counter::model{}, lager::with_manual_event_loop{});
     watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
@@ -64,12 +64,12 @@ TEST_CASE("effect as a result")
     auto view   = [&](auto model) { viewed = model; };
     auto called = 0;
     auto effect = [&](lager::context<int> ctx) { ++called; };
-    auto store  = lager::make_store<int>(
-        0,
-        [=](int model, int action) {
-            return std::pair{model + action, effect};
-        },
-        lager::with_manual_event_loop{});
+    auto store =
+        lager::make_store<int>(0,
+                               lager::with_manual_event_loop{},
+                               lager::with_reducer([=](int model, int action) {
+                                   return std::pair{model + action, effect};
+                               }));
     watch(store, [&](auto&& v) { view(v); });
 
     store.dispatch(2);
@@ -86,12 +86,12 @@ TEST_CASE("effects see updated world")
         CHECK(store->get() == 2);
         ++called;
     };
-    store = lager::make_store<int>(
-        0,
-        [=](int model, int action) {
-            return std::pair{model + action, effect};
-        },
-        lager::with_manual_event_loop{});
+    store =
+        lager::make_store<int>(0,
+                               lager::with_manual_event_loop{},
+                               lager::with_reducer([=](int model, int action) {
+                                   return std::pair{model + action, effect};
+                               }));
 
     store->dispatch(2);
     CHECK(called == 1);
@@ -103,8 +103,8 @@ TEST_CASE("store type erasure")
     auto viewed = std::optional<counter::model>{std::nullopt};
     auto view   = [&](auto model) { viewed = model; };
     lager::store<counter::action, counter::model> store =
-        lager::make_store<counter::action>(
-            counter::model{}, counter::update, lager::with_manual_event_loop{});
+        lager::make_store<counter::action>(counter::model{},
+                                           lager::with_manual_event_loop{});
     watch(store, [&](auto&& v) { view(v); });
     CHECK(!viewed);
 
@@ -132,7 +132,6 @@ TEST_CASE("with deps enhancer")
     auto f     = services::foo{};
     auto store = lager::make_store<counter::action>(
         counter::model{},
-        counter::update,
         lager::with_manual_event_loop{},
         lager::with_deps(std::ref(f), services::params{"yeah"}));
     f.x = 42;
@@ -166,15 +165,15 @@ TEST_CASE("with deps, type erased, plus effects")
     lager::store<counter::action, counter::model> store =
         lager::make_store<counter::action>(
             counter::model{},
-            [&](auto m, auto act) {
+            lager::with_manual_event_loop{},
+            lager::with_deps(std::ref(f), services::params{"yeah"}),
+            lager::with_reducer([&](auto m, auto act) {
                 return std::make_pair(counter::update(m, act), [&](auto ctx) {
                     effect1(ctx);
                     effect2(ctx);
                     effect3(ctx);
                 });
-            },
-            lager::with_manual_event_loop{},
-            lager::with_deps(std::ref(f), services::params{"yeah"}));
+            }));
 
     f.x = 42;
     store.dispatch(counter::increment_action{});
@@ -212,12 +211,12 @@ TEST_CASE("sequencing multiple effects with deps")
     auto f     = services::foo{};
     auto store = lager::make_store<counter::action>(
         counter::model{},
-        [&](auto m, auto act) {
+        lager::with_manual_event_loop{},
+        lager::with_deps(std::ref(f), services::params{"yeah"}),
+        lager::with_reducer([&](auto m, auto act) {
             return std::make_pair(counter::update(m, act),
                                   lager::sequence(effect1, effect2, effect3));
-        },
-        lager::with_manual_event_loop{},
-        lager::with_deps(std::ref(f), services::params{"yeah"}));
+        }));
 
     f.x = 42;
     store.dispatch(counter::increment_action{});
@@ -283,14 +282,14 @@ TEST_CASE("composing context with converter")
 {
     auto store = lager::make_store<parent2_action>(
         0,
-        [=](int model, parent2_action action) {
+        lager::with_manual_event_loop{},
+        lager::with_reducer([=](int model, parent2_action action) {
             return std::visit(
                 lager::visitor{
                     [](std::pair<int, child1_action> p) { return p.first; },
                     [](auto x) { return 0; }},
                 action);
-        },
-        lager::with_manual_event_loop{});
+        }));
 
     auto ctx1 = lager::context<child1_action>{
         store, [](auto&& act) { return std::make_pair(1, child1_action{}); }};
