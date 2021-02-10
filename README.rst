@@ -69,7 +69,7 @@ For a guided introductory tour with **code samples**, please read the
 * **Counter**, a minimalistic example with multiple UIs (`link
   <https://github.com/arximboldi/lager/tree/master/example/counter>`_).
 * **Autopong**, a basic game using SDL2 (`link
-  <https://github.com/arximboldi/lager/blob/master/example/autopong/main.cpp>`_).
+  <https://github.com/arximboldi/lager/blob/master/example/autopong>`_).
 * **Ewig**, a terminal text editor with undo, asynchronous loading,
   and more (`link <https://github.com/arximboldi/ewig>`_).
 
