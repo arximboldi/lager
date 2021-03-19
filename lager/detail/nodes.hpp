@@ -100,8 +100,8 @@ struct writer_node_base
     virtual void send_up(T&&)      = 0;
 };
 
-template <typename T>
-auto has_changed(T&& a, T&& b) -> decltype(!(a == b))
+template <typename T, typename U>
+auto has_changed(T&& a, U&& b) -> decltype(!(a == b))
 {
     return !(a == b);
 }
