@@ -231,6 +231,7 @@ ZUG_INLINE_CONSTEXPR struct default_reducer_t
 {
     template <typename Model, typename Action>
     auto operator()(Model&& s, Action&& a) const
+        -> decltype(update(LAGER_FWD(s), LAGER_FWD(a)))
     {
         return update(LAGER_FWD(s), LAGER_FWD(a));
     }
