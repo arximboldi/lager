@@ -94,11 +94,11 @@ into the parent state.  For example:
    {
        return std::visit(lager::visitor{
            [&] (foo_action a) {
-               app.foo = update_foo(a);
+               app.foo = update_foo(app.foo, a);
                return app;
            },
            [&] (bar_action a) {
-               app.bar = update_bar(a);
+               app.bar = update_bar(app.bar, a);
                return app;
            },
        }, act);
