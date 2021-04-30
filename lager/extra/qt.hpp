@@ -12,9 +12,11 @@
 
 #pragma once
 
+#ifndef Q_MOC_RUN
 #include <lager/cursor.hpp>
 #include <lager/reader.hpp>
 #include <lager/watch.hpp>
+#endif
 
 namespace lager {
 
