@@ -30,10 +30,10 @@ public:
 
 template <typename SensorFnT>
 class sensor_node
-    : public sensor_node_base<std::decay_t<std::result_of_t<SensorFnT()>>>
+    : public sensor_node_base<std::decay_t<std::invoke_result_t<SensorFnT>>>
 {
     using base_t =
-        sensor_node_base<std::decay_t<std::result_of_t<SensorFnT()>>>;
+        sensor_node_base<std::decay_t<std::invoke_result_t<SensorFnT>>>;
 
 public:
     sensor_node(SensorFnT sensor)
@@ -70,7 +70,7 @@ public:
     template <
         typename Fn,
         std::enable_if_t<
-            std::is_same_v<std::decay_t<std::result_of_t<Fn()>>, value_type>,
+            std::is_same_v<std::decay_t<std::invoke_result_t<Fn>>, value_type>,
             int> = 0>
     sensor(Fn&& fn)
         : base_t{detail::make_sensor_node(std::forward<Fn>(fn))}
@@ -83,7 +83,7 @@ private:
 
 template <typename SensorFnT>
 auto make_sensor(SensorFnT&& fn)
-    -> sensor<std::decay_t<std::result_of_t<SensorFnT()>>>
+    -> sensor<std::decay_t<std::invoke_result_t<SensorFnT>>>
 {
     return std::forward<SensorFnT>(fn);
 }

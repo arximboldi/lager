@@ -172,7 +172,7 @@ struct dispatcher<actions<Actions...>> : std::function<void(Actions)>...
                                   Converter conv)
     {
         auto& other = static_cast<std::function<void(
-            find_convertible_action_t<std::result_of_t<Converter(Action)>,
+            find_convertible_action_t<std::invoke_result_t<Converter, Action>,
                                       As...>)>&>(other_);
         return [conv, other](auto&& act) { other(conv(LAGER_FWD(act))); };
     }
