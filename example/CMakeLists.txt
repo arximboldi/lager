@@ -143,14 +143,18 @@ set(imgui_sources
 if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
   message(STATUS "ImGui found in ${imgui_source_dir}")
 
+  set(extra_emcc_flags $ENV{NIX_CFLAGS_COMPILE})
+  separate_arguments(extra_emcc_flags)
+
   add_custom_target(todo-imgui
-    COMMAND em++ -std=c++1z -I ${CMAKE_SOURCE_DIR} -I ${imgui_source_dir}
+    COMMAND em++ ${extra_emcc_flags}
+      -std=c++1z -I ${CMAKE_SOURCE_DIR}
+      -I ${imgui_source_dir}
       ${imgui_sources}
       ${CMAKE_CURRENT_SOURCE_DIR}/todo/todo.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/todo/imgui/main.cpp
       -s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1
       -s ALLOW_MEMORY_GROWTH=1
-      -Wno-undefined-internal # false positive relted to deduction guides
       --emrun
       --shell-file ${CMAKE_SOURCE_DIR}/resources/emscripten_shell_minimal.html
       -o ${CMAKE_CURRENT_BINARY_DIR}/todo-imgui.html
