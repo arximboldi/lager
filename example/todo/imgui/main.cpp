@@ -165,7 +165,7 @@ int main()
             ImGui_ImplSDL2_ProcessEvent(&ev);
             return ev.type != SDL_QUIT;
         },
-        [&] {
+        [&](auto dt) {
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL2_NewFrame(window);
             ImGui::NewFrame();

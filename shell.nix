@@ -1,10 +1,13 @@
-{ compiler ? "",
-  nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
-    owner  = "NixOS";
-    repo   = "nixpkgs";
-    rev    = "053ad4e0db7241ae6a02394d62750fdc5d64aa9f";
-    sha256 = "11l9sr8zg8j1n5p43zjkqwpj59gn8c84z1kf16icnsbnv2smzqdc";
-  }}:
+{
+  compiler ? "",
+  rev     ? "87645f7222515f604f91b56121f2b9c9ddc90ae8",
+  sha256  ? "1fr3jyf3hjbz3m95yjlfwq7jl4x6jz03894iqz6pqw54pm24q0a6",
+  nixpkgs ? builtins.fetchTarball {
+    name   = "nixpkgs-${rev}";
+    url    = "https://github.com/nixos/nixpkgs/archive/${rev}.tar.gz";
+    sha256 = sha256;
+  },
+}:
 
 with import nixpkgs {};
 
@@ -81,5 +84,6 @@ theStdenv.mkDerivation rec {
     addToSearchPath QT_PLUGIN_PATH ${qt512.qtsvg.bin}/lib/qt-${qtver}/plugins
     export QT_QPA_PLATFORM_PLUGIN_PATH=${qt512.qtbase}/lib/qt-${qtver}/plugins
     export IMGUI_SOURCE_DIR=${deps.imgui}
+    export EM_CACHE=`mktemp -d`
   '';
 }

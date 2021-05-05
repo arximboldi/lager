@@ -74,7 +74,8 @@ struct sdl_event_loop
 
 #if __EMSCRIPTEN__
     std::function<bool(const SDL_Event&)> current_handler;
-    std::function<void()> current_tick;
+    std::function<void(float)> current_tick;
+    unsigned last_ticks = 0;
 
     template <typename Fn1, typename Fn2>
     void run(Fn1&& handler, Fn2&& tick)
@@ -86,8 +87,9 @@ struct sdl_event_loop
         current_tick    = std::forward<Fn2>(tick);
         emscripten_set_main_loop_arg(
             [](void* loop_) {
-                auto loop  = (sdl_event_loop*) loop_;
-                auto event = SDL_Event{};
+                auto loop        = (sdl_event_loop*) loop_;
+                auto event       = SDL_Event{};
+                loop->last_ticks = SDL_GetTicks();
                 while (SDL_PollEvent(&event)) {
                     if (event.type == loop->post_event_type_) {
                         auto fnp = static_cast<event_fn*>(event.user.data1);
@@ -97,7 +99,10 @@ struct sdl_event_loop
                         loop->current_handler(event);
                     }
                 }
-                loop->current_tick();
+                auto ticks = SDL_GetTicks();
+                auto dt    = static_cast<float>(ticks - loop->last_ticks);
+                loop->current_tick(dt);
+                loop->last_ticks = ticks;
             },
             this,
             0,
