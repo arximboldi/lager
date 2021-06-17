@@ -451,6 +451,29 @@ room model and watch it for changes:
            });
        }
    };
+   
+.. note:: A ``lager::watch(reader, ...)`` is bound to the
+   ``reader`` object. It is simply an alias of
+   ``reader.watch(...)``. This means that when the reader
+   object goes out of scope, the watch is disposed. For
+   example:
+
+   .. code-block:: c++
+   
+      void setup_watch() {
+          auto reader = my_store[&my_model::foo];
+
+          lager::watch(reader, [] (auto value) {
+              std::cout << value << std::endl;
+          });
+      }
+
+   Because the reader is freed when ``setup_watch()``
+   returns, the watch is disposed and will never get
+   called. Instead store the reader object in a class
+   member or somewhere else where it lives for at least as
+   long as the watch is necessary.
+
 
 Dispatching actions
 ~~~~~~~~~~~~~~~~~~~
