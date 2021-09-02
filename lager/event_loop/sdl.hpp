@@ -98,7 +98,7 @@ struct sdl_event_loop
     }
 
     template <typename Fn1, typename Fn2>
-    void run(Fn1&& handler, Fn2&& tick)
+    void run(Fn1&& handler, Fn2&& tick, int fps = 0)
     {
         static bool guard = false;
         assert(!guard && "only one instance is allowed!");
@@ -111,7 +111,7 @@ struct sdl_event_loop
                 loop->step();
             },
             this,
-            0,
+            fps,
             true);
     }
 
