@@ -98,7 +98,7 @@ struct sdl_event_loop
     }
 
     template <typename Fn1, typename Fn2>
-    void run(Fn1&& handler, Fn2&& tick, int fps = 0)
+    void run(Fn1&& handler, Fn2&& tick, int fps = 0, bool infinite = true)
     {
         static bool guard = false;
         assert(!guard && "only one instance is allowed!");
@@ -112,26 +112,8 @@ struct sdl_event_loop
             },
             this,
             fps,
-            true);
+            infinite);
     }
-
-    template <typename Fn1, typename Fn2>
-    void run_async(Fn1&& handler, Fn2&& tick)
-    {
-        static bool guard = false;
-        assert(!guard && "only one instance is allowed!");
-        guard           = true;
-        current_handler = std::forward<Fn1>(handler);
-        current_tick    = std::forward<Fn2>(tick);
-        emscripten_request_animation_frame_loop(
-            [](auto time, void* loop_) {
-                auto loop = static_cast<sdl_event_loop*>(loop_);
-                loop->step();
-                return EM_TRUE;
-            },
-            this);
-    }
-
 #else  // !__EMSCRIPTEN__
 
     template <typename Fn>
