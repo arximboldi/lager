@@ -34,10 +34,13 @@ void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, const immer::array<T, MP>& array)
 template <typename Archive, typename T, typename MP>
 void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::array<T, MP>& array)
 {
-    size_type size;
+    size_type size{};
     ar(make_size_tag(size));
 
-    auto t = std::move(array).transient();
+    if (!size)
+        return;
+
+    auto t = immer::array<T, MP>{}.transient();
     for (auto i = size_type{}; i < size; ++i) {
         T x;
         ar(x);

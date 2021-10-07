@@ -44,10 +44,13 @@ template <typename Archive,
           std::uint32_t BL>
 void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::vector<T, MP, B, BL>& vector)
 {
-    size_type size;
+    size_type size{};
     ar(make_size_tag(size));
 
-    auto t = std::move(vector).transient();
+    if (!size)
+        return;
+
+    auto t = immer::vector<T, MP, B, BL>{}.transient();
     for (auto i = size_type{}; i < size; ++i) {
         T x;
         ar(x);
@@ -79,10 +82,13 @@ template <typename Archive,
 void CEREAL_LOAD_FUNCTION_NAME(
     Archive& ar, immer::vector<immer::box<T, MP>, MP, B, BL>& vector)
 {
-    size_type size;
+    size_type size{};
     ar(make_size_tag(size));
 
-    auto t = std::move(vector).transient();
+    if (!size)
+        return;
+
+    auto t = immer::vector<immer::box<T, MP>, MP, B, BL>{}.transient();
     for (auto i = size_type{}; i < size; ++i) {
         T x;
         ar(x);

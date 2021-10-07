@@ -44,10 +44,13 @@ template <typename Archive,
 void CEREAL_LOAD_FUNCTION_NAME(Archive& ar,
                                immer::flex_vector<T, MP, B, BL>& flex_vector)
 {
-    size_type size;
+    size_type size{};
     ar(make_size_tag(size));
 
-    auto t = std::move(flex_vector).transient();
+    if (!size)
+        return;
+
+    auto t = immer::flex_vector<T, MP, B, BL>{}.transient();
     for (auto i = size_type{}; i < size; ++i) {
         T x;
         ar(x);
