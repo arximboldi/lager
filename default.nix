@@ -30,9 +30,9 @@ stdenv.mkDerivation rec {
     deps.cereal
     deps.immer
   ];
-  meta = with stdenv.lib; {
+  meta = {
     homepage    = "https://github.com/arximboldi/lager";
     description = "library for functional interactive c++ programs";
-    license     = licenses.lgpl3Plus;
+    license     = lib.licenses.lgpl3Plus;
   };
 }

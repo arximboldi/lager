@@ -21,7 +21,7 @@ rec {
       mkdir build && cd build
       ../configure -prefix $out
     '';
-    meta = with stdenv.lib; {
+    meta = with lib; {
       homepage = "https://github.com/etr/libhttpserver";
       description = "C++ library for creating an embedded Rest HTTP server (and more)";
       license = licenses.lgpl2;
@@ -40,7 +40,7 @@ rec {
     };
     nativeBuildInputs = [ cmake ];
     cmakeFlags="-DJUST_INSTALL_CEREAL=true";
-    meta = with stdenv.lib; {
+    meta = with lib; {
       homepage = "http://uscilab.github.io/cereal";
       description = "A C++11 library for serialization";
       license = licenses.bsd3;
@@ -58,7 +58,7 @@ rec {
       sha256 = "0f05mhm2sjmvwy6ix4gfahig26rx63c1ji2zr8nvxy75gslnfkpn";
     };
     nativeBuildInputs = [ cmake ];
-    meta = with stdenv.lib; {
+    meta = with lib; {
       homepage = "http://sinusoid.es/immer";
       description = "Immutable data structures for C++";
       license = licenses.lgpl3;
@@ -77,7 +77,7 @@ rec {
     };
     nativeBuildInputs = [ cmake ];
     dontUseCmakeBuildDir = true;
-    meta = with stdenv.lib; {
+    meta = with lib; {
       homepage = "http://sinusoid.es/zug";
       description = "Transducers for C++";
     };
@@ -100,7 +100,7 @@ rec {
       cp $src/*.cpp $out/
       cp $src/examples/imgui_impl_* $out/
     '';
-    meta = with stdenv.lib; {
+    meta = with lib; {
       description = "Immediate mode UI library";
       license = licenses.lgpl3;
     };
