@@ -1,12 +1,12 @@
 {
   compiler ? "",
-  rev     ? "08ef0f28e3a41424b92ba1d203de64257a9fca6a",
-  sha256  ? "1mql1gp86bk6pfsrp0lcww6hw5civi6f8542d4nh356506jdxmcy",
+  rev     ? "87645f7222515f604f91b56121f2b9c9ddc90ae8",
+  sha256  ? "1fr3jyf3hjbz3m95yjlfwq7jl4x6jz03894iqz6pqw54pm24q0a6",
   nixpkgs ? builtins.fetchTarball {
     name   = "nixpkgs-${rev}";
     url    = "https://github.com/nixos/nixpkgs/archive/${rev}.tar.gz";
     sha256 = sha256;
-  }
+  },
 }:
 
 with import nixpkgs {};
@@ -78,11 +78,11 @@ theStdenv.mkDerivation rec {
     addToSearchPath PATH "$LAGER_ROOT/build"
     addToSearchPath PATH "$LAGER_ROOT/build/example"
     addToSearchPath PATH "$LAGER_ROOT/build/test"
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols}/lib/qt-${qtver}/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtquickcontrols2.bin}/lib/qt-${qtver}/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt5.qtgraphicaleffects}/lib/qt-${qtver}/qml
-    addToSearchPath QT_PLUGIN_PATH ${qt5.qtsvg.bin}/lib/qt-${qtver}/plugins
-    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt5.qtbase}/lib/qt-${qtver}/plugins
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols2.bin}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt512.qtgraphicaleffects}/lib/qt-${qtver}/qml
+    addToSearchPath QT_PLUGIN_PATH ${qt512.qtsvg.bin}/lib/qt-${qtver}/plugins
+    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt512.qtbase}/lib/qt-${qtver}/plugins
     export IMGUI_SOURCE_DIR=${deps.imgui}
     export EM_CACHE=`mktemp -d`
   '';
