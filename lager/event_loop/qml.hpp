@@ -3,6 +3,7 @@
 #include <lager/event_loop/queue.hpp>
 
 #include <QQuickItem>
+#include <QTimer>
 
 #include <functional>
 #include <stdexcept>
@@ -16,11 +17,14 @@ class event_loop_quick_item : public QQuickItem
     lager::queue_event_loop queue_;
     std::thread::id this_id_ = std::this_thread::get_id();
     bool polished_           = false;
+    QTimer timer_{this};
 
 public:
     event_loop_quick_item(QQuickItem* parent = nullptr)
         : QQuickItem{parent}
-    {}
+    {
+        connect(&timer_, &QTimer::timeout, this, &event_loop_quick_item::step);
+    }
 
     virtual void step() { queue_.step(); }
 
@@ -29,6 +33,11 @@ public:
         QQuickItem::updatePolish();
         if (!polished_) {
             polished_ = true;
+            // Ideally the polish is working at 60Hz, so this reset just keeps
+            // the timer always waiting.  However, when the window owning this
+            // item is not visible, the polish may actually never be called.
+            // This ensures at least a 30Hz update rate in that scenario.
+            timer_.start(1000 / 30);
             step();
             update();
         }
