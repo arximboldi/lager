@@ -334,12 +334,17 @@ public:
     /*!
      * Creates a `deps` object picking the dependencies from `other`.
      */
+#ifdef LAGER_DISABLE_STORE_DEPENDENCY_CHECKS
+    template <
+        typename... Ds>
+#else
     template <
         typename... Ds,
         std::enable_if_t<required_key_set == boost::hana::intersection(
-                                                 required_key_set,
-                                                 deps<Ds...>::required_key_set),
-                         bool> = true>
+            required_key_set,
+            deps<Ds...>::required_key_set),
+        bool> = true>
+#endif
     deps(deps<Ds...> other)
         : storage_{make_storage_from_(std::move(other.storage_))}
     {}
@@ -349,15 +354,20 @@ public:
      * `other2`.  If both `other1` and `other2` provide a dependency, it is
      * picked from `other2`.
      */
+#ifdef LAGER_DISABLE_STORE_DEPENDENCY_CHECKS
     template <typename... D1s,
-              typename... D2s,
-              std::enable_if_t<
-                  required_key_set ==
-                      boost::hana::intersection(
-                          required_key_set,
-                          boost::hana::union_(deps<D1s...>::required_key_set,
-                                              deps<D2s...>::required_key_set)),
-                  bool> = true>
+        typename... D2s>
+#else
+    template <typename... D1s,
+        typename... D2s,
+        std::enable_if_t<
+        required_key_set ==
+        boost::hana::intersection(
+            required_key_set,
+            boost::hana::union_(deps<D1s...>::required_key_set,
+                deps<D2s...>::required_key_set)),
+        bool> = true>
+#endif
     deps(deps<D1s...> other1, deps<D2s...> other2)
         : storage_{make_storage_from_(boost::hana::union_(
               std::move(other1.storage_), std::move(other2.storage_)))}

@@ -24,9 +24,15 @@ option(lager_BUILD_EXAMPLES "Build examples" ON)
 option(lager_BUILD_DEBUGGER "Build web based debugger" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
 option(lager_EMBED_RESOURCES_PATH "Embed installation paths for easier, non-portable resource location" ON)
+option(lager_DISABLE_STORE_DEPENDENCY_CHECKS "Disable compile-time checks for store dependencies" OFF)
 
 if (NOT lager_EMBED_RESOURCES_PATH AND lager_BUILD_EXAMPLES)
   message(FATAL_ERROR "Examples require embedded resources path")
+endif()
+
+if (MSVC AND NOT lager_DISABLE_STORE_DEPENDENCY_CHECKS)
+  message(WARNING "compile-time checks for store dependencies are currently not supported with msvc")
+  set(lager_DISABLE_STORE_DEPENDENCY_CHECKS ON)
 endif()
 
 find_program(CCACHE ccache)
@@ -47,6 +53,11 @@ target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
   $<INSTALL_INTERFACE:include>)
+
+if(lager_DISABLE_STORE_DEPENDENCY_CHECKS)
+  message(STATUS "Disabling compile-time checks for store dependencies")
+  target_compile_definitions(lager INTERFACE LAGER_DISABLE_STORE_DEPENDENCY_CHECKS)
+endif()
 
 install(TARGETS lager EXPORT LagerConfig)
 
