@@ -18,32 +18,36 @@ set(CMAKE_CURSES_NEED_WIDE true)
 
 find_package(Curses)
 
-set(counter_ncurses_sources
-  counter/ncurses/main.cpp
-  counter/ncurses/terminal.cpp)
-set(counter_ncurses_include_directories
-  ${CURSES_INCLUDE_DIR})
-set(counter_ncurses_link_libraries
-  lager-debugger
-  ${CURSES_LIBRARIES})
-
-add_executable(counter-ncurses EXCLUDE_FROM_ALL ${counter_ncurses_sources})
-target_include_directories(counter-ncurses SYSTEM PUBLIC ${counter_ncurses_include_directories})
-target_link_libraries(counter-ncurses ${counter_ncurses_link_libraries})
-target_compile_definitions(counter-ncurses PUBLIC DEBUGGER)
-add_dependencies(examples counter-ncurses)
-
-add_executable(counter-ncurses-tree EXCLUDE_FROM_ALL ${counter_ncurses_sources})
-target_include_directories(counter-ncurses-tree SYSTEM PUBLIC ${counter_ncurses_include_directories})
-target_link_libraries(counter-ncurses-tree ${counter_ncurses_link_libraries})
-target_compile_definitions(counter-ncurses-tree PUBLIC TREE_DEBUGGER)
-add_dependencies(examples counter-ncurses-tree)
-
-add_executable(counter-ncurses-meta EXCLUDE_FROM_ALL ${counter_ncurses_sources})
-target_include_directories(counter-ncurses-meta SYSTEM PUBLIC ${counter_ncurses_include_directories})
-target_link_libraries(counter-ncurses-meta ${counter_ncurses_link_libraries})
-target_compile_definitions(counter-ncurses-meta PUBLIC DEBUGGER META_DEBUGGER)
-add_dependencies(examples counter-ncurses-meta)
+if(Curses)
+  set(counter_ncurses_sources
+    counter/ncurses/main.cpp
+    counter/ncurses/terminal.cpp)
+  set(counter_ncurses_include_directories
+    ${CURSES_INCLUDE_DIR})
+  set(counter_ncurses_link_libraries
+    lager-debugger
+    ${CURSES_LIBRARIES})
+  
+  add_executable(counter-ncurses EXCLUDE_FROM_ALL ${counter_ncurses_sources})
+  target_include_directories(counter-ncurses SYSTEM PUBLIC ${counter_ncurses_include_directories})
+  target_link_libraries(counter-ncurses ${counter_ncurses_link_libraries})
+  target_compile_definitions(counter-ncurses PUBLIC DEBUGGER)
+  add_dependencies(examples counter-ncurses)
+  
+  add_executable(counter-ncurses-tree EXCLUDE_FROM_ALL ${counter_ncurses_sources})
+  target_include_directories(counter-ncurses-tree SYSTEM PUBLIC ${counter_ncurses_include_directories})
+  target_link_libraries(counter-ncurses-tree ${counter_ncurses_link_libraries})
+  target_compile_definitions(counter-ncurses-tree PUBLIC TREE_DEBUGGER)
+  add_dependencies(examples counter-ncurses-tree)
+  
+  add_executable(counter-ncurses-meta EXCLUDE_FROM_ALL ${counter_ncurses_sources})
+  target_include_directories(counter-ncurses-meta SYSTEM PUBLIC ${counter_ncurses_include_directories})
+  target_link_libraries(counter-ncurses-meta ${counter_ncurses_link_libraries})
+  target_compile_definitions(counter-ncurses-meta PUBLIC DEBUGGER META_DEBUGGER)
+  add_dependencies(examples counter-ncurses-meta)
+else()
+  message(STATUS "Disabling Curses based examples")
+endif()
 
 # sdl examples
 # ===========
