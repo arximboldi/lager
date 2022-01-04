@@ -7,7 +7,7 @@ project(lager VERSION 0.0.0)
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD 20)
-  add_compile_options(/Wall /Zc:preprocessor)
+  add_compile_options(/Wall /Zc:preprocessor /bigobj)
 else()
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
