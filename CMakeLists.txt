@@ -9,7 +9,7 @@ if(MSVC)
   set(CMAKE_CXX_STANDARD 20)
   add_compile_options(/Wall /Zc:preprocessor /bigobj)
 else()
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif()
 
@@ -92,7 +92,10 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
       ${Boost_INCLUDE_DIR}
       ${LIBHTTPSERVER_INCLUDE_DIRS})
     target_link_libraries(lager-debugger INTERFACE
-      lager-example
+      lager 
+      immer
+      ${CMAKE_THREAD_LIBS_INIT}
+      ${Boost_LIBRARIES}
       ${LIBHTTPSERVER_LIBRARIES})
 
    add_custom_target(gui ALL
