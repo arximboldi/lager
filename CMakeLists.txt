@@ -86,7 +86,9 @@ endif()
 if(lager_BUILD_TESTS)
   add_library(lager-dev INTERFACE)
   target_include_directories(lager-dev SYSTEM INTERFACE
-    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
+    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include"
+    ${Boost_INCLUDE_DIR}
+  )
   target_link_libraries(lager-dev INTERFACE lager
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT})
