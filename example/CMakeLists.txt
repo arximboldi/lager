@@ -8,7 +8,7 @@ add_dependencies(check examples)
 
 add_executable(counter-std EXCLUDE_FROM_ALL
   counter/std/main.cpp)
-target_link_libraries(counter-std lager)
+target_link_libraries(counter-std lager-example)
 add_dependencies(examples counter-std)
 
 # ncurses examples
@@ -116,7 +116,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
     todo/todo.cpp
     todo/qml/main.cpp)
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
-  target_link_libraries(todo-qml lager Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
+  target_link_libraries(todo-qml lager-example Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_compile_definitions(todo-qml PRIVATE
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
   add_dependencies(examples todo-qml)
@@ -124,7 +124,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
   add_executable(snake-qml EXCLUDE_FROM_ALL
     snake/model.cpp snake/qml/main.cpp snake/qml/qmodel.cpp)
   set_target_properties(snake-qml PROPERTIES AUTOMOC YES)
-  target_link_libraries(snake-qml lager Qt5::Core Qt5::Concurrent Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
+  target_link_libraries(snake-qml lager-example Qt5::Core Qt5::Concurrent Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_include_directories(snake-qml PRIVATE ${Boost_INCLUDE_DIRS})
   target_compile_definitions(snake-qml PRIVATE
     LAGER_SNAKE_QML_DIR="${CMAKE_SOURCE_DIR}/example/snake/qml")

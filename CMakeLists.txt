@@ -50,6 +50,20 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
 
+  add_library(lager-example INTERFACE)
+  target_include_directories(lager-example INTERFACE
+     $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
+     $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
+     $<INSTALL_INTERFACE:include>
+    ${Boost_INCLUDE_DIR}
+  )
+  target_link_libraries(lager-example INTERFACE
+    lager
+    immer
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_LIBRARIES}
+  )
+
   if (lager_BUILD_DEBUGGER)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
@@ -61,10 +75,7 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
       ${Boost_INCLUDE_DIR}
       ${LIBHTTPSERVER_INCLUDE_DIRS})
     target_link_libraries(lager-debugger INTERFACE
-      lager
-      immer
-      ${CMAKE_THREAD_LIBS_INIT}
-      ${Boost_LIBRARIES}
+      lager-example
       ${LIBHTTPSERVER_LIBRARIES})
 
    add_custom_target(gui ALL
