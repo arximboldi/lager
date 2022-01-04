@@ -15,6 +15,7 @@ endif()
 
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
+option(lager_BUILD_DEBUGGER "Build web based debugger" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
 option(lager_EMBED_RESOURCES_PATH "Embed installation paths for easier, non-portable resource location" ON)
 
@@ -48,34 +49,37 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Boost 1.56 COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
-  add_library(lager-debugger INTERFACE)
-  target_include_directories(lager-debugger INTERFACE
-    $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
-    $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
-    $<INSTALL_INTERFACE:include>
-    ${Boost_INCLUDE_DIR}
-    ${LIBHTTPSERVER_INCLUDE_DIRS})
-  target_link_libraries(lager-debugger INTERFACE
-    lager
-    immer
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${Boost_LIBRARIES}
-    ${LIBHTTPSERVER_LIBRARIES})
 
-  add_custom_target(gui ALL
-    COMMAND make
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
-    COMMENT "Build debugger web UI")
+  if (lager_BUILD_DEBUGGER)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
+    add_library(lager-debugger INTERFACE)
+    target_include_directories(lager-debugger INTERFACE
+      $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
+      $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
+      $<INSTALL_INTERFACE:include>
+      ${Boost_INCLUDE_DIR}
+      ${LIBHTTPSERVER_INCLUDE_DIRS})
+    target_link_libraries(lager-debugger INTERFACE
+      lager
+      immer
+      ${CMAKE_THREAD_LIBS_INIT}
+      ${Boost_LIBRARIES}
+      ${LIBHTTPSERVER_LIBRARIES})
 
-  install(TARGETS lager-debugger EXPORT LagerConfig)
+   add_custom_target(gui ALL
+     COMMAND make
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
+      COMMENT "Build debugger web UI")
+ 
+   install(TARGETS lager-debugger EXPORT LagerConfig)
 
-  install(FILES
-    resources/gui/gui.js
-    resources/gui/gui.css
-    resources/gui/index.html
-    DESTINATION share/lager/gui)
+   install(FILES
+      resources/gui/gui.js
+      resources/gui/gui.css
+      resources/gui/index.html
+      DESTINATION share/lager/gui)
+    endif()
 endif()
 
 # the library, local development target
