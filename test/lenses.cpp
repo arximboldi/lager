@@ -24,6 +24,8 @@
 #include <lager/lenses/variant.hpp>
 #include <lager/lenses/tuple.hpp>
 
+#include <array>
+
 struct yearday
 {
     int day;
