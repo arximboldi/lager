@@ -22,15 +22,12 @@
 
 #include <zug/transducer/filter.hpp>
 
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/fusion/include/comparison.hpp>
-
 #include <array>
 #include <map>
+#include <optional>
 
 using namespace zug;
 using namespace lager;
-using namespace boost::fusion::operators;
 
 namespace detail {
 
@@ -390,15 +387,13 @@ struct machine
     std::size_t wheels;
 };
 
-BOOST_FUSION_ADAPT_STRUCT(machine, name, wheels)
-
 bool operator==(const machine& a, const machine& b)
 {
-    return boost::fusion::operator==(a, b);
+    return std::tie(a.name, a.wheels) == std::tie(b.name, b.wheels);
 }
 bool operator!=(const machine& a, const machine& b)
 {
-    return boost::fusion::operator!=(a, b);
+    return !operator==(a, b);
 }
 
 TEST_CASE("atted, modifying attributes of immutable")
