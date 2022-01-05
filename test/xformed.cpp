@@ -174,7 +174,7 @@ TEST_CASE("xformed, one arg filter without value non default ctr")
     auto s = state<non_default>{non_default{43}};
     CHECK_THROWS_AS(
         s.xform(filter([](non_default x) { return x.v % 2 == 0; })).make(),
-        no_value_error const);
+        no_value_error);
 }
 
 TEST_CASE(

@@ -138,7 +138,7 @@ TEST_CASE("optionals")
     CHECK(d2.has<foo1>());
     CHECK(d2.get<foo1>().x == 42);
     CHECK(!d2.has<yas>());
-    CHECK_THROWS_AS(d2.get<yas>(), lager::missing_dependency_error const);
+    CHECK_THROWS_AS(d2.get<yas>(), lager::missing_dependency_error);
 
     auto d3 = lager::deps<lager::dep::opt<lager::dep::key<foo1, foo&>>,
                           lager::dep::opt<yas>>{d2};
@@ -146,7 +146,7 @@ TEST_CASE("optionals")
     CHECK(d3.has<foo1>());
     CHECK(d3.get<foo1>().x == 13);
     CHECK(!d3.has<yas>());
-    CHECK_THROWS_AS(d3.get<yas>(), lager::missing_dependency_error const);
+    CHECK_THROWS_AS(d3.get<yas>(), lager::missing_dependency_error);
 }
 
 TEST_CASE("specs in factories")
