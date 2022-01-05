@@ -1,7 +1,8 @@
 
 add_custom_target(examples COMMENT "Build all examples")
-add_dependencies(check examples)
-
+if (lager_BUILD_TESTS)
+  add_dependencies(check examples)
+endif()
 
 # std  examples
 # ====================
