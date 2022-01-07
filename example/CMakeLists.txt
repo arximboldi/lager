@@ -19,7 +19,7 @@ set(CMAKE_CURSES_NEED_WIDE true)
 
 find_package(Curses)
 
-if(Curses)
+if(Curses_FOUND)
   if (lager_BUILD_DEBUGGER_EXAMPLES)
     set(counter_ncurses_sources
       counter/ncurses/main.cpp
