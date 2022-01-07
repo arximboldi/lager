@@ -20,7 +20,7 @@ set(CMAKE_CURSES_NEED_WIDE true)
 find_package(Curses)
 
 if(Curses)
-  if (lager_BUILD_DEBUGGER)
+  if (lager_BUILD_DEBUGGER_EXAMPLES)
     set(counter_ncurses_sources
       counter/ncurses/main.cpp
       counter/ncurses/terminal.cpp)
@@ -59,7 +59,7 @@ find_package(SDL2)
 find_package(SDL2_ttf)
 
 if (SDL2_FOUND AND SDL2_ttf_FOUND)
-  if(lager_BUILD_DEBUGGER)
+  if(lager_BUILD_DEBUGGER_EXAMPLES)
     add_executable(counter-sdl2 EXCLUDE_FROM_ALL
       counter/sdl2/main.cpp)
     target_include_directories(counter-sdl2 SYSTEM PUBLIC
