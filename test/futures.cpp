@@ -62,3 +62,22 @@ TEST_CASE("future then callback is called after effects")
     queue.step();
     CHECK(called == 1);
 }
+
+TEST_CASE("combining future")
+{
+    auto queue = lager::queue_event_loop{};
+    auto store = lager::make_store<counter::action>(
+        counter::model{}, lager::with_queue_event_loop{queue});
+
+    auto called = 0;
+    store.dispatch(counter::increment_action{})
+        .also(store.dispatch(counter::increment_action{}))
+        .then([&] {
+            CHECK(store->value == 2);
+            ++called;
+        });
+    CHECK(called == 0);
+
+    queue.step();
+    CHECK(called == 1);
+}

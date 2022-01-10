@@ -69,10 +69,14 @@ struct future
      */
     future() = default;
 
-    future(future&&) = default;
-    future& operator=(future&&) = default;
-    future(const future&)       = delete;
-    future& operator=(const future&) = delete;
+    // I would prefer the promise to be not copyable, however putting lambdas in
+    // std::function requires the closure to be copyable, which makes this not
+    // so usable.
+    //
+    //   future(future&&) = default;
+    //   future& operator=(future&&) = default;
+    //   future(const future&)       = delete;
+    //   future& operator=(const future&) = delete;
 
     operator bool() const { return bool{state_}; }
 
@@ -83,6 +87,15 @@ struct future
      */
     template <typename Fn>
     future then(Fn&& fn) &&;
+
+    /*!
+     * Returns a future that completes when both this and `f` complete.
+     */
+    future also(future&& f)
+    {
+        return std::move(*this).then(
+            [f = std::move(f)]() mutable { return std::move(f); });
+    }
 
 private:
     friend struct promise;
