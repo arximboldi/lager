@@ -259,9 +259,12 @@ TEST_CASE("subsetting context actions")
     auto eff3 = lager::effect<parent_action>{eff2};
 
     auto dispatch_count = 0;
-    auto dispatcher     = [&](auto) { ++dispatch_count; };
-    auto loop           = lager::with_manual_event_loop{};
-    auto ctx            = lager::context<parent_action>{dispatcher, loop, {}};
+    auto dispatcher     = [&](auto) {
+        ++dispatch_count;
+        return lager::future{};
+    };
+    auto loop = lager::with_manual_event_loop{};
+    auto ctx  = lager::context<parent_action>{dispatcher, loop, {}};
 
     eff3(ctx);
     CHECK(dispatch_count == 2);

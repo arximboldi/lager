@@ -13,6 +13,7 @@
 #pragma once
 
 #include <lager/deps.hpp>
+#include <lager/future.hpp>
 #include <lager/util.hpp>
 
 #include <boost/hana/all_of.hpp>
@@ -149,44 +150,45 @@ template <typename... Actions>
 struct dispatcher;
 
 template <typename... Actions>
-struct dispatcher<actions<Actions...>> : std::function<void(Actions)>...
+struct dispatcher<actions<Actions...>> : std::function<future(Actions)>...
 {
-    using std::function<void(Actions)>::operator()...;
+    using std::function<future(Actions)>::operator()...;
 
     dispatcher() = default;
 
     template <typename... As>
     dispatcher(dispatcher<actions<As...>> other)
-        : std::function<void(Actions)>{static_cast<
-              std::function<void(find_convertible_action_t<Actions, As...>)>&>(
-              other)}...
+        : std::function<future(Actions)>{static_cast<std::function<future(
+              find_convertible_action_t<Actions, As...>)>&>(other)}...
     {}
 
     template <typename Fn>
     dispatcher(Fn other)
-        : std::function<void(Actions)>{other}...
+        : std::function<future(Actions)>{other}...
     {}
 
     template <typename Action, typename... As, typename Converter>
     static auto dispatcher_fn_aux(dispatcher<actions<As...>> other_,
                                   Converter conv)
     {
-        auto& other = static_cast<std::function<void(
+        auto& other = static_cast<std::function<future(
             find_convertible_action_t<std::invoke_result_t<Converter, Action>,
                                       As...>)>&>(other_);
-        return [conv, other](auto&& act) { other(conv(LAGER_FWD(act))); };
+        return
+            [conv, other](auto&& act) { return other(conv(LAGER_FWD(act))); };
     }
 
     template <typename... As, typename Converter>
     dispatcher(dispatcher<actions<As...>> other, Converter conv)
-        : std::function<void(Actions)>{
+        : std::function<future(Actions)>{
               dispatcher_fn_aux<Actions>(other, conv)}...
     {}
 
     template <typename Fn, typename Converter>
     dispatcher(Fn other, Converter conv)
-        : std::function<void(Actions)>{
-              [other, conv](auto&& act) { other(conv(LAGER_FWD(act))); }}...
+        : std::function<future(Actions)>{[other, conv](auto&& act) {
+            return other(conv(LAGER_FWD(act)));
+        }}...
     {}
 };
 
@@ -301,9 +303,9 @@ struct context : Deps
     {}
 
     template <typename Action>
-    void dispatch(Action&& act) const
+    future dispatch(Action&& act) const
     {
-        dispatcher_(std::forward<Action>(act));
+        return dispatcher_(std::forward<Action>(act));
     }
 
     detail::event_loop_iface& loop() const { return *loop_; }
@@ -323,7 +325,7 @@ private:
  * Effectful procedure that uses the store context.
  */
 template <typename Action, typename Deps = lager::deps<>>
-struct effect : std::function<void(const context<Action, Deps>&)>
+struct effect : std::function<future(const context<Action, Deps>&)>
 {
     static_assert(
         is_deps<Deps>::value,
@@ -337,7 +339,7 @@ lager::effect<lager::actions<...>, ...> " //
     using action_t  = Action;
     using deps_t    = Deps;
     using context_t = context<action_t, deps_t>;
-    using base_t    = std::function<void(const context_t&)>;
+    using base_t    = std::function<future(const context_t&)>;
 
     using base_t::base_t;
     using base_t::operator=;
@@ -354,6 +356,17 @@ lager::effect<lager::actions<...>, ...> " //
                                int> = 0>
     effect(effect<A2, D2> e)
         : base_t{std::move(e)}
+    {}
+
+    template <
+        typename Fn,
+        std::enable_if_t<std::is_same_v<void, std::result_of_t<Fn(context_t)>>,
+                         int> = 0>
+    effect(Fn&& fn)
+        : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) -> future {
+            fn(ctx);
+            return {};
+        }}
     {}
 };
 
@@ -407,14 +420,13 @@ struct result : std::pair<Model, lager::effect<Action, Deps>>
                       LAGER_STATIC_ASSERT_MESSAGE_BEGIN
                       "The model of the result types are not convertible" //
                       LAGER_STATIC_ASSERT_MESSAGE_END);
-        static_assert(
-            detail::are_compatible_actions_v<A2, Action>,
-            LAGER_STATIC_ASSERT_MESSAGE_BEGIN
-            "The actions actions of the given effect are not compatible to \
-those if this result.  This effect's action must be a superset of those of the \
+        static_assert(detail::are_compatible_actions_v<A2, Action>,
+                      LAGER_STATIC_ASSERT_MESSAGE_BEGIN
+                      "The actions of the given effect are not compatible to \
+those in this result.  This effect's action must be a superset of those of the \
 given effect.\n\nThis may occur when returning effects from a nested reducer \
 and you forgot to add the nested action to the parent action variant." //
-            LAGER_STATIC_ASSERT_MESSAGE_END);
+                      LAGER_STATIC_ASSERT_MESSAGE_END);
         static_assert(
             std::is_convertible_v<Deps, D2>,
             LAGER_STATIC_ASSERT_MESSAGE_BEGIN
@@ -463,7 +475,7 @@ constexpr auto has_effect_v = has_effect<Reducer, Model, Action, Deps>::value;
  * Heuristically determine if the effect is empty or a noop operation.
  */
 template <typename Ctx>
-bool is_empty_effect(const std::function<void(Ctx)>& v)
+bool is_empty_effect(const std::function<future(Ctx)>& v)
 {
     return !v || v.template target<decltype(noop)>() == &noop;
 }
@@ -522,15 +534,15 @@ auto sequence(effect<Actions1, Deps1> a, effect<Actions2, Deps2> b)
     using actions_t = detail::merge_actions_t<Actions1, Actions2>;
     using result_t  = effect<actions_t, deps_t>;
 
-    return is_empty_effect(a) && is_empty_effect(b)
-               ? result_t{noop}
-               : is_empty_effect(a)
-                     ? result_t{b}
-                     : is_empty_effect(b) ? result_t{a}
-                                          : result_t{[a, b](auto&& ctx) {
-                                                a(ctx);
-                                                b(ctx);
-                                            }};
+    return is_empty_effect(a) && is_empty_effect(b) ? result_t{noop}
+           : is_empty_effect(a)                     ? result_t{b}
+           : is_empty_effect(b)
+               ? result_t{a}
+               : result_t{[a, b](auto&& ctx) {
+                     return a(ctx).then([ctx = LAGER_FWD(ctx), b]() mutable {
+                         return b(ctx);
+                     });
+                 }};
 }
 
 template <typename A1, typename D1, typename A2, typename D2, typename... Effs>

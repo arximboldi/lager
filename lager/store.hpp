@@ -36,7 +36,7 @@ struct store_node_base : public root_node<Model, reader_node>
     using base_t::base_t;
 
     virtual void recompute() final {}
-    virtual void dispatch(action_t action) = 0;
+    virtual future dispatch(action_t action) = 0;
 };
 
 } // namespace detail
@@ -128,36 +128,51 @@ private:
             : base_t{std::move(init_)}
             , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
-            , ctx{[this](auto&& act) { dispatch(LAGER_FWD(act)); },
+            , ctx{[this](auto&& act) { return dispatch(LAGER_FWD(act)); },
                   loop,
                   std::move(deps_)}
         {}
 
-        void dispatch(action_t action) override
+        future dispatch(action_t action) override
         {
-            loop.post([this, action = std::move(action)] {
+            auto [p, f] = promise::make(loop);
+            loop.post([this,
+                       p      = std::move(p),
+                       action = std::move(action)]() mutable {
                 base_t::push_down(invoke_reducer<deps_t>(
                     reducer,
                     base_t::current(),
                     std::move(action),
                     [&](auto&& effect) {
-                        loop.post([this, effect = LAGER_FWD(effect)] {
+                        loop.post([this,
+                                   p   = std::move(p),
+                                   eff = LAGER_FWD(effect)]() mutable {
                             if constexpr (std::is_same_v<Tag, automatic_tag>) {
                                 base_t::send_down();
                                 base_t::notify();
                             }
-                            effect(ctx);
+                            if constexpr (std::is_same_v<void,
+                                                         decltype(eff(ctx))>) {
+                                eff(ctx);
+                                p();
+                            } else {
+                                eff(ctx).then(std::move(p));
+                            }
                         });
                     },
                     [&] {
                         if constexpr (std::is_same_v<Tag, automatic_tag>) {
-                            loop.post([this] {
+                            loop.post([this, p = std::move(p)]() mutable {
                                 base_t::send_down();
                                 base_t::notify();
+                                p();
                             });
+                        } else {
+                            p();
                         }
                     }));
             });
+            return std::move(f);
         }
     };
 
