@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include <lager/context.hpp>
 #include <lager/detail/access.hpp>
+#include <lager/effect.hpp>
 #include <lager/util.hpp>
 
 #include <immer/algorithm.hpp>

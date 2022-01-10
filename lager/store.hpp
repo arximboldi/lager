@@ -14,6 +14,7 @@
 
 #include <lager/context.hpp>
 #include <lager/deps.hpp>
+#include <lager/effect.hpp>
 #include <lager/state.hpp>
 #include <lager/util.hpp>
 
