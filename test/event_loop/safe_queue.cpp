@@ -15,7 +15,7 @@
 #include <lager/event_loop/safe_queue.hpp>
 #include <lager/store.hpp>
 
-#include "../example/counter/counter.hpp"
+#include "example/counter/counter.hpp"
 
 TEST_CASE("basic")
 {

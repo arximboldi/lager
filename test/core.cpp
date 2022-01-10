@@ -27,7 +27,6 @@ TEST_CASE("automatic")
     watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
-    CHECK(viewed->value == 0);
     CHECK(store.get().value == 0);
 
     store.dispatch(counter::increment_action{});
@@ -45,7 +44,6 @@ TEST_CASE("basic")
     watch(store, [&](auto&& v) { view(v); });
 
     CHECK(!viewed);
-    CHECK(viewed->value == 0);
     CHECK(store.get().value == 0);
 
     store.dispatch(counter::increment_action{});

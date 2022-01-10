@@ -5,8 +5,14 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(lager VERSION 0.0.0)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+if(MSVC)
+  set(CMAKE_CXX_STANDARD 20)
+  add_compile_options(/Wall /Zc:preprocessor /bigobj)
+else()
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(CMAKE_CXX_EXTENSIONS off)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -15,11 +21,23 @@ endif()
 
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
+option(lager_BUILD_DEBUGGER_EXAMPLES "Build examples that showcase the web based debugger" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
 option(lager_EMBED_RESOURCES_PATH "Embed installation paths for easier, non-portable resource location" ON)
+option(lager_DISABLE_STORE_DEPENDENCY_CHECKS "Disable compile-time checks for store dependencies" OFF)
 
 if (NOT lager_EMBED_RESOURCES_PATH AND lager_BUILD_EXAMPLES)
   message(FATAL_ERROR "Examples require embedded resources path")
+endif()
+
+if (MSVC AND NOT lager_DISABLE_STORE_DEPENDENCY_CHECKS)
+  message(WARNING "compile-time checks for store dependencies are currently not supported with msvc")
+  set(lager_DISABLE_STORE_DEPENDENCY_CHECKS ON)
+endif()
+
+if (NOT lager_BUILD_EXAMPLES AND lager_BUILD_DEBUGGER_EXAMPLES)
+    message(WARNING "examples using the web-based debugger are disabled when examples are disabled")
+    set(lager_BUILD_DEBUGGER_EXAMPLES OFF)
 endif()
 
 find_program(CCACHE ccache)
@@ -41,48 +59,28 @@ target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
   $<INSTALL_INTERFACE:include>)
 
+if(lager_DISABLE_STORE_DEPENDENCY_CHECKS)
+  message(STATUS "Disabling compile-time checks for store dependencies")
+  target_compile_definitions(lager INTERFACE LAGER_DISABLE_STORE_DEPENDENCY_CHECKS)
+endif()
+
 install(TARGETS lager EXPORT LagerConfig)
 
-# the library, with http debugger
+# requirements for tests and examples
 if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Boost 1.56 COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
-  add_library(lager-debugger INTERFACE)
-  target_include_directories(lager-debugger INTERFACE
-    $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
-    $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
-    $<INSTALL_INTERFACE:include>
-    ${Boost_INCLUDE_DIR}
-    ${LIBHTTPSERVER_INCLUDE_DIRS})
-  target_link_libraries(lager-debugger INTERFACE
-    lager
-    immer
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${Boost_LIBRARIES}
-    ${LIBHTTPSERVER_LIBRARIES})
-
-  add_custom_target(gui ALL
-    COMMAND make
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
-    COMMENT "Build debugger web UI")
-
-  install(TARGETS lager-debugger EXPORT LagerConfig)
-
-  install(FILES
-    resources/gui/gui.js
-    resources/gui/gui.css
-    resources/gui/index.html
-    DESTINATION share/lager/gui)
 endif()
 
 # the library, local development target
 if(lager_BUILD_TESTS)
   add_library(lager-dev INTERFACE)
   target_include_directories(lager-dev SYSTEM INTERFACE
-    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include")
+    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include"
+    ${lager_SOURCE_DIR}
+    ${Boost_INCLUDE_DIR}
+  )
   target_link_libraries(lager-dev INTERFACE lager
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT})
@@ -105,7 +103,50 @@ if(lager_BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
-if(lager_BUILD_EXAMPLES)
+# the library, with http debugger
+if (lager_BUILD_EXAMPLES)
+
+  add_library(lager-example INTERFACE)
+  target_include_directories(lager-example INTERFACE
+     $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
+     $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
+     $<INSTALL_INTERFACE:include>
+    ${Boost_INCLUDE_DIR}
+  )
+  target_link_libraries(lager-example INTERFACE
+    lager
+    immer
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_LIBRARIES}
+  )
+
+  install(TARGETS lager-example EXPORT LagerConfig)
+
+  # examples with the http debugger
+  if (lager_BUILD_DEBUGGER_EXAMPLES)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
+    add_library(lager-debugger-example INTERFACE)
+    target_include_directories(lager-debugger-example INTERFACE
+      ${LIBHTTPSERVER_INCLUDE_DIRS})
+    target_link_libraries(lager-debugger-example INTERFACE
+      lager-example
+      ${LIBHTTPSERVER_LIBRARIES})
+
+    add_custom_target(gui ALL
+      COMMAND make
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
+        COMMENT "Build debugger web UI")
+
+    install(TARGETS lager-debugger-example  EXPORT LagerConfig)
+
+    install(FILES
+      resources/gui/gui.js
+      resources/gui/gui.css
+      resources/gui/index.html
+      DESTINATION share/lager/gui)
+    endif()
+
   add_subdirectory(example)
 endif()
 

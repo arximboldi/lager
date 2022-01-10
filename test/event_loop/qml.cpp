@@ -15,7 +15,7 @@
 #include <lager/event_loop/qml.hpp>
 #include <lager/store.hpp>
 
-#include "../example/counter/counter.hpp"
+#include "example/counter/counter.hpp"
 
 namespace {
 
