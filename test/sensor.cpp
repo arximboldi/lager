@@ -49,7 +49,7 @@ TEST_CASE("sensor, looks up only on commit")
 
 TEST_CASE("sensor, watching")
 {
-    auto expected = 1;
+    auto expected = std::size_t{1};
     auto x        = make_sensor(counter{});
     auto s = testing::spy([&](std::size_t curr) { CHECK(expected == curr); });
     watch(x, s);
