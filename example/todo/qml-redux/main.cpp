@@ -96,9 +96,15 @@ class App : public lager::event_loop_quick_item
 
     using base_t = lager::event_loop_quick_item;
 
+    todo::logger logger_{.error = [this](auto&& text) {
+        Q_EMIT error(QString::fromStdString(text));
+    }};
+
     lager::store<todo::app_action, todo::app> store_ =
-        lager::make_store<todo::app_action>(todo::app{},
-                                            lager::with_qml_event_loop{*this});
+        lager::make_store<todo::app_action>(
+            todo::app{},
+            lager::with_qml_event_loop{*this},
+            lager::with_deps(std::ref(logger_)));
 
     Model model_{store_, store_[&todo::app::doc]};
 
@@ -126,6 +132,8 @@ public:
     {
         store_.dispatch(todo::load_action{fname.toLocalFile().toStdString()});
     }
+
+    Q_SIGNAL void error(QString text);
 };
 
 #include "main.moc"

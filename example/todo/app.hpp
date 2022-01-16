@@ -40,7 +40,12 @@ struct load_result_action
 using app_action =
     std::variant<model_action, save_action, load_action, load_result_action>;
 
-using app_result = lager::result<app, app_action>;
+struct logger
+{
+    std::function<void(const std::string& text)> error;
+};
+
+using app_result = lager::result<app, app_action, lager::deps<logger&>>;
 
 app_result update(app, app_action);
 

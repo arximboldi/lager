@@ -17,6 +17,14 @@ ApplicationWindow {
 
     Todo.App {
         id: app
+        onError: {
+            errorDialog.text = text;
+            errorDialog.open()
+        }
+    }
+
+    MessageDialog {
+        id: errorDialog
     }
 
     FileDialog {

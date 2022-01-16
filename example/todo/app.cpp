@@ -16,22 +16,36 @@
 
 namespace todo {
 
-lager::result<app, app_action> update(app s, app_action a)
+app_result update(app s, app_action a)
 {
     return lager::match(std::move(a))(
         [&](save_action&& a) -> app_result {
             s.path   = a.file.replace_extension("todo");
             auto eff = [m = s.doc, f = s.path](auto&& ctx) {
-                std::cout << "saving file: " << f << std::endl;
-                save(f, m);
+                try {
+                    std::cout << "saving file: " << f << std::endl;
+                    save(f, m);
+                } catch (std::exception const& err) {
+                    std::cerr << "error saving file: " << err.what()
+                              << std::endl;
+                    lager::get<logger>(ctx).error("Could not save file: " +
+                                                  f.string());
+                }
             };
             return {std::move(s), eff};
         },
         [&](load_action&& a) -> app_result {
             auto eff = [f = std::move(a.file)](auto&& ctx) {
                 std::cout << "loading file: " << f << std::endl;
-                auto m = load(f);
-                ctx.dispatch(load_result_action{f, std::move(m)});
+                try {
+                    auto m = load(f);
+                    ctx.dispatch(load_result_action{f, std::move(m)});
+                } catch (std::exception const& err) {
+                    std::cerr << "error loading file: " << err.what()
+                              << std::endl;
+                    lager::get<logger>(ctx).error("Could not load file: " +
+                                                  f.string());
+                }
             };
             return {std::move(s), eff};
         },
