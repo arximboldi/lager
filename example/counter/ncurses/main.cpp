@@ -13,6 +13,8 @@
 #include "../counter.hpp"
 #include "terminal.hpp"
 
+#include <cereal/types/complex.hpp>
+
 #include <lager/debug/debugger.hpp>
 #include <lager/debug/http_server.hpp>
 #include <lager/debug/tree_debugger.hpp>
@@ -38,10 +40,10 @@ void draw(const counter::model& c)
     auto pos_y = max_y / 2;
     auto pos_x = (max_x - message.size()) / 2;
     ::clear();
-    auto color = c.value < -3 ? 3
-                              : c.value > 3 ? 2
-                                            /* else */
-                                            : 1;
+    auto color = c.value < -3  ? 3
+                 : c.value > 3 ? 2
+                               /* else */
+                               : 1;
     ::attron(COLOR_PAIR(color));
     ::bkgd(COLOR_PAIR(color));
     attrset(A_NORMAL);

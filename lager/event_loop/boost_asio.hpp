@@ -37,7 +37,7 @@ template <typename Executor>
 struct with_boost_asio_event_loop
 {
     Executor executor;
-    std::function<void()> stop = [this] {};
+    std::function<void()> stop = [] {};
 
     with_boost_asio_event_loop(Executor ex)
         : executor{std::move(ex)}

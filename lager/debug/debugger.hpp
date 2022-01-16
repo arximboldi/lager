@@ -19,9 +19,10 @@
 #include <immer/algorithm.hpp>
 #include <immer/vector.hpp>
 
-#include <lager/debug/cereal/immer_vector.hpp>
-#include <lager/debug/cereal/struct.hpp>
-#include <lager/debug/cereal/variant_with_name.hpp>
+#include <lager/extra/cereal/immer_vector.hpp>
+#include <lager/extra/cereal/struct.hpp>
+#include <lager/extra/cereal/variant_with_name.hpp>
+#include <lager/extra/struct.hpp>
 
 #include <zug/transducer/map.hpp>
 
@@ -42,15 +43,24 @@ struct debugger
     struct goto_action
     {
         cursor_t cursor;
+        LAGER_STRUCT_NESTED(goto_action, cursor);
     };
     struct undo_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(undo_action);
+    };
     struct redo_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(redo_action);
+    };
     struct pause_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(pause_action);
+    };
     struct resume_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(resume_action);
+    };
 
     using action = std::variant<Action,
                                 goto_action,
@@ -63,6 +73,7 @@ struct debugger
     {
         Action action;
         Model model;
+        LAGER_STRUCT_NESTED(step, action, model);
     };
 
     struct model
@@ -72,6 +83,7 @@ struct debugger
         Model init;
         immer::vector<step> history   = {};
         immer::vector<Action> pending = {};
+        LAGER_STRUCT_NESTED(model, cursor, paused, init, history, pending);
 
         model() = default;
         model(Model i)
@@ -171,14 +183,6 @@ struct debugger
     {
         serv.view(m);
     }
-
-    LAGER_CEREAL_NESTED_STRUCT(undo_action);
-    LAGER_CEREAL_NESTED_STRUCT(redo_action);
-    LAGER_CEREAL_NESTED_STRUCT(pause_action);
-    LAGER_CEREAL_NESTED_STRUCT(resume_action);
-    LAGER_CEREAL_NESTED_STRUCT(goto_action, (cursor));
-    LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(paused)(init)(history));
-    LAGER_CEREAL_NESTED_STRUCT(step, (action)(model));
 };
 
 template <template <class, class, class> class Debugger = debugger,

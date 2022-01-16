@@ -10,7 +10,7 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <lager/debug/cereal/struct.hpp>
+#include <lager/extra/struct.hpp>
 #include <lager/util.hpp>
 
 #include <variant>
@@ -43,9 +43,9 @@ inline model update(model c, action action)
                       action);
 }
 
-LAGER_CEREAL_STRUCT(model, (value));
-LAGER_CEREAL_STRUCT(increment_action);
-LAGER_CEREAL_STRUCT(decrement_action);
-LAGER_CEREAL_STRUCT(reset_action, (new_value));
-
 } // namespace counter
+
+LAGER_STRUCT(counter, model, value);
+LAGER_STRUCT(counter, increment_action);
+LAGER_STRUCT(counter, decrement_action);
+LAGER_STRUCT(counter, reset_action, new_value);

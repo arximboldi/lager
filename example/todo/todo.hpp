@@ -10,17 +10,11 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <lager/debug/cereal/immer_flex_vector.hpp>
-#include <lager/debug/cereal/struct.hpp>
+#include <lager/extra/struct.hpp>
 
 #include <immer/flex_vector.hpp>
 
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/fusion/include/comparison.hpp>
-
-#include <cereal/archives/json.hpp>
-#include <cereal/cereal.hpp>
-
+#include <string>
 #include <variant>
 
 namespace todo {
@@ -30,7 +24,6 @@ struct item
     bool done = false;
     std::string text;
 };
-LAGER_CEREAL_STRUCT(todo::item, (done)(text));
 
 struct toggle_item_action
 {};
@@ -45,7 +38,6 @@ struct model
     std::string name;
     immer::flex_vector<item> todos;
 };
-LAGER_CEREAL_STRUCT(todo::model, (name)(todos));
 
 struct add_todo_action
 {
@@ -60,10 +52,7 @@ model update(model m, action a);
 model save(const std::string& fname, model todos);
 model load(const std::string& fname);
 
-using boost::fusion::operators::operator==;
-using boost::fusion::operators::operator!=;
-
 } // namespace todo
 
-BOOST_FUSION_ADAPT_STRUCT(todo::item, done, text);
-BOOST_FUSION_ADAPT_STRUCT(todo::model, name, todos);
+LAGER_STRUCT(todo, item, done, text);
+LAGER_STRUCT(todo, model, name, todos);

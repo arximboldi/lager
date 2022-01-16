@@ -2,6 +2,12 @@
 
 #include <lager/util.hpp>
 
+#include <cereal/archives/json.hpp>
+#include <cereal/cereal.hpp>
+
+#include <lager/extra/cereal/immer_flex_vector.hpp>
+#include <lager/extra/cereal/struct.hpp>
+
 #include <fstream>
 
 namespace todo {

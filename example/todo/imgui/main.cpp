@@ -22,6 +22,8 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
+#include <iostream>
+
 constexpr int window_padding = 48;
 constexpr int window_width   = 800;
 constexpr int window_height  = 600;

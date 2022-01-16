@@ -10,10 +10,8 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <lager/debug/cereal/struct.hpp>
+#include <lager/extra/struct.hpp>
 #include <lager/util.hpp>
-
-#include <cereal/types/complex.hpp>
 
 #include <complex>
 #include <variant>
@@ -66,11 +64,18 @@ struct tick_action
 
 using action = std::variant<paddle_move_action, tick_action>;
 
-LAGER_CEREAL_STRUCT(
-    model, (score)(max_score)(ball)(ball_v)(paddle_x)(death_anim)(bounce_anim));
-LAGER_CEREAL_STRUCT(paddle_move_action, (delta));
-LAGER_CEREAL_STRUCT(tick_action, (delta));
-
 model update(model g, action a);
 
 } // namespace autopong
+
+LAGER_STRUCT(autopong,
+             model,
+             score,
+             max_score,
+             ball,
+             ball_v,
+             paddle_x,
+             death_anim,
+             bounce_anim);
+LAGER_STRUCT(autopong, paddle_move_action, delta);
+LAGER_STRUCT(autopong, tick_action, delta);

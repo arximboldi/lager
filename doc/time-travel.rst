@@ -103,7 +103,7 @@ is however quite easy with the provided ``LAGER_CEREAL_STRUCT`` macro:
 
 .. code-block:: c++
 
-   #include <lager/debug/cereal/struct.hpp>
+   #include <lager/extra/cereal/struct.hpp>
 
    struct model
    {
