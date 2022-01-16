@@ -10,7 +10,7 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include "../todo.hpp"
+#include "../model.hpp"
 
 #include <lager/cursor.hpp>
 #include <lager/extra/qt.hpp>
@@ -49,18 +49,17 @@ class Model : public QObject
     lager::state<QString, lager::automatic_tag> file_name_;
 
 public:
+    LAGER_QT_READER(QString, fileName);
+    LAGER_QT_READER(QString, name);
+    LAGER_QT_READER(int, count);
+
     Model()
-        : LAGER_QT(name){state_[&todo::model::name].xform(
-              zug::map([](auto&& x) { return QString::fromStdString(x); }),
-              zug::map([](auto&& x) { return x.toStdString(); }))}
-        , LAGER_QT(fileName){file_name_}
+        : LAGER_QT(fileName){file_name_}
+        , LAGER_QT(name){file_name_.map(
+              [](auto f) { return QFileInfo{f}.baseName(); })}
         , LAGER_QT(count){state_.xform(zug::map(
               [](auto&& x) { return static_cast<int>(x.todos.size()); }))}
     {}
-
-    LAGER_QT_READER(QString, name);
-    LAGER_QT_READER(QString, fileName);
-    LAGER_QT_READER(int, count);
 
     Q_INVOKABLE Item* todo(int index)
     {
@@ -92,11 +91,7 @@ public:
             auto fpath = QUrl{fname}.toLocalFile();
             if (QFileInfo{fname}.suffix() != "todo")
                 fpath += ".todo";
-            state_.update([&](auto s) {
-                s      = todo::save(fpath.toStdString(), std::move(s));
-                s.name = QFileInfo{fname}.baseName().toStdString();
-                return s;
-            });
+            todo::save(fpath.toStdString(), *state_);
             file_name_.set(fname);
             return true;
         } catch (std::exception const& err) {
@@ -109,7 +104,6 @@ public:
     {
         try {
             auto model = todo::load(QUrl{fname}.toLocalFile().toStdString());
-            model.name = QFileInfo{fname}.baseName().toStdString();
             state_.set(model);
             file_name_.set(fname);
             return true;

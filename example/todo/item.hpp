@@ -10,9 +10,9 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <lager/extra/struct.hpp>
+#pragma once
 
-#include <immer/flex_vector.hpp>
+#include <lager/extra/struct.hpp>
 
 #include <string>
 #include <variant>
@@ -31,28 +31,8 @@ struct remove_item_action
 {};
 using item_action = std::variant<toggle_item_action, remove_item_action>;
 
-item update_item(item m, item_action a);
-
-struct model
-{
-    std::string name;
-    immer::flex_vector<item> todos;
-};
-
-struct add_todo_action
-{
-    std::string text;
-};
-
-using action =
-    std::variant<add_todo_action, std::pair<std::size_t, item_action>>;
-
-model update(model m, action a);
-
-model save(const std::string& fname, model todos);
-model load(const std::string& fname);
+item update(item m, item_action a);
 
 } // namespace todo
 
 LAGER_STRUCT(todo, item, done, text);
-LAGER_STRUCT(todo, model, name, todos);

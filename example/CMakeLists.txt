@@ -29,19 +29,19 @@ if(Curses_FOUND)
     set(counter_ncurses_link_libraries
       lager-debugger-example
       ${CURSES_LIBRARIES})
-    
+
     add_executable(counter-ncurses EXCLUDE_FROM_ALL ${counter_ncurses_sources})
     target_include_directories(counter-ncurses SYSTEM PUBLIC ${counter_ncurses_include_directories})
     target_link_libraries(counter-ncurses ${counter_ncurses_link_libraries})
     target_compile_definitions(counter-ncurses PUBLIC DEBUGGER)
     add_dependencies(examples counter-ncurses)
-    
+
     add_executable(counter-ncurses-tree EXCLUDE_FROM_ALL ${counter_ncurses_sources})
     target_include_directories(counter-ncurses-tree SYSTEM PUBLIC ${counter_ncurses_include_directories})
     target_link_libraries(counter-ncurses-tree ${counter_ncurses_link_libraries})
     target_compile_definitions(counter-ncurses-tree PUBLIC TREE_DEBUGGER)
     add_dependencies(examples counter-ncurses-tree)
-    
+
     add_executable(counter-ncurses-meta EXCLUDE_FROM_ALL ${counter_ncurses_sources})
     target_include_directories(counter-ncurses-meta SYSTEM PUBLIC ${counter_ncurses_include_directories})
     target_link_libraries(counter-ncurses-meta ${counter_ncurses_link_libraries})
@@ -70,7 +70,7 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
       ${SDL2_LIBRARY}
       ${SDL2_TTF_LIBRARIES})
     add_dependencies(examples counter-sdl2)
-    
+
     add_executable(autopong EXCLUDE_FROM_ALL
       autopong/autopong.cpp
       autopong/sdl2/main.cpp)
@@ -82,7 +82,7 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
       ${SDL2_LIBRARY}
       ${SDL2_TTF_LIBRARIES})
     add_dependencies(examples autopong)
-    
+
     add_executable(autopong-debug EXCLUDE_FROM_ALL
       autopong/autopong.cpp
       autopong/sdl2/main.cpp)
@@ -114,13 +114,25 @@ find_package(Boost 1.56)
 
 if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND AND Qt5QuickControls2_FOUND AND Boost_FOUND)
   add_executable(todo-qml EXCLUDE_FROM_ALL
-    todo/todo.cpp
+    todo/item.cpp
+    todo/model.cpp
     todo/qml/main.cpp)
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(todo-qml lager-example Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_compile_definitions(todo-qml PRIVATE
     LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
   add_dependencies(examples todo-qml)
+
+  add_executable(todo-qml-redux EXCLUDE_FROM_ALL
+    todo/item.cpp
+    todo/model.cpp
+    todo/app.cpp
+    todo/qml-redux/main.cpp)
+  set_target_properties(todo-qml-redux PROPERTIES AUTOMOC YES)
+  target_link_libraries(todo-qml-redux lager-example Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
+  target_compile_definitions(todo-qml-redux PRIVATE
+    LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml-redux")
+  add_dependencies(examples todo-qml-redux)
 
   add_executable(snake-qml EXCLUDE_FROM_ALL
     snake/model.cpp snake/qml/main.cpp snake/qml/qmodel.cpp)
@@ -157,10 +169,12 @@ if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
 
   add_custom_target(todo-imgui
     COMMAND em++ ${extra_emcc_flags}
-      -std=c++1z -I ${CMAKE_SOURCE_DIR}
+      -Os
+      -std=c++17 -I ${CMAKE_SOURCE_DIR}
       -I ${imgui_source_dir}
       ${imgui_sources}
-      ${CMAKE_CURRENT_SOURCE_DIR}/todo/todo.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/item.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/todo/model.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/todo/imgui/main.cpp
       -s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1
       -s ALLOW_MEMORY_GROWTH=1
