@@ -78,11 +78,11 @@ theStdenv.mkDerivation rec {
     addToSearchPath PATH "$LAGER_ROOT/build"
     addToSearchPath PATH "$LAGER_ROOT/build/example"
     addToSearchPath PATH "$LAGER_ROOT/build/test"
-    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols}/lib/qt-${qtver}/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt512.qtquickcontrols2.bin}/lib/qt-${qtver}/qml
-    addToSearchPath QML2_IMPORT_PATH ${qt512.qtgraphicaleffects}/lib/qt-${qtver}/qml
-    addToSearchPath QT_PLUGIN_PATH ${qt512.qtsvg.bin}/lib/qt-${qtver}/plugins
-    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt512.qtbase}/lib/qt-${qtver}/plugins
+    addToSearchPath QML2_IMPORT_PATH ${qt.qtquickcontrols}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt.qtquickcontrols2.bin}/lib/qt-${qtver}/qml
+    addToSearchPath QML2_IMPORT_PATH ${qt.qtgraphicaleffects}/lib/qt-${qtver}/qml
+    addToSearchPath QT_PLUGIN_PATH ${qt.qtsvg.bin}/lib/qt-${qtver}/plugins
+    export QT_QPA_PLATFORM_PLUGIN_PATH=${qt.qtbase}/lib/qt-${qtver}/plugins
     export IMGUI_SOURCE_DIR=${deps.imgui}
     export EM_CACHE=`mktemp -d`
   '';
