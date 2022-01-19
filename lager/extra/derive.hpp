@@ -32,7 +32,7 @@
         LAGER_DERIVE_ITER__,                                                   \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
         BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))))             \
-    static_assert("force semicolon")
+    static_assert(true, "force semicolon")
 
 #define LAGER_DERIVE_TEMPLATE_ITER__(r__, data__, elem__)                      \
     BOOST_PP_CAT(LAGER_DERIVE_TEMPLATE_IMPL_, elem__)                          \
@@ -47,7 +47,7 @@
         LAGER_DERIVE_TEMPLATE_ITER__,                                          \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
         BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))));            \
-    static_assert("force semicolon")
+    static_assert(true, "force semicolon")
 
 #define LAGER_DERIVE_NESTED_ITER__(r__, data__, elem__)                        \
     BOOST_PP_CAT(LAGER_DERIVE_NESTED_IMPL_, elem__)                            \
@@ -58,4 +58,4 @@
         LAGER_DERIVE_NESTED_ITER__,                                            \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
         BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))))             \
-    static_assert("force semicolon")
+    static_assert(true, "force semicolon")
