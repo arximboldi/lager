@@ -22,11 +22,25 @@ struct derived
 };
 } // namespace ns
 
-LAGER_DERIVE((EQ), ns, derived, a, b);
+LAGER_DERIVE(EQ, ns, derived, a, b);
 
 TEST_CASE("basic")
 {
     auto x = ns::derived{42, 12};
+    auto y = x;
+    CHECK(x == y);
+}
+
+namespace ns {
+struct empty_t
+{};
+} // namespace ns
+
+LAGER_DERIVE((EQ), ns, empty_t);
+
+TEST_CASE("empty")
+{
+    auto x = ns::empty_t{};
     auto y = x;
     CHECK(x == y);
 }
