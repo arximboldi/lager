@@ -62,3 +62,23 @@ TEST_CASE("template")
     auto y = x;
     CHECK(x == y);
 }
+
+namespace ns {
+template <typename A, typename B>
+struct foo_tpl2
+{
+    struct nested
+    {
+        A a;
+        B b;
+        LAGER_DERIVE_NESTED(EQ, nested, a, b);
+    };
+};
+} // namespace ns
+
+TEST_CASE("template_nested")
+{
+    auto x = ns::foo_tpl2<float, int>::nested{42, 12};
+    auto y = x;
+    CHECK(x == y);
+}

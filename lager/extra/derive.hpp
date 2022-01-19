@@ -42,7 +42,20 @@
     {                                                                          \
         return !(a == b);                                                      \
     }                                                                          \
-    }
+    }                                                                          \
+    //
+
+#define LAGER_DERIVE_IMPL_NESTED_EQ(r__, name__, members__)                    \
+    friend bool operator==(name__ const& a, name__ const& b)                   \
+    {                                                                          \
+        return true BOOST_PP_SEQ_FOR_EACH_R(                                   \
+            r__, LAGER_DERIVE_IMPL_EQ_ITER__, _, members__);                   \
+    }                                                                          \
+    friend bool operator!=(name__ const& a, name__ const& b)                   \
+    {                                                                          \
+        return !(a == b);                                                      \
+    }                                                                          \
+    //
 
 #define LAGER_DERIVE_ITER__(r__, data__, elem__)                               \
     BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)                                   \
@@ -56,7 +69,7 @@
     BOOST_PP_LIST_FOR_EACH(                                                    \
         LAGER_DERIVE_ITER__,                                                   \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
-        BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))));            \
+        BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))))             \
     static_assert("force semicolon")
 
 #define LAGER_DERIVE_TEMPLATE_ITER__(r__, data__, elem__)                      \
@@ -72,4 +85,15 @@
         LAGER_DERIVE_TEMPLATE_ITER__,                                          \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
         BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))));            \
+    static_assert("force semicolon")
+
+#define LAGER_DERIVE_NESTED_ITER__(r__, data__, elem__)                        \
+    BOOST_PP_CAT(LAGER_DERIVE_IMPL_NESTED_, elem__)                            \
+    (r__, BOOST_PP_SEQ_ELEM(0, data__), BOOST_PP_SEQ_REST_N(1, data__))
+
+#define LAGER_DERIVE_NESTED(impls__, ...)                                      \
+    BOOST_PP_LIST_FOR_EACH(                                                    \
+        LAGER_DERIVE_NESTED_ITER__,                                            \
+        BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
+        BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))))             \
     static_assert("force semicolon")
