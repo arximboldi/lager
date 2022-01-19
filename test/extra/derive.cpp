@@ -10,9 +10,12 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#include "test/cereal/cerealize.hpp"
+
 #include <catch.hpp>
 
 #include <lager/extra/derive.hpp>
+#include <lager/extra/derive/cereal.hpp>
 #include <lager/extra/derive/eq.hpp>
 #include <lager/extra/derive/hana.hpp>
 
@@ -27,7 +30,7 @@ struct derived
 };
 } // namespace ns
 
-LAGER_DERIVE((EQ, HANA), ns, derived, a, b);
+LAGER_DERIVE((EQ, HANA, CEREAL), ns, derived, a, b);
 
 TEST_CASE("basic")
 {
@@ -44,6 +47,9 @@ TEST_CASE("basic")
     CHECK(members ==
           immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
     CHECK(acc == 54);
+
+    auto z = cerealize(x);
+    CHECK(z == x);
 }
 
 namespace ns {
@@ -51,13 +57,16 @@ struct empty_t
 {};
 } // namespace ns
 
-LAGER_DERIVE(EQ, ns, empty_t);
+LAGER_DERIVE((EQ, CEREAL), ns, empty_t);
 
 TEST_CASE("empty")
 {
     auto x = ns::empty_t{};
     auto y = x;
     CHECK(x == y);
+
+    auto z = cerealize(x);
+    CHECK(z == x);
 }
 
 namespace ns {
@@ -70,7 +79,7 @@ struct foo_tpl
 } // namespace ns
 
 LAGER_DERIVE_TEMPLATE(
-    (EQ, HANA), ns, (class A, class B), (foo_tpl<A, B>), a, b);
+    (EQ, HANA, CEREAL), ns, (class A, class B), (foo_tpl<A, B>), a, b);
 
 TEST_CASE("template")
 {
@@ -87,6 +96,9 @@ TEST_CASE("template")
     CHECK(members ==
           immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
     CHECK(acc == 54);
+
+    auto z = cerealize(x);
+    CHECK(z == x);
 }
 
 namespace ns {
@@ -97,7 +109,7 @@ struct foo_tpl2
     {
         A a;
         B b;
-        LAGER_DERIVE_NESTED((EQ, HANA), nested, a, b);
+        LAGER_DERIVE_NESTED((EQ, HANA, CEREAL), nested, a, b);
     };
 };
 } // namespace ns
@@ -117,4 +129,7 @@ TEST_CASE("template_nested")
     CHECK(members ==
           immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
     CHECK(acc == 54);
+
+    auto z = cerealize(x);
+    CHECK(z == x);
 }
