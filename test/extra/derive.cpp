@@ -13,6 +13,7 @@
 #include <catch.hpp>
 
 #include <lager/extra/derive.hpp>
+#include <lager/extra/derive/eq.hpp>
 
 namespace ns {
 struct derived
