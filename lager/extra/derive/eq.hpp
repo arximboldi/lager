@@ -17,16 +17,30 @@
 
 #define LAGER_DERIVE_IMPL_EQ_ITER__(r__, data__, elem__) &&a.elem__ == b.elem__
 
-#define LAGER_DERIVE_IMPL_EQ(r__, tpl__, ns__, name__, members__)              \
+#define LAGER_DERIVE_IMPL_EQ(r__, ns__, name__, members__)                     \
     namespace ns__ {                                                           \
-    BOOST_PP_REMOVE_PARENS(tpl__)                                              \
+    inline bool operator==(name__ const& a, name__ const& b)                   \
+    {                                                                          \
+        return true BOOST_PP_SEQ_FOR_EACH_R(                                   \
+            r__, LAGER_DERIVE_IMPL_EQ_ITER__, _, members__);                   \
+    }                                                                          \
+    inline bool operator!=(name__ const& a, name__ const& b)                   \
+    {                                                                          \
+        return !(a == b);                                                      \
+    }                                                                          \
+    }                                                                          \
+    //
+
+#define LAGER_DERIVE_TEMPLATE_IMPL_EQ(r__, ns__, tpl__, name__, members__)     \
+    namespace ns__ {                                                           \
+    template <BOOST_PP_REMOVE_PARENS(tpl__)>                                   \
     inline bool operator==(BOOST_PP_REMOVE_PARENS(name__) const& a,            \
                            BOOST_PP_REMOVE_PARENS(name__) const& b)            \
     {                                                                          \
         return true BOOST_PP_SEQ_FOR_EACH_R(                                   \
             r__, LAGER_DERIVE_IMPL_EQ_ITER__, _, members__);                   \
     }                                                                          \
-    BOOST_PP_REMOVE_PARENS(tpl__)                                              \
+    template <BOOST_PP_REMOVE_PARENS(tpl__)>                                   \
     inline bool operator!=(BOOST_PP_REMOVE_PARENS(name__) const& a,            \
                            BOOST_PP_REMOVE_PARENS(name__) const& b)            \
     {                                                                          \
@@ -35,7 +49,7 @@
     }                                                                          \
     //
 
-#define LAGER_DERIVE_IMPL_NESTED_EQ(r__, name__, members__)                    \
+#define LAGER_DERIVE_NESTED_IMPL_EQ(r__, name__, members__)                    \
     friend bool operator==(name__ const& a, name__ const& b)                   \
     {                                                                          \
         return true BOOST_PP_SEQ_FOR_EACH_R(                                   \

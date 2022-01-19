@@ -23,7 +23,6 @@
 #define LAGER_DERIVE_ITER__(r__, data__, elem__)                               \
     BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)                                   \
     (r__,                                                                      \
-     (),                                                                       \
      BOOST_PP_SEQ_ELEM(0, data__),                                             \
      BOOST_PP_SEQ_ELEM(1, data__),                                             \
      BOOST_PP_SEQ_REST_N(2, data__))
@@ -36,10 +35,10 @@
     static_assert("force semicolon")
 
 #define LAGER_DERIVE_TEMPLATE_ITER__(r__, data__, elem__)                      \
-    BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)                                   \
+    BOOST_PP_CAT(LAGER_DERIVE_TEMPLATE_IMPL_, elem__)                          \
     (r__,                                                                      \
-     (template <BOOST_PP_REMOVE_PARENS(BOOST_PP_SEQ_ELEM(1, data__))>),        \
      BOOST_PP_SEQ_ELEM(0, data__),                                             \
+     BOOST_PP_SEQ_ELEM(1, data__),                                             \
      BOOST_PP_SEQ_ELEM(2, data__),                                             \
      BOOST_PP_SEQ_REST_N(3, data__))
 
@@ -51,7 +50,7 @@
     static_assert("force semicolon")
 
 #define LAGER_DERIVE_NESTED_ITER__(r__, data__, elem__)                        \
-    BOOST_PP_CAT(LAGER_DERIVE_IMPL_NESTED_, elem__)                            \
+    BOOST_PP_CAT(LAGER_DERIVE_NESTED_IMPL_, elem__)                            \
     (r__, BOOST_PP_SEQ_ELEM(0, data__), BOOST_PP_SEQ_REST_N(1, data__))
 
 #define LAGER_DERIVE_NESTED(impls__, ...)                                      \
