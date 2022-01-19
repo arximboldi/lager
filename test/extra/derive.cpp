@@ -44,3 +44,21 @@ TEST_CASE("empty")
     auto y = x;
     CHECK(x == y);
 }
+
+namespace ns {
+template <typename A, typename B>
+struct foo_tpl
+{
+    A a;
+    B b;
+};
+} // namespace ns
+
+LAGER_DERIVE_TEMPLATE(EQ, ns, (class A, class B), (foo_tpl<A, B>), a, b);
+
+TEST_CASE("template")
+{
+    auto x = ns::foo_tpl<float, int>{42, 12};
+    auto y = x;
+    CHECK(x == y);
+}

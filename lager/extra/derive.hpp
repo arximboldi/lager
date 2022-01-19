@@ -27,29 +27,49 @@
 
 #define LAGER_DERIVE_IMPL_EQ_ITER__(r__, data__, elem__) &&a.elem__ == b.elem__
 
-#define LAGER_DERIVE_IMPL_EQ(r__, ns__, name__, members__)                     \
+#define LAGER_DERIVE_IMPL_EQ(r__, tpl__, ns__, name__, members__)              \
     namespace ns__ {                                                           \
-    inline bool operator==(name__ const& a, name__ const& b)                   \
+    BOOST_PP_REMOVE_PARENS(tpl__)                                              \
+    inline bool operator==(BOOST_PP_REMOVE_PARENS(name__) const& a,            \
+                           BOOST_PP_REMOVE_PARENS(name__) const& b)            \
     {                                                                          \
         return true BOOST_PP_SEQ_FOR_EACH_R(                                   \
             r__, LAGER_DERIVE_IMPL_EQ_ITER__, _, members__);                   \
     }                                                                          \
-    inline bool operator!=(name__ const& a, name__ const& b)                   \
+    BOOST_PP_REMOVE_PARENS(tpl__)                                              \
+    inline bool operator!=(BOOST_PP_REMOVE_PARENS(name__) const& a,            \
+                           BOOST_PP_REMOVE_PARENS(name__) const& b)            \
     {                                                                          \
         return !(a == b);                                                      \
     }                                                                          \
     }
 
 #define LAGER_DERIVE_ITER__(r__, data__, elem__)                               \
-    BOOST_PP_EXPAND(BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)(                  \
-        r__,                                                                   \
-        BOOST_PP_SEQ_ELEM(0, data__),                                          \
-        BOOST_PP_SEQ_ELEM(1, data__),                                          \
-        BOOST_PP_EXPAND(BOOST_PP_SEQ_REST_N(2, data__))))
+    BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)                                   \
+    (r__,                                                                      \
+     (),                                                                       \
+     BOOST_PP_SEQ_ELEM(0, data__),                                             \
+     BOOST_PP_SEQ_ELEM(1, data__),                                             \
+     BOOST_PP_SEQ_REST_N(2, data__))
 
 #define LAGER_DERIVE(impls__, ...)                                             \
     BOOST_PP_LIST_FOR_EACH(                                                    \
         LAGER_DERIVE_ITER__,                                                   \
+        BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
+        BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))));            \
+    static_assert("force semicolon")
+
+#define LAGER_DERIVE_TEMPLATE_ITER__(r__, data__, elem__)                      \
+    BOOST_PP_CAT(LAGER_DERIVE_IMPL_, elem__)                                   \
+    (r__,                                                                      \
+     (template <BOOST_PP_REMOVE_PARENS(BOOST_PP_SEQ_ELEM(1, data__))>),        \
+     BOOST_PP_SEQ_ELEM(0, data__),                                             \
+     BOOST_PP_SEQ_ELEM(2, data__),                                             \
+     BOOST_PP_SEQ_REST_N(3, data__))
+
+#define LAGER_DERIVE_TEMPLATE(impls__, ...)                                    \
+    BOOST_PP_LIST_FOR_EACH(                                                    \
+        LAGER_DERIVE_TEMPLATE_ITER__,                                          \
         BOOST_PP_TUPLE_TO_SEQ((__VA_ARGS__)),                                  \
         BOOST_PP_TUPLE_TO_LIST((BOOST_PP_REMOVE_PARENS(impls__))));            \
     static_assert("force semicolon")
