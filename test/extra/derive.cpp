@@ -19,25 +19,28 @@
 #include <lager/extra/derive/eq.hpp>
 #include <lager/extra/derive/hana.hpp>
 
+#include <boost/hana/assert.hpp>
+#include <boost/hana/equal.hpp>
 #include <boost/hana/for_each.hpp>
+#include <boost/hana/integral_constant.hpp>
+#include <boost/hana/size.hpp>
+
 #include <immer/array.hpp>
 
-namespace ns {
-struct derived
-{
-    int a;
-    float b;
-};
-} // namespace ns
+namespace {
 
-LAGER_DERIVE((EQ, HANA, CEREAL), ns, derived, a, b);
-
-TEST_CASE("basic")
+template <typename T>
+void check_eq()
 {
-    auto x = ns::derived{42, 12};
+    auto x = T{42, 12};
     auto y = x;
     CHECK(x == y);
+}
 
+template <typename T>
+void check_hana()
+{
+    auto x       = T{42, 12};
     auto members = immer::array<std::string>{};
     auto acc     = 0;
     boost::hana::for_each(x, [&](auto&& x) {
@@ -47,26 +50,46 @@ TEST_CASE("basic")
     CHECK(members ==
           immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
     CHECK(acc == 54);
+}
 
-    auto z = cerealize(x);
-    CHECK(z == x);
+template <typename T>
+void check_cereal()
+{
+    auto x = T{42, 12};
+    auto y = cerealize(x);
+    CHECK(y == x);
+}
+
+} // namespace
+
+namespace ns {
+struct derived
+{
+    int a;
+    float b;
+};
+} // namespace ns
+LAGER_DERIVE((EQ, HANA, CEREAL), ns, derived, a, b);
+
+TEST_CASE("basic")
+{
+    check_eq<ns::derived>();
+    check_hana<ns::derived>();
+    check_cereal<ns::derived>();
 }
 
 namespace ns {
 struct empty_t
 {};
 } // namespace ns
-
-LAGER_DERIVE((EQ, CEREAL), ns, empty_t);
+LAGER_DERIVE((EQ, HANA, CEREAL), ns, empty_t);
 
 TEST_CASE("empty")
 {
-    auto x = ns::empty_t{};
-    auto y = x;
-    CHECK(x == y);
-
-    auto z = cerealize(x);
-    CHECK(z == x);
+    CHECK(ns::empty_t{} == ns::empty_t{});
+    CHECK(cerealize(ns::empty_t{}) == ns::empty_t{});
+    BOOST_HANA_CONSTANT_CHECK(boost::hana::size(ns::empty_t{}) ==
+                              boost::hana::size_c<0>);
 }
 
 namespace ns {
@@ -77,28 +100,14 @@ struct foo_tpl
     B b;
 };
 } // namespace ns
-
 LAGER_DERIVE_TEMPLATE(
     (EQ, HANA, CEREAL), ns, (class A, class B), (foo_tpl<A, B>), a, b);
 
 TEST_CASE("template")
 {
-    auto x = ns::foo_tpl<float, int>{42, 12};
-    auto y = x;
-    CHECK(x == y);
-
-    auto members = immer::array<std::string>{};
-    auto acc     = 0;
-    boost::hana::for_each(x, [&](auto&& x) {
-        members = std::move(members).push_back(boost::hana::first(x).c_str());
-        acc += boost::hana::second(x);
-    });
-    CHECK(members ==
-          immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
-    CHECK(acc == 54);
-
-    auto z = cerealize(x);
-    CHECK(z == x);
+    check_eq<ns::foo_tpl<int, float>>();
+    check_hana<ns::foo_tpl<int, float>>();
+    check_cereal<ns::foo_tpl<int, float>>();
 }
 
 namespace ns {
@@ -116,20 +125,7 @@ struct foo_tpl2
 
 TEST_CASE("template_nested")
 {
-    auto x = ns::foo_tpl2<float, int>::nested{42, 12};
-    auto y = x;
-    CHECK(x == y);
-
-    auto members = immer::array<std::string>{};
-    auto acc     = 0;
-    boost::hana::for_each(x, [&](auto&& x) {
-        members = std::move(members).push_back(boost::hana::first(x).c_str());
-        acc += boost::hana::second(x);
-    });
-    CHECK(members ==
-          immer::array<std::string>{{std::string{"a"}, std::string{"b"}}});
-    CHECK(acc == 54);
-
-    auto z = cerealize(x);
-    CHECK(z == x);
+    check_eq<ns::foo_tpl2<int, float>::nested>();
+    check_hana<ns::foo_tpl2<int, float>::nested>();
+    check_cereal<ns::foo_tpl2<int, float>::nested>();
 }
