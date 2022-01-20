@@ -20,10 +20,11 @@
 #include <immer/vector.hpp>
 #include <immer/vector_transient.hpp>
 
-#include <lager/debug/cereal/immer_box.hpp>
-#include <lager/debug/cereal/immer_vector.hpp>
-#include <lager/debug/cereal/struct.hpp>
-#include <lager/debug/cereal/variant_with_name.hpp>
+#include <lager/extra/cereal/immer_box.hpp>
+#include <lager/extra/cereal/immer_vector.hpp>
+#include <lager/extra/cereal/struct.hpp>
+#include <lager/extra/cereal/variant_with_name.hpp>
+#include <lager/extra/struct.hpp>
 
 #include <functional>
 #include <variant>
@@ -41,6 +42,7 @@ struct tree_debugger
     {
         std::size_t branch;
         std::size_t step;
+        LAGER_STRUCT_NESTED(pos_t, branch, step);
     };
 
     using cursor_t = immer::vector<pos_t>;
@@ -48,15 +50,24 @@ struct tree_debugger
     struct goto_action
     {
         cursor_t cursor;
+        LAGER_STRUCT_NESTED(goto_action, cursor);
     };
     struct undo_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(undo_action);
+    };
     struct redo_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(redo_action);
+    };
     struct pause_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(pause_action);
+    };
     struct resume_action
-    {};
+    {
+        LAGER_STRUCT_NESTED(resume_action);
+    };
 
     using action = std::variant<Action,
                                 goto_action,
@@ -73,6 +84,7 @@ struct tree_debugger
         Action action;
         Model model;
         immer::vector<history> branches;
+        LAGER_STRUCT_NESTED(step, action, model, branches);
     };
 
     struct summary_step_t;
@@ -84,6 +96,7 @@ struct tree_debugger
     {
         std::size_t steps;
         summary_t branches;
+        LAGER_STRUCT_NESTED(summary_step_t, steps, branches);
     };
 
     struct model
@@ -93,6 +106,7 @@ struct tree_debugger
         Model init;
         immer::vector<history> branches = {};
         immer::vector<Action> pending   = {};
+        LAGER_STRUCT_NESTED(model, cursor, paused, init, branches, pending);
 
         model() = default;
         model(Model i)
@@ -247,9 +261,9 @@ struct tree_debugger
                         auto index = m.cursor.size() - 1;
                         auto pos   = m.cursor.back();
                         m.cursor   = pos.step > 0
-                                       ? m.cursor.set(
+                                         ? m.cursor.set(
                                              index, {pos.branch, pos.step - 1})
-                                       : m.cursor.take(index);
+                                         : m.cursor.take(index);
                     }
                     return m;
                 },
@@ -288,16 +302,6 @@ struct tree_debugger
     {
         serv.view(m);
     }
-
-    LAGER_CEREAL_NESTED_STRUCT(undo_action);
-    LAGER_CEREAL_NESTED_STRUCT(redo_action);
-    LAGER_CEREAL_NESTED_STRUCT(pause_action);
-    LAGER_CEREAL_NESTED_STRUCT(resume_action);
-    LAGER_CEREAL_NESTED_STRUCT(goto_action, (cursor));
-    LAGER_CEREAL_NESTED_STRUCT(pos_t, (branch)(step));
-    LAGER_CEREAL_NESTED_STRUCT(model, (cursor)(paused)(init)(branches));
-    LAGER_CEREAL_NESTED_STRUCT(step, (action)(model)(branches));
-    LAGER_CEREAL_NESTED_STRUCT(summary_step_t, (steps)(branches));
 };
 
 } // namespace lager

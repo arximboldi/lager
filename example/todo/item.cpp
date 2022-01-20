@@ -10,13 +10,20 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include "cerealize.hpp"
-#include <catch.hpp>
-#include <lager/extra/cereal/immer_vector.hpp>
+#include "item.hpp"
 
-TEST_CASE("basic")
+#include <lager/util.hpp>
+
+namespace todo {
+
+item update(item s, item_action a)
 {
-    auto x = immer::vector<int>{{1, 2, 3, 5, 6}};
-    auto y = cerealize(x);
-    CHECK(x == y);
+    return lager::match(std::move(a))(
+        [&](toggle_item_action&& a) {
+            s.done = !s.done;
+            return std::move(s);
+        },
+        [&](remove_item_action&& a) { return std::move(s); });
 }
+
+} // namespace todo

@@ -21,6 +21,9 @@
 #include <lager/resources_path.hpp>
 #include <lager/store.hpp>
 
+#include <cereal/types/complex.hpp>
+#include <lager/extra/cereal/struct.hpp>
+
 #include <cmath>
 #include <iostream>
 #include <string>

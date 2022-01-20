@@ -18,7 +18,7 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
-#include <lager/debug/cereal/variant_with_name.hpp>
+#include <lager/extra/cereal/variant_with_name.hpp>
 
 #include <httpserver.hpp>
 
@@ -213,14 +213,11 @@ public:
                     req_path == "/" ? "/gui/index.html" : "/gui/" + req_path;
                 auto full_path = this->self.resources_path() + rel_path;
                 auto content_type =
-                    detail::ends_with(full_path, ".html")
-                        ? "text/html"
-                        : detail::ends_with(full_path, ".js")
-                              ? "text/javascript"
-                              : detail::ends_with(full_path, ".css")
-                                    ? "text/css"
-                                    /* otherwise */
-                                    : "text/plain";
+                    detail::ends_with(full_path, ".html")  ? "text/html"
+                    : detail::ends_with(full_path, ".js")  ? "text/javascript"
+                    : detail::ends_with(full_path, ".css") ? "text/css"
+                                                           /* otherwise */
+                                                           : "text/plain";
                 return std::make_shared<httpserver::file_response>(
                     full_path, 200, content_type);
             }

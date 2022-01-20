@@ -12,7 +12,7 @@
 
 #include "cerealize.hpp"
 #include <catch.hpp>
-#include <lager/debug/cereal/immer_array.hpp>
+#include <lager/extra/cereal/immer_array.hpp>
 
 TEST_CASE("basic")
 {

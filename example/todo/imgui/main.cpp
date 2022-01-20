@@ -10,7 +10,7 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include "../todo.hpp"
+#include "../model.hpp"
 
 #include <lager/event_loop/sdl.hpp>
 #include <lager/store.hpp>
@@ -21,6 +21,8 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
+
+#include <iostream>
 
 constexpr int window_padding = 48;
 constexpr int window_width   = 800;
@@ -51,7 +53,9 @@ void draw(lager::context<todo::item_action> ctx, const todo::item& i)
     }
 }
 
-void draw(lager::context<todo::action> ctx, const todo::model& m, ui_state& s)
+void draw(lager::context<todo::model_action> ctx,
+          const todo::model& m,
+          ui_state& s)
 {
     ImGui::SetNextWindowPos({window_padding, window_padding}, ImGuiCond_Once);
     ImGui::SetNextWindowSize(
@@ -69,8 +73,6 @@ void draw(lager::context<todo::action> ctx, const todo::model& m, ui_state& s)
     ImGui::SameLine();
     if (ImGui::Button("Load"))
         ImGui::OpenPopup("not-implemented");
-    ImGui::SameLine();
-    ImGui::Text("%s", m.name.c_str());
 
     ImGui::Separator();
     if (ImGui::IsWindowAppearing())
@@ -156,7 +158,7 @@ int main()
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     auto loop  = lager::sdl_event_loop{};
-    auto store = lager::make_store<todo::action>(
+    auto store = lager::make_store<todo::model_action>(
         todo::model{}, lager::with_sdl_event_loop{loop});
     auto state = ui_state{};
 

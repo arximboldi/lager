@@ -12,7 +12,7 @@
 
 #include "cerealize.hpp"
 #include <catch.hpp>
-#include <lager/debug/cereal/tuple.hpp>
+#include <lager/extra/cereal/tuple.hpp>
 
 TEST_CASE("basic")
 {
