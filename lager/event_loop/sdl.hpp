@@ -159,11 +159,21 @@ struct sdl_event_loop
 
     void post(event_fn ev)
     {
+#if !__EMSCRIPTEN__
         auto event = SDL_Event{};
         SDL_zero(event);
         event.type       = post_event_type_;
         event.user.data1 = new event_fn{std::move(ev)};
         SDL_PushEvent(&event);
+#else
+        ::emscripten_set_immediate(
+            [](void* data) {
+                auto fn =
+                    std::unique_ptr<event_fn>{static_cast<event_fn*>(data)};
+                (*fn)();
+            },
+            new event_fn{std::move(ev)});
+#endif
     }
 
     void finish() { done_ = true; }
