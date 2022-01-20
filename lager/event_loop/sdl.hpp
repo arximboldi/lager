@@ -166,12 +166,13 @@ struct sdl_event_loop
         event.user.data1 = new event_fn{std::move(ev)};
         SDL_PushEvent(&event);
 #else
-        ::emscripten_set_immediate(
+        ::emscripten_set_timeout(
             [](void* data) {
                 auto fn =
                     std::unique_ptr<event_fn>{static_cast<event_fn*>(data)};
                 (*fn)();
             },
+            0,
             new event_fn{std::move(ev)});
 #endif
     }
