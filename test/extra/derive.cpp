@@ -18,6 +18,7 @@
 #include <lager/extra/derive/cereal.hpp>
 #include <lager/extra/derive/eq.hpp>
 #include <lager/extra/derive/hana.hpp>
+#include <lager/extra/derive/hash.hpp>
 
 #include <boost/hana/assert.hpp>
 #include <boost/hana/equal.hpp>
@@ -26,6 +27,7 @@
 #include <boost/hana/size.hpp>
 
 #include <immer/array.hpp>
+#include <immer/set.hpp>
 
 namespace {
 
@@ -60,6 +62,14 @@ void check_cereal()
     CHECK(y == x);
 }
 
+template <typename T>
+void check_hash()
+{
+    auto m = immer::set<T>{}.insert(T{42, 12});
+    CHECK(m.count(T{42, 12}) == 1);
+    CHECK(m.count(T{42, 13}) == 0);
+}
+
 } // namespace
 
 namespace ns {
@@ -69,13 +79,14 @@ struct derived
     float b;
 };
 } // namespace ns
-LAGER_DERIVE((EQ, HANA, CEREAL), ns, derived, a, b);
+LAGER_DERIVE((EQ, HANA, CEREAL, HASH), ns, derived, a, b);
 
 TEST_CASE("basic")
 {
     check_eq<ns::derived>();
     check_hana<ns::derived>();
     check_cereal<ns::derived>();
+    check_hash<ns::derived>();
 }
 
 namespace ns {
@@ -101,13 +112,14 @@ struct foo_tpl
 };
 } // namespace ns
 LAGER_DERIVE_TEMPLATE(
-    (EQ, HANA, CEREAL), ns, (class A, class B), (foo_tpl<A, B>), a, b);
+    (EQ, HANA, CEREAL, HASH), ns, (class A, class B), (foo_tpl<A, B>), a, b);
 
 TEST_CASE("template")
 {
     check_eq<ns::foo_tpl<int, float>>();
     check_hana<ns::foo_tpl<int, float>>();
     check_cereal<ns::foo_tpl<int, float>>();
+    check_hash<ns::foo_tpl<int, float>>();
 }
 
 namespace ns {

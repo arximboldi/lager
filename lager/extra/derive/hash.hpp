@@ -12,23 +12,46 @@
 
 #pragma once
 
+#include <boost/preprocessor/punctuation/remove_parens.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
+#include <boost/functional/hash.hpp>
+
 #include <functional>
 
-#define LAGER_DERIVE_IMPL_CEREAL_ITER__(r__, data__, i__, elem__)              \
+#define LAGER_DERIVE_IMPL_HASH_ITER__(r__, data__, elem__)                     \
     ::boost::hash_combine(seed, x.elem__);
 
 #define LAGER_DERIVE_IMPL_HASH(r__, ns__, name__, members__)                   \
     namespace std {                                                            \
     template <>                                                                \
-    struct hash<name__>                                                        \
+    struct hash<ns__::name__>                                                  \
     {                                                                          \
-        std::size_t operator()(const name__& x)                                \
+        std::size_t operator()(const ns__::name__& x)                          \
         {                                                                      \
             auto seed = std::size_t{};                                         \
-            BOOST_PP_SEQ_FOR_EACH_I_R(                                         \
-                r__, LAGER_DERIVE_IMPL_HASH_ITER__, _, members__);             \
+            BOOST_PP_SEQ_FOR_EACH_R(                                           \
+                r__, LAGER_DERIVE_IMPL_HASH_ITER__, _, members__)              \
+            return seed;                                                       \
         }                                                                      \
     };                                                                         \
+    }                                                                          \
+    //
+
+#define LAGER_DERIVE_TEMPLATE_IMPL_HASH(r__, ns__, tpl__, name__, members__)   \
+    namespace std {                                                            \
+    template <BOOST_PP_REMOVE_PARENS(tpl__)>                                   \
+    struct hash<ns__::BOOST_PP_REMOVE_PARENS(name__)>                          \
+    {                                                                          \
+        std::size_t operator()(const ns__::BOOST_PP_REMOVE_PARENS(name__) & x) \
+        {                                                                      \
+            auto seed = std::size_t{};                                         \
+            BOOST_PP_SEQ_FOR_EACH_R(                                           \
+                r__, LAGER_DERIVE_IMPL_HASH_ITER__, _, members__)              \
+            return seed;                                                       \
+        }                                                                      \
+    };                                                                         \
+    }                                                                          \
     //
 
 #define LAGER_DERIVE_NESTED_IMPL_HASH(r__, name__, members__)                  \
