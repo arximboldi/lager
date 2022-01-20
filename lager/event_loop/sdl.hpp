@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -144,9 +145,9 @@ struct sdl_event_loop
             while (continue_ && ((!paused_ && SDL_PollEvent(&event)) ||
                                  (paused_ && SDL_WaitEvent(&event)))) {
                 if (event.type == post_event_type_) {
-                    auto fnp = static_cast<event_fn*>(event.user.data1);
+                    auto fnp = std::unique_ptr<event_fn>{
+                        static_cast<event_fn*>(event.user.data1)};
                     (*fnp)();
-                    delete fnp;
                 } else {
                     continue_ = continue_ && (paused_ || handler(event));
                 }
@@ -158,11 +159,22 @@ struct sdl_event_loop
 
     void post(event_fn ev)
     {
+#if !__EMSCRIPTEN__
         auto event = SDL_Event{};
         SDL_zero(event);
         event.type       = post_event_type_;
         event.user.data1 = new event_fn{std::move(ev)};
         SDL_PushEvent(&event);
+#else
+        ::emscripten_set_timeout(
+            [](void* data) {
+                auto fn =
+                    std::unique_ptr<event_fn>{static_cast<event_fn*>(data)};
+                (*fn)();
+            },
+            0,
+            new event_fn{std::move(ev)});
+#endif
     }
 
     void finish() { done_ = true; }
