@@ -10,6 +10,7 @@ cc_library(
         "@boost//:intrusive",
         "@boost//:intrusive_ptr",
         "@zug//:zug",
+        "@cereal//:cereal",
     ],
     includes = [".", "lager/"],
     visibility = ["//visibility:public"],
