@@ -10,5 +10,11 @@ git_repository(
     remote = "https://github.com/arximboldi/zug",
 )
 
+git_repository(
+    name = "cereal",
+    commit = "72d3eb200dc0568277255f960bc2bd7eccf8bafc",
+    remote = "https://github.com/USCiLab/cereal",
+)
+
 load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
 boost_deps()
