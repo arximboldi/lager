@@ -29,6 +29,7 @@ stdenv.mkDerivation rec {
     deps.libhttpserver
     deps.cereal
     deps.immer
+    deps.zug
   ];
   meta = {
     homepage    = "https://github.com/arximboldi/lager";

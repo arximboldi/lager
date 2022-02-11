@@ -71,6 +71,7 @@ if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
   find_package(Boost 1.56 COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
+  find_package(Zug REQUIRED)
 endif()
 
 # the library, local development target
@@ -83,7 +84,10 @@ if(lager_BUILD_TESTS)
   )
   target_link_libraries(lager-dev INTERFACE lager
     ${Boost_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT}
+    immer
+    zug
+  )
   if (ENABLE_COVERAGE)
     target_compile_options(lager-dev INTERFACE "--coverage")
     target_link_libraries(lager-dev INTERFACE "--coverage")
