@@ -18,6 +18,9 @@
 #include <lager/state.hpp>
 #include <lager/writer.hpp>
 
+#include <lager/lenses.hpp>
+#include <lager/lenses/tuple.hpp>
+
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/comparison.hpp>
 
@@ -199,4 +202,18 @@ TEST_CASE("automatic_tag edge case")
     cur.set(42); // this would cause a crash before commit aefd37b
 
     st.set(vec_t{1, 2, 3, 4}); // this will collect garbage
+}
+
+TEST_CASE("lenses over with expression")
+{
+    state<person, automatic_tag> person_data;
+
+    person_data.set(person{{}, "old name", {}});
+
+    cursor<std::string> name = with(person_data[&person::name], person_data[&person::birthday]).zoom(lenses::first);
+
+    name.set("new name");
+
+    CHECK(person_data->name == "new name");
+    CHECK(name.get() == "new name");
 }
