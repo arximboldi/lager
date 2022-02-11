@@ -38,14 +38,14 @@ class lens_reader_node<Lens, zug::meta::pack<Parents...>, Base>
     : public inner_node<
           std::decay_t<decltype(view(
               std::declval<Lens>(),
-              zug::tuplify(std::declval<zug::meta::value_t<Parents>...>())))>,
+              zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>,
           zug::meta::pack<Parents...>,
           Base>
 {
     using base_t = inner_node<
         std::decay_t<decltype(view(
             std::declval<Lens>(),
-            zug::tuplify(std::declval<zug::meta::value_t<Parents>...>())))>,
+            zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>,
         zug::meta::pack<Parents...>,
         Base>;
 
