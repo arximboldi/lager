@@ -618,11 +618,7 @@ TEST_CASE("lenses over with expression")
 
     person_data.set(person{{}, "old name", {}});
 
-    auto name_lens = lenses::getset(
-        [] (std::tuple<std::string, yearday> x) { return std::get<0>(x); },
-        [] (std::tuple<std::string, yearday> x, std::string new_name) { return std::make_tuple(new_name, std::get<1>(x)); });
-
-    cursor<std::string> name = with(person_data[&person::name], person_data[&person::birthday]).zoom(name_lens);
+    cursor<std::string> name = with(person_data[&person::name], person_data[&person::birthday]).zoom(lenses::first);
 
     name.set("new name");
 
