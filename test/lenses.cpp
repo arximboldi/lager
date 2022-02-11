@@ -16,6 +16,7 @@
 #include <zug/compose.hpp>
 #include <zug/util.hpp>
 
+#include <lager/state.hpp>
 #include <lager/lenses.hpp>
 #include <lager/lenses/at.hpp>
 #include <lager/lenses/at_or.hpp>
@@ -609,4 +610,22 @@ TEST_CASE("lenses::element array", "[lenses][element][array]")
     CHECK(view(second, foo) == 2);
 
     CHECK(over(element<1>, foo, increment) == (std::array{1, 3, 3}));
+}
+
+TEST_CASE("lenses over with expression")
+{
+    state<person, automatic_tag> person_data;
+
+    person_data.set(person{{}, "old name", {}});
+
+    auto name_lens = lenses::getset(
+        [] (std::tuple<std::string, yearday> x) { return std::get<0>(x); },
+        [] (std::tuple<std::string, yearday> x, std::string new_name) { return std::make_tuple(new_name, std::get<1>(x)); });
+
+    cursor<std::string> name = with(person_data[&person::name], person_data[&person::birthday]).zoom(name_lens);
+
+    name.set("new name");
+
+    CHECK(person_data->name == "new name");
+    CHECK(name.get() == "new name");
 }
