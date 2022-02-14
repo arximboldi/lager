@@ -94,6 +94,13 @@ public:
 
     state(state&&) = default;
     state& operator=(state&&) = default;
+
+    /*!
+     * Deletes implicit creation and replacement of the store
+     * when it is assigned with the base type
+     */
+    state& operator=(const T&) = delete;
+    state& operator=(T&&) = delete;
 };
 
 template <typename T>
