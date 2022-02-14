@@ -10,6 +10,8 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
+#include <boost/operators.hpp>
+
 #include <catch.hpp>
 
 #include <lager/state.hpp>
@@ -182,4 +184,66 @@ TEST_CASE("state, capsule carries its own watchers")
     sig->notify();
     CHECK(1 == s.count());
     CHECK(sig->observers().empty());
+}
+
+namespace TestNS {
+struct Child : public boost::equality_comparable<Child>
+{
+    friend bool operator==(const Child &lhs, const Child &rhs) {
+        return lhs.childValue == rhs.childValue;
+    }
+
+    Child() = default;
+    Child(int value) : childValue(value) {}
+
+    int childValue = 0;
+};
+
+struct Parent : public boost::equality_comparable<Parent>
+{
+    friend bool operator==(const Parent &lhs, const Parent &rhs) {
+        return lhs.parentValue == rhs.parentValue &&
+            lhs.child == rhs.child;
+    }
+
+    int parentValue = 0;
+    Child child;
+};
+}
+
+TEST_CASE("state, check notifications after direct assignment to state")
+{
+
+    lager::state<TestNS::Parent, automatic_tag> state;
+    lager::cursor<TestNS::Child> childCursor = state[&TestNS::Parent::child];
+    lager::cursor<int> childValueCursor = childCursor[&TestNS::Child::childValue];
+
+    auto childSpy = testing::spy([&](const TestNS::Child &value) {
+        CHECK(value.childValue == 13);
+    });
+
+    auto parentSpy = testing::spy([&](const TestNS::Parent &value) {
+        CHECK(value.parentValue == 0);
+        CHECK(value.child.childValue == 13);
+    });
+
+    watch(state, parentSpy);
+    watch(childCursor, childSpy);
+
+    /// this code must be impossible to compile,
+    /// because it implicitly replaces the store,
+    /// breaking all the links
+    ///
+    /// state = TestNS::Parent();
+
+    // use explicit setters instead (like in cursors)
+    state.set(TestNS::Parent());
+
+    childValueCursor.set(13);
+
+    CHECK(state.get().parentValue == 0);
+    CHECK(state.get().child.childValue == 13);
+
+    CHECK(childSpy.count() == 1);
+    CHECK(parentSpy.count() == 1);
 }
