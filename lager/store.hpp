@@ -20,6 +20,9 @@
 
 #include <zug/compose.hpp>
 
+#include <boost/hana/contains.hpp>
+#include <boost/hana/set.hpp>
+
 #include <memory>
 #include <type_traits>
 
@@ -70,10 +73,13 @@ public:
     template <typename ReducerFn,
               typename EventLoop,
               typename Deps,
-              typename Tag>
-    store(
-        model_t init, ReducerFn reducer, EventLoop loop, Deps dependencies, Tag)
-        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps, Tag>>(
+              typename Tags>
+    store(model_t init,
+          ReducerFn reducer,
+          EventLoop loop,
+          Deps dependencies,
+          Tags tags)
+        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps, Tags>>(
               std::move(init),
               std::move(reducer),
               std::move(loop),
@@ -109,7 +115,7 @@ private:
     template <typename ReducerFn,
               typename EventLoop,
               typename Deps,
-              typename Tag>
+              typename Tags>
     struct store_node final : detail::store_node_base<Action, Model>
     {
         using base_t             = detail::store_node_base<Action, Model>;
@@ -121,6 +127,9 @@ private:
         event_loop_t loop;
         reducer_t reducer;
         concrete_context_t ctx;
+
+        static constexpr bool is_automatic =
+            boost::hana::contains(Tags{}, boost::hana::type_c<automatic_tag>);
 
         store_node(model_t init_,
                    reducer_t reducer_,
@@ -148,7 +157,7 @@ private:
                         loop.post([this,
                                    p   = std::move(p),
                                    eff = LAGER_FWD(effect)]() mutable {
-                            if constexpr (std::is_same_v<Tag, automatic_tag>) {
+                            if constexpr (is_automatic) {
                                 base_t::send_down();
                                 base_t::notify();
                             }
@@ -162,7 +171,7 @@ private:
                         });
                     },
                     [&] {
-                        if constexpr (std::is_same_v<Tag, automatic_tag>) {
+                        if constexpr (is_automatic) {
                             loop.post([this, p = std::move(p)]() mutable {
                                 base_t::send_down();
                                 base_t::notify();
@@ -201,12 +210,14 @@ auto with_deps(Args&&... args)
                                 auto&& model,
                                 auto&& reducer,
                                 auto&& loop,
-                                auto&& deps) {
+                                auto&& deps,
+                                auto&& tags) {
             return next(action,
                         LAGER_FWD(model),
                         LAGER_FWD(reducer),
                         LAGER_FWD(loop),
-                        LAGER_FWD(deps).merge(new_deps));
+                        LAGER_FWD(deps).merge(new_deps),
+                        LAGER_FWD(tags));
         };
     };
 }
@@ -229,12 +240,14 @@ auto with_reducer(Reducer&& reducer)
                                auto&& model,
                                auto&& old_reducer,
                                auto&& loop,
-                               auto&& deps) {
+                               auto&& deps,
+                               auto&& tags) {
             return next(action,
                         LAGER_FWD(model),
                         reducer,
                         LAGER_FWD(loop),
-                        LAGER_FWD(deps));
+                        LAGER_FWD(deps),
+                        LAGER_FWD(tags));
         };
     };
 }
@@ -311,22 +324,23 @@ auto make_store(Model&& init, EventLoop&& loop, Enhancers&&... enhancers)
                                       auto&& model,
                                       auto&& reducer,
                                       auto&& loop,
-                                      auto&& deps) {
+                                      auto&& deps,
+                                      auto&& tags) {
         using action_t = typename decltype(action)::type;
         using model_t  = std::decay_t<decltype(model)>;
         using deps_t   = std::decay_t<decltype(deps)>;
-        using tag_t    = Tag;
         return store<action_t, model_t, deps_t>{LAGER_FWD(model),
                                                 LAGER_FWD(reducer),
                                                 LAGER_FWD(loop),
                                                 LAGER_FWD(deps),
-                                                tag_t{}};
+                                                tags};
     });
     return store_creator(type_<Action>{},
                          std::forward<Model>(init),
                          default_reducer,
                          std::forward<EventLoop>(loop),
-                         deps<>{});
+                         deps<>{},
+                         boost::hana::make_set(boost::hana::type_c<Tag>));
 }
 
 template <typename Action,
