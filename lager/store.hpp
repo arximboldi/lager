@@ -136,7 +136,7 @@ private:
 
         future dispatch(action_t action) override
         {
-            auto [p, f] = promise::make(loop);
+            auto [p, f] = promise::with_loop(loop);
             loop.post([this,
                        p      = std::move(p),
                        action = std::move(action)]() mutable {

@@ -130,16 +130,16 @@ struct promise
      * Constructs a promise and future associated to the given event loop.
      */
     template <typename EventLoop>
-    static std::pair<promise, future> make(EventLoop& loop)
+    static std::pair<promise, future> with_loop(EventLoop& loop)
     {
-        return make_([&loop](auto&& fn) { loop.post(LAGER_FWD(fn)); });
+        return with_post([&loop](auto&& fn) { loop.post(LAGER_FWD(fn)); });
     }
 
     /*!
      * Constructs a promise and future associated to a given `post` function.
      */
     static std::pair<promise, future>
-    make_(std::function<void(std::function<void()>)> post)
+    with_post(std::function<void(std::function<void()>)> post)
     {
         auto state = std::make_shared<detail::promise_state>(std::move(post));
         return {promise{state}, future{state}};
@@ -186,7 +186,7 @@ future future::then(Fn&& fn) &&
     } else {
         assert(state_);
         assert(!state_->callback);
-        auto [p, f] = promise::make_(state_->post);
+        auto [p, f] = promise::with_post(state_->post);
         {
             auto lock        = std::unique_lock{state_->mutex};
             state_->callback = [p  = std::move(p),
