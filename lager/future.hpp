@@ -146,6 +146,16 @@ struct promise
     }
 
     /*!
+     * Constructs a promise and future that do not have an associated execution
+     * context. These are invalid and any function chained in the futures will
+     * be invoked immediatelly.
+     */
+    static std::pair<promise, future> invalid()
+    {
+        return {promise{nullptr}, future{nullptr}};
+    }
+
+    /*!
      * Fullfils the promise. Can only be called once for any promise chain!
      */
     void operator()()

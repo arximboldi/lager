@@ -22,6 +22,7 @@
 
 #include <boost/hana/contains.hpp>
 #include <boost/hana/set.hpp>
+#include <boost/hana/union.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -128,8 +129,10 @@ private:
         reducer_t reducer;
         concrete_context_t ctx;
 
-        static constexpr bool is_automatic =
-            boost::hana::contains(Tags{}, boost::hana::type_c<automatic_tag>);
+        static constexpr bool is_transactional = boost::hana::contains(
+            Tags{}, boost::hana::type_c<transactional_tag>);
+        static constexpr bool has_futures = boost::hana::contains(
+            Tags{}, boost::hana::type_c<enable_futures_tag>);
 
         store_node(model_t init_,
                    reducer_t reducer_,
@@ -145,7 +148,12 @@ private:
 
         future dispatch(action_t action) override
         {
-            auto [p, f] = promise::with_loop(loop);
+            auto [p, f] = [&] {
+                if constexpr (has_futures)
+                    return promise::with_loop(loop);
+                else
+                    return promise::invalid();
+            }();
             loop.post([this,
                        p      = std::move(p),
                        action = std::move(action)]() mutable {
@@ -157,29 +165,32 @@ private:
                         loop.post([this,
                                    p   = std::move(p),
                                    eff = LAGER_FWD(effect)]() mutable {
-                            if constexpr (is_automatic) {
+                            if constexpr (!is_transactional) {
                                 base_t::send_down();
                                 base_t::notify();
                             }
                             if constexpr (std::is_same_v<void,
                                                          decltype(eff(ctx))>) {
                                 eff(ctx);
-                                p();
+                                if constexpr (has_futures)
+                                    p();
                             } else {
-                                eff(ctx).then(std::move(p));
+                                auto f = eff(ctx);
+                                if constexpr (has_futures)
+                                    std::move(f).then(std::move(p));
                             }
                         });
                     },
                     [&] {
-                        if constexpr (is_automatic) {
+                        if constexpr (!is_transactional) {
                             loop.post([this, p = std::move(p)]() mutable {
                                 base_t::send_down();
                                 base_t::notify();
-                                p();
+                                if constexpr (has_futures)
+                                    p();
                             });
-                        } else {
+                        } else if constexpr (has_futures)
                             p();
-                        }
                     }));
             });
             return std::move(f);
@@ -195,6 +206,33 @@ private:
         , reader_t{std::move(node)}
     {}
 };
+
+/*!
+ * Store enhancer that adds certaings tags to the store
+ */
+template <typename... Tags>
+ZUG_INLINE_CONSTEXPR auto with_tags = [](auto next) {
+    return [next](auto action,
+                  auto&& model,
+                  auto&& reducer,
+                  auto&& loop,
+                  auto&& deps,
+                  auto&& tags) {
+        return next(action,
+                    LAGER_FWD(model),
+                    LAGER_FWD(reducer),
+                    LAGER_FWD(loop),
+                    LAGER_FWD(deps),
+                    boost::hana::union_(
+                        LAGER_FWD(tags),
+                        boost::hana::make_set(boost::hana::type_c<Tags>...)));
+    };
+};
+
+/*!
+ * Store enhancer that enables futures support for the given store.
+ */
+ZUG_INLINE_CONSTEXPR auto with_futures = with_tags<enable_futures_tag>;
 
 /*!
  * Store enhancer that adds dependencies to the store.
@@ -313,7 +351,7 @@ ZUG_INLINE_CONSTEXPR struct default_reducer_t
  * @endrst
  */
 template <typename Action,
-          typename Tag = automatic_tag,
+          typename Tag = void, // use default
           typename Model,
           typename EventLoop,
           typename... Enhancers>

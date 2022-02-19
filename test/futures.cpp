@@ -20,8 +20,10 @@
 TEST_CASE("future then callback is called after reducer")
 {
     auto queue = lager::queue_event_loop{};
-    auto store = lager::make_store<counter::action>(
-        counter::model{}, lager::with_queue_event_loop{queue});
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           lager::with_queue_event_loop{queue},
+                                           lager::with_futures);
 
     auto called = 0;
     store.dispatch(counter::increment_action{}).then([&] {
@@ -43,6 +45,7 @@ TEST_CASE("future then callback is called after effects")
     auto store = lager::make_store<int>(
         0,
         lager::with_queue_event_loop{queue},
+        lager::with_futures,
         lager::with_reducer([&](int s, int a) -> lager::result<int, int> {
             if (a == 0)
                 return {s,
@@ -66,8 +69,10 @@ TEST_CASE("future then callback is called after effects")
 TEST_CASE("combining future")
 {
     auto queue = lager::queue_event_loop{};
-    auto store = lager::make_store<counter::action>(
-        counter::model{}, lager::with_queue_event_loop{queue});
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           lager::with_queue_event_loop{queue},
+                                           lager::with_futures);
 
     auto called = 0;
     store.dispatch(counter::increment_action{})
