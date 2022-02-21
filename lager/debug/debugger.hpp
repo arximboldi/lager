@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include <lager/context.hpp>
 #include <lager/detail/access.hpp>
+#include <lager/effect.hpp>
 #include <lager/util.hpp>
 
 #include <immer/algorithm.hpp>
@@ -194,7 +194,8 @@ auto with_debugger(Server& serv)
                              auto&& model,
                              auto&& reducer,
                              auto&& loop,
-                             auto&& deps) {
+                             auto&& deps,
+                             auto&& tags) {
             using action_t   = typename decltype(action)::type;
             using model_t    = std::decay_t<decltype(model)>;
             using deps_t     = std::decay_t<decltype(deps)>;
@@ -208,7 +209,8 @@ auto with_debugger(Server& serv)
                         reducer, LAGER_FWD(model), LAGER_FWD(action));
                 },
                 LAGER_FWD(loop),
-                LAGER_FWD(deps));
+                LAGER_FWD(deps),
+                LAGER_FWD(tags));
             handle.set_context(store);
             handle.set_reader(store.xform(zug::map([](auto&& x) {
                 return static_cast<typename debugger_t::model>(x);

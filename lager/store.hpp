@@ -14,10 +14,15 @@
 
 #include <lager/context.hpp>
 #include <lager/deps.hpp>
+#include <lager/effect.hpp>
 #include <lager/state.hpp>
 #include <lager/util.hpp>
 
 #include <zug/compose.hpp>
+
+#include <boost/hana/contains.hpp>
+#include <boost/hana/set.hpp>
+#include <boost/hana/union.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -36,7 +41,7 @@ struct store_node_base : public root_node<Model, reader_node>
     using base_t::base_t;
 
     virtual void recompute() final {}
-    virtual void dispatch(action_t action) = 0;
+    virtual future dispatch(action_t action) = 0;
 };
 
 } // namespace detail
@@ -69,10 +74,13 @@ public:
     template <typename ReducerFn,
               typename EventLoop,
               typename Deps,
-              typename Tag>
-    store(
-        model_t init, ReducerFn reducer, EventLoop loop, Deps dependencies, Tag)
-        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps, Tag>>(
+              typename Tags>
+    store(model_t init,
+          ReducerFn reducer,
+          EventLoop loop,
+          Deps dependencies,
+          Tags tags)
+        : store{std::make_shared<store_node<ReducerFn, EventLoop, Deps, Tags>>(
               std::move(init),
               std::move(reducer),
               std::move(loop),
@@ -108,7 +116,7 @@ private:
     template <typename ReducerFn,
               typename EventLoop,
               typename Deps,
-              typename Tag>
+              typename Tags>
     struct store_node final : detail::store_node_base<Action, Model>
     {
         using base_t             = detail::store_node_base<Action, Model>;
@@ -121,6 +129,11 @@ private:
         reducer_t reducer;
         concrete_context_t ctx;
 
+        static constexpr bool is_transactional = boost::hana::contains(
+            Tags{}, boost::hana::type_c<transactional_tag>);
+        static constexpr bool has_futures = boost::hana::contains(
+            Tags{}, boost::hana::type_c<enable_futures_tag>);
+
         store_node(model_t init_,
                    reducer_t reducer_,
                    event_loop_t loop_,
@@ -128,36 +141,59 @@ private:
             : base_t{std::move(init_)}
             , loop{std::move(loop_)}
             , reducer{std::move(reducer_)}
-            , ctx{[this](auto&& act) { dispatch(LAGER_FWD(act)); },
+            , ctx{[this](auto&& act) { return dispatch(LAGER_FWD(act)); },
                   loop,
                   std::move(deps_)}
         {}
 
-        void dispatch(action_t action) override
+        future dispatch(action_t action) override
         {
-            loop.post([this, action = std::move(action)] {
+            auto [p, f] = [&] {
+                if constexpr (has_futures)
+                    return promise::with_loop(loop);
+                else
+                    return promise::invalid();
+            }();
+            loop.post([this,
+                       p      = std::move(p),
+                       action = std::move(action)]() mutable {
                 base_t::push_down(invoke_reducer<deps_t>(
                     reducer,
                     base_t::current(),
                     std::move(action),
                     [&](auto&& effect) {
-                        loop.post([this, effect = LAGER_FWD(effect)] {
-                            if constexpr (std::is_same_v<Tag, automatic_tag>) {
+                        loop.post([this,
+                                   p   = std::move(p),
+                                   eff = LAGER_FWD(effect)]() mutable {
+                            if constexpr (!is_transactional) {
                                 base_t::send_down();
                                 base_t::notify();
                             }
-                            effect(ctx);
+                            if constexpr (std::is_same_v<void,
+                                                         decltype(eff(ctx))>) {
+                                eff(ctx);
+                                if constexpr (has_futures)
+                                    p();
+                            } else {
+                                auto f = eff(ctx);
+                                if constexpr (has_futures)
+                                    std::move(f).then(std::move(p));
+                            }
                         });
                     },
                     [&] {
-                        if constexpr (std::is_same_v<Tag, automatic_tag>) {
-                            loop.post([this] {
+                        if constexpr (!is_transactional) {
+                            loop.post([this, p = std::move(p)]() mutable {
                                 base_t::send_down();
                                 base_t::notify();
+                                if constexpr (has_futures)
+                                    p();
                             });
-                        }
+                        } else if constexpr (has_futures)
+                            p();
                     }));
             });
+            return std::move(f);
         }
     };
 
@@ -170,6 +206,33 @@ private:
         , reader_t{std::move(node)}
     {}
 };
+
+/*!
+ * Store enhancer that adds certaings tags to the store
+ */
+template <typename... Tags>
+ZUG_INLINE_CONSTEXPR auto with_tags = [](auto next) {
+    return [next](auto action,
+                  auto&& model,
+                  auto&& reducer,
+                  auto&& loop,
+                  auto&& deps,
+                  auto&& tags) {
+        return next(action,
+                    LAGER_FWD(model),
+                    LAGER_FWD(reducer),
+                    LAGER_FWD(loop),
+                    LAGER_FWD(deps),
+                    boost::hana::union_(
+                        LAGER_FWD(tags),
+                        boost::hana::make_set(boost::hana::type_c<Tags>...)));
+    };
+};
+
+/*!
+ * Store enhancer that enables futures support for the given store.
+ */
+ZUG_INLINE_CONSTEXPR auto with_futures = with_tags<enable_futures_tag>;
 
 /*!
  * Store enhancer that adds dependencies to the store.
@@ -185,12 +248,14 @@ auto with_deps(Args&&... args)
                                 auto&& model,
                                 auto&& reducer,
                                 auto&& loop,
-                                auto&& deps) {
+                                auto&& deps,
+                                auto&& tags) {
             return next(action,
                         LAGER_FWD(model),
                         LAGER_FWD(reducer),
                         LAGER_FWD(loop),
-                        LAGER_FWD(deps).merge(new_deps));
+                        LAGER_FWD(deps).merge(new_deps),
+                        LAGER_FWD(tags));
         };
     };
 }
@@ -213,12 +278,14 @@ auto with_reducer(Reducer&& reducer)
                                auto&& model,
                                auto&& old_reducer,
                                auto&& loop,
-                               auto&& deps) {
+                               auto&& deps,
+                               auto&& tags) {
             return next(action,
                         LAGER_FWD(model),
                         reducer,
                         LAGER_FWD(loop),
-                        LAGER_FWD(deps));
+                        LAGER_FWD(deps),
+                        LAGER_FWD(tags));
         };
     };
 }
@@ -284,7 +351,7 @@ ZUG_INLINE_CONSTEXPR struct default_reducer_t
  * @endrst
  */
 template <typename Action,
-          typename Tag = automatic_tag,
+          typename Tag = void, // use default
           typename Model,
           typename EventLoop,
           typename... Enhancers>
@@ -295,22 +362,23 @@ auto make_store(Model&& init, EventLoop&& loop, Enhancers&&... enhancers)
                                       auto&& model,
                                       auto&& reducer,
                                       auto&& loop,
-                                      auto&& deps) {
+                                      auto&& deps,
+                                      auto&& tags) {
         using action_t = typename decltype(action)::type;
         using model_t  = std::decay_t<decltype(model)>;
         using deps_t   = std::decay_t<decltype(deps)>;
-        using tag_t    = Tag;
         return store<action_t, model_t, deps_t>{LAGER_FWD(model),
                                                 LAGER_FWD(reducer),
                                                 LAGER_FWD(loop),
                                                 LAGER_FWD(deps),
-                                                tag_t{}};
+                                                tags};
     });
     return store_creator(type_<Action>{},
                          std::forward<Model>(init),
                          default_reducer,
                          std::forward<EventLoop>(loop),
-                         deps<>{});
+                         deps<>{},
+                         boost::hana::make_set(boost::hana::type_c<Tag>));
 }
 
 template <typename Action,

@@ -18,5 +18,7 @@ struct transactional_tag
 {};
 struct automatic_tag
 {};
+struct enable_futures_tag
+{};
 
 } // namespace lager
