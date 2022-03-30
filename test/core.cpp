@@ -56,6 +56,19 @@ TEST_CASE("basic")
     CHECK(store.get().value == 1);
 }
 
+TEST_CASE("with reducer enhancer")
+{
+    auto reducer = [](counter::model m, counter::action) { return m; };
+    auto store =
+        lager::make_store<counter::action>(counter::model{},
+                                           lager::with_manual_event_loop{},
+                                           lager::with_reducer(reducer));
+
+    CHECK(store.get().value == 0);
+    store.dispatch(counter::increment_action{});
+    CHECK(store.get().value == 0);
+}
+
 TEST_CASE("effect as a result")
 {
     auto viewed = std::optional<int>{std::nullopt};
