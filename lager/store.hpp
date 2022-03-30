@@ -273,7 +273,7 @@ auto with_deps(Args&&... args)
 template <typename Reducer>
 auto with_reducer(Reducer&& reducer)
 {
-    return [reducer](auto next) {
+    return [reducer = LAGER_FWD(reducer)](auto next) {
         return [reducer, next](auto action,
                                auto&& model,
                                auto&& old_reducer,
