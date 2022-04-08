@@ -27,7 +27,7 @@
     template <>                                                                \
     struct hash<ns__::name__>                                                  \
     {                                                                          \
-        std::size_t operator()(const ns__::name__& x)                          \
+        std::size_t operator()(const ns__::name__& x) const                    \
         {                                                                      \
             auto seed = std::size_t{};                                         \
             BOOST_PP_SEQ_FOR_EACH_R(                                           \
@@ -43,7 +43,8 @@
     template <BOOST_PP_REMOVE_PARENS(tpl__)>                                   \
     struct hash<ns__::BOOST_PP_REMOVE_PARENS(name__)>                          \
     {                                                                          \
-        std::size_t operator()(const ns__::BOOST_PP_REMOVE_PARENS(name__) & x) \
+        std::size_t operator()(const ns__::BOOST_PP_REMOVE_PARENS(name__) &    \
+                               x) const                                        \
         {                                                                      \
             auto seed = std::size_t{};                                         \
             BOOST_PP_SEQ_FOR_EACH_R(                                           \
