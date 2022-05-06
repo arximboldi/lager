@@ -21,6 +21,7 @@
 
 extern "C"
 {
+#define NCURSES_NOMACROS
 #include <ncurses.h>
 }
 
