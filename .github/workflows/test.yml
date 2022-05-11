@@ -14,6 +14,26 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-build
 
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v14.1
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v10
+        with:
+          name: arximboldi
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: nix-shell --run 'mkdir build-mac'
+      - name: configure cmake
+        run: |
+          nix-shell --run "
+            cd build-mac && cmake .. \
+              -DCMAKE_BUILD_TYPE=Debug
+          "
+      - run: nix-shell --run "cd build-mac && make check -j`nproc`"
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -48,6 +68,8 @@ jobs:
           - type: Debug
             compiler: gcc9
             opts: ['coverage']
+          - type: Debug
+            compiler: clang_10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

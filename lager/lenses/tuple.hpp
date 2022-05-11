@@ -56,15 +56,31 @@ decltype(auto) operator+(Init&& init, Elem&& elem)
 }
 } // namespace fold_op
 
+template <typename Init>
+decltype(auto) set_fold_iteration(Init&& init)
+{
+    return LAGER_FWD(init);
+}
+
+template <typename Init, typename Elem, typename... Tail>
+decltype(auto) set_fold_iteration(Init&& init, Elem&& elem, Tail&&... tail)
+{
+    auto&& [lens, part] = LAGER_FWD(elem);
+    return ::lager::set(
+        LAGER_FWD(lens),
+        LAGER_FWD(set_fold_iteration(LAGER_FWD(init), LAGER_FWD(tail)...)),
+        LAGER_FWD(part));
+}
+
 template <typename Whole, typename LensTuple, typename PartTuple, size_t... Seq>
 decltype(auto) set_fold_impl(Whole&& whole,
                              LensTuple&& lenses,
                              PartTuple&& parts,
                              std::index_sequence<Seq...>)
 {
-    using fold_op::operator+;
-    return (LAGER_FWD(whole) + ... +
-            multiget<Seq>(LAGER_FWD(lenses), LAGER_FWD(parts)));
+    return set_fold_iteration(
+        LAGER_FWD(whole),
+        multiget<Seq>(LAGER_FWD(lenses), LAGER_FWD(parts))...);
 }
 
 template <typename Whole, typename LensTuple, typename PartTuple>

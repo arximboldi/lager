@@ -137,10 +137,12 @@ if (lager_BUILD_EXAMPLES)
       lager-example
       ${LIBHTTPSERVER_LIBRARIES})
 
-    add_custom_target(gui ALL
-      COMMAND make
+    if (NOT APPLE)
+      add_custom_target(gui ALL
+        COMMAND make
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
         COMMENT "Build debugger web UI")
+    endif()
 
     install(TARGETS lager-debugger-example  EXPORT LagerConfig)
 

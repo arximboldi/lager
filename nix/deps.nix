@@ -31,12 +31,12 @@ rec {
   cereal = stdenv.mkDerivation rec {
     name = "cereal-${version}";
     version = "git-arximboldi-${commit}";
-    commit = "f158a44a3277ec2e1807618e63bcb8e1bd559649";
+    commit = "4bfaf5fee1cbc69db4614169092368a29c7607c4";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "cereal";
       rev = commit;
-      sha256 = "1zny1k00npz3vrx6bhhdd2gpsy007zjykvmf5af3b3vmvip5p9sm";
+      sha256 = "17gwhwhih4737wzm24c45y3ch69jzw2mi8prj1pdlxff8f1pki8v";
     };
     nativeBuildInputs = [ cmake ];
     cmakeFlags="-DJUST_INSTALL_CEREAL=true";
@@ -50,13 +50,14 @@ rec {
   immer = stdenv.mkDerivation rec {
     name = "immer-${version}";
     version = "git-${commit}";
-    commit = "ffbc180da6463f8f06af0e96336f161256422b1f";
+    commit = "a1271fa712342f5c6dfad876820da17e10c28214";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "immer";
       rev = commit;
-      sha256 = "0f05mhm2sjmvwy6ix4gfahig26rx63c1ji2zr8nvxy75gslnfkpn";
+      sha256 = "1bqkinkbp1b1aprg7ydfrbfs7gi779nypwvh9fj129frq1c2rxw5";
     };
+    dontUseCmakeBuildDir = true;
     nativeBuildInputs = [ cmake ];
     meta = with lib; {
       homepage = "http://sinusoid.es/immer";

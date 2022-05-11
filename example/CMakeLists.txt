@@ -161,14 +161,16 @@ set(imgui_sources
   "${imgui_source_dir}/imgui_impl_sdl.cpp"
   "${imgui_source_dir}/imgui_impl_opengl3.cpp")
 
-if (OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
+find_program(EMXX em++)
+
+if (EMXX AND OPENGL_FOUND AND SDL2_FOUND AND EXISTS "${imgui_source_dir}/imgui.h")
   message(STATUS "ImGui found in ${imgui_source_dir}")
 
   set(extra_emcc_flags $ENV{NIX_CFLAGS_COMPILE})
   separate_arguments(extra_emcc_flags)
 
   add_custom_target(todo-imgui
-    COMMAND em++ ${extra_emcc_flags}
+    COMMAND ${EMXX} ${extra_emcc_flags}
       -Os
       -std=c++17 -I ${CMAKE_SOURCE_DIR}
       -I ${imgui_source_dir}
