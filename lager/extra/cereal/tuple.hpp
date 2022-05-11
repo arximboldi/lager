@@ -44,7 +44,7 @@ template <class Archive, class... Types>
 inline void CEREAL_SERIALIZE_FUNCTION_NAME(Archive& ar,
                                            std::tuple<Types...>& tuple)
 {
-    auto ts = sizeof...(Types);
+    auto ts = static_cast<size_type>(sizeof...(Types));
     ar(make_size_tag(ts));
     assert(ts == sizeof...(Types));
     detail::serialize<sizeof...(Types)>::template apply(ar, tuple);

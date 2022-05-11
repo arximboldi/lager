@@ -114,7 +114,8 @@ model update(model g, action a)
                     g.max_score  = std::max(g.max_score, g.score);
                     g.score      = 0;
                     g.ball_v     = ball_init_v;
-                    g.ball       = {padding + (float) std::rand() / RAND_MAX *
+                    g.ball       = {padding + std::rand() /
+                                            static_cast<float>(RAND_MAX) *
                                             (window_width - padding * 4),
                               padding * 2};
                     g.death_anim = 1;

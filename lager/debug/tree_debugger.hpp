@@ -261,9 +261,9 @@ struct tree_debugger
                         auto index = m.cursor.size() - 1;
                         auto pos   = m.cursor.back();
                         m.cursor   = pos.step > 0
-                                         ? m.cursor.set(
+                                       ? m.cursor.set(
                                              index, {pos.branch, pos.step - 1})
-                                         : m.cursor.take(index);
+                                       : m.cursor.take(index);
                     }
                     return m;
                 },
@@ -278,20 +278,22 @@ struct tree_debugger
                 [&](resume_action) -> result_t {
                     auto resume_eff =
                         effect<action>{[](auto&& ctx) { ctx.loop().resume(); }};
-                    auto eff         = effect<action>{noop};
-                    auto pending     = m.pending;
-                    m.paused         = false;
-                    m.pending        = {};
-                    std::tie(m, eff) = immer::accumulate(
+                    auto eff     = effect<action>{noop};
+                    auto pending = m.pending;
+                    m.paused     = false;
+                    m.pending    = {};
+                    auto r       = result_t{std::move(m), std::move(eff)};
+                    r            = immer::accumulate(
                         pending,
-                        result_t{m, eff},
+                        std::move(r),
                         [&](result_t acc, auto&& act) -> result_t {
                             auto [m, eff] = LAGER_FWD(acc);
                             auto [new_m, new_eff] =
                                 update(reducer, std::move(m), LAGER_FWD(act));
                             return {new_m, sequence(eff, new_eff)};
                         });
-                    return {m, sequence(resume_eff, eff)};
+                    return {std::move(r.first),
+                            sequence(resume_eff, std::move(r.second))};
                 },
             },
             act);
