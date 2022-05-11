@@ -50,13 +50,14 @@ rec {
   immer = stdenv.mkDerivation rec {
     name = "immer-${version}";
     version = "git-${commit}";
-    commit = "ffbc180da6463f8f06af0e96336f161256422b1f";
+    commit = "a1271fa712342f5c6dfad876820da17e10c28214";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "immer";
       rev = commit;
-      sha256 = "0f05mhm2sjmvwy6ix4gfahig26rx63c1ji2zr8nvxy75gslnfkpn";
+      sha256 = "1bqkinkbp1b1aprg7ydfrbfs7gi779nypwvh9fj129frq1c2rxw5";
     };
+    dontUseCmakeBuildDir = true;
     nativeBuildInputs = [ cmake ];
     meta = with lib; {
       homepage = "http://sinusoid.es/immer";
