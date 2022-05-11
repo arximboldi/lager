@@ -21,7 +21,17 @@
 
 extern "C"
 {
-#define NCURSES_NOMACROS
+// this is required to avoid naming conflicts with boost::asio
+#ifndef NCURSES_NOMACROS
+#define NCURSES_NOMACROS 1
+#endif
+// this is required on Apple for ::get_wch
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED 1
+#endif
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 1
+#endif
 #include <ncurses.h>
 }
 
