@@ -31,12 +31,12 @@ rec {
   cereal = stdenv.mkDerivation rec {
     name = "cereal-${version}";
     version = "git-arximboldi-${commit}";
-    commit = "f158a44a3277ec2e1807618e63bcb8e1bd559649";
+    commit = "4bfaf5fee1cbc69db4614169092368a29c7607c4";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "cereal";
       rev = commit;
-      sha256 = "1zny1k00npz3vrx6bhhdd2gpsy007zjykvmf5af3b3vmvip5p9sm";
+      sha256 = "17gwhwhih4737wzm24c45y3ch69jzw2mi8prj1pdlxff8f1pki8v";
     };
     nativeBuildInputs = [ cmake ];
     cmakeFlags="-DJUST_INSTALL_CEREAL=true";
