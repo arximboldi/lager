@@ -47,7 +47,6 @@ theStdenv.mkDerivation rec {
     deps.immer
     deps.zug
     deps.imgui
-    deps.libhttpserver
     SDL2
     SDL2_ttf
     qt.qtbase

@@ -3,31 +3,6 @@
 with import nixpkgs {};
 
 rec {
-  libhttpserver = stdenv.mkDerivation rec {
-    name = "libhttpserver-${version}";
-    version = "git-${commit}";
-    commit = "f4caf637090b5ff39bfc146b0ecd633f670c3697";
-    src = fetchFromGitHub {
-      owner = "etr";
-      repo = "libhttpserver";
-      rev = commit;
-      sha256 = "0cx928sjnhgg008pvg7n8pqk93bm83gz4a8wpz3dq7356j9qqs1m";
-    };
-    propagatedBuildInputs = [ gnutls libmicrohttpd ] ++ gnutls.buildInputs;
-    nativeBuildInputs = [ autoreconfHook ];
-    configureScript = "../configure";
-    configurePhase = ''
-      substituteInPlace configure --replace "/bin/pwd" "${coreutils}/bin/pwd"
-      mkdir build && cd build
-      ../configure -prefix $out
-    '';
-    meta = with lib; {
-      homepage = "https://github.com/etr/libhttpserver";
-      description = "C++ library for creating an embedded Rest HTTP server (and more)";
-      license = licenses.lgpl2;
-    };
-  };
-
   cereal = stdenv.mkDerivation rec {
     name = "cereal-${version}";
     version = "git-arximboldi-${commit}";
