@@ -1,8 +1,8 @@
 {
   compiler ? "",
-  rev     ? "87645f7222515f604f91b56121f2b9c9ddc90ae8",
-  sha256  ? "1fr3jyf3hjbz3m95yjlfwq7jl4x6jz03894iqz6pqw54pm24q0a6",
-  nixpkgs ? builtins.fetchTarball {
+  rev      ? "e1118817a12dba39081d9e70ae52dd38aa184c2e",
+  sha256   ? "04jhgyr5ibdhjay3s5jx11q5y9mfn8nd8lr941b0jlpky89a1pjw",
+  nixpkgs  ? builtins.fetchTarball {
     name   = "nixpkgs-${rev}";
     url    = "https://github.com/nixos/nixpkgs/archive/${rev}.tar.gz";
     sha256 = sha256;
@@ -27,7 +27,7 @@ let
                   then pkgs.${compiler}
                   else stdenv.cc;
   theStdenv     = if compilerPkg.isClang
-                  then libcxxStdenv
+                  then clangStdenv
                   else stdenv;
   qt            = qt5;
   qtver         = qt.qtbase.version;
@@ -43,15 +43,13 @@ theStdenv.mkDerivation rec {
     pkgconfig
     libiconvReal
     glibcLocales
-    deps.libhttpserver
     deps.cereal
     deps.immer
     deps.zug
     deps.imgui
-    sass
+    deps.libhttpserver
     SDL2
     SDL2_ttf
-    emscripten
     qt.qtbase
     qt.qtdeclarative
     qt.qtquickcontrols
@@ -61,13 +59,15 @@ theStdenv.mkDerivation rec {
       click
       requests
     ]))
+  ] ++ lib.optionals stdenv.isLinux [
+    emscripten
     old-nixpkgs.doxygen
     (old-nixpkgs.python.withPackages (ps: [
       ps.sphinx
       docs.breathe
       docs.recommonmark
       ]))
-  ] ++ lib.optionals stdenv.isLinux [
+    old-nixpkgs.sass
     old-nixpkgs.elmPackages.elm-reactor
     old-nixpkgs.elmPackages.elm-make
     old-nixpkgs.elmPackages.elm-package
