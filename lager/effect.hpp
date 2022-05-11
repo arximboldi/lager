@@ -58,7 +58,7 @@ lager::effect<lager::actions<...>, ...> " //
 
     template <
         typename Fn,
-        std::enable_if_t<std::is_same_v<void, std::result_of_t<Fn(context_t)>>,
+        std::enable_if_t<std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
                          int> = 0>
     effect(Fn&& fn)
         : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) -> future {
