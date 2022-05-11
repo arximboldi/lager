@@ -128,14 +128,10 @@ if (lager_BUILD_EXAMPLES)
 
   # examples with the http debugger
   if (lager_BUILD_DEBUGGER_EXAMPLES)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
     add_library(lager-debugger-example INTERFACE)
-    target_include_directories(lager-debugger-example INTERFACE
-      ${LIBHTTPSERVER_INCLUDE_DIRS})
     target_link_libraries(lager-debugger-example INTERFACE
       lager-example
-      ${LIBHTTPSERVER_LIBRARIES})
+      Boost::system)
 
     if (NOT APPLE)
       add_custom_target(gui ALL

@@ -66,7 +66,7 @@ void terminal::stop()
 
 void terminal::next_resize_()
 {
-    signal_.async_wait([=](auto ec, auto) {
+    signal_.async_wait([this](auto ec, auto) {
         if (!ec) {
             next_resize_();
             auto ws = ::winsize{};

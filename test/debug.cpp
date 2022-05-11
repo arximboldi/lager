@@ -21,23 +21,18 @@
 
 struct dummy_debugger
 {
-    struct handle
+    struct impl
     {
-        template <typename Context>
-        void set_context(Context&&)
-        {}
-        template <typename Reader>
-        void set_reader(Reader&&)
+        template <typename Context, typename Reader>
+        void init(Context&&, Reader&&)
         {}
     };
 
     template <typename Debugger>
-    handle& enable(Debugger)
+    std::shared_ptr<impl> make(Debugger)
     {
-        return handle_;
+        return std::make_shared<impl>();
     }
-
-    handle handle_;
 };
 
 TEST_CASE("basic")

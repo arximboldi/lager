@@ -26,7 +26,6 @@ stdenv.mkDerivation rec {
   ];
   propagatedBuildInputs = [
     boost
-    deps.libhttpserver
     deps.cereal
     deps.immer
     deps.zug
