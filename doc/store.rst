@@ -19,6 +19,6 @@ with_deps
 store
 -----
 
-.. doxygenstruct:: lager::store
+.. doxygenclass:: lager::store
     :members:
     :undoc-members:
