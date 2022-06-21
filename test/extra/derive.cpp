@@ -90,6 +90,23 @@ TEST_CASE("basic")
 }
 
 namespace ns {
+struct derived2
+{
+    derived a;
+    float b;
+};
+} // namespace ns
+LAGER_DERIVE((EQ, HANA, CEREAL, HASH), ns, derived2, a, b);
+
+TEST_CASE("basic-2")
+{
+    check_eq<ns::derived2>();
+    // check_hana<ns::derived2>();
+    check_cereal<ns::derived2>();
+    check_hash<ns::derived2>();
+}
+
+namespace ns {
 struct empty_t
 {};
 } // namespace ns
