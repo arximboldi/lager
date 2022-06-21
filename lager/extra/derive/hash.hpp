@@ -19,8 +19,11 @@
 
 #include <functional>
 
+// use formula from boost::hash_combine as in:
+// https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine
 #define LAGER_DERIVE_IMPL_HASH_ITER__(r__, data__, elem__)                     \
-    ::boost::hash_combine(seed, x.elem__);
+    seed ^= std::hash<std::decay_t<decltype(x.elem__)>>{}(x.elem__) +          \
+            0x9e3779b9 + (seed << 6) + (seed >> 2);
 
 #define LAGER_DERIVE_IMPL_HASH(r__, ns__, name__, members__)                   \
     namespace std {                                                            \
@@ -46,7 +49,7 @@
         std::size_t operator()(const ns__::BOOST_PP_REMOVE_PARENS(name__) &    \
                                x) const                                        \
         {                                                                      \
-            auto seed = std::size_t{};                                         \
+            auto seed = typeid(x).hash_code();                                 \
             BOOST_PP_SEQ_FOR_EACH_R(                                           \
                 r__, LAGER_DERIVE_IMPL_HASH_ITER__, _, members__)              \
             return seed;                                                       \
