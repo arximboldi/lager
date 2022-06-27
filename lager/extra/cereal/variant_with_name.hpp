@@ -84,4 +84,8 @@ inline void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, std::variant<Ts...>& variant)
     detail::load_variant<0, variant_t, Ts...>(ar, target, variant);
 }
 
+//! Serializing a std::monostate
+template <class Archive>
+void CEREAL_SERIALIZE_FUNCTION_NAME( Archive &, std::monostate const & ) {}
+
 } // namespace cereal
