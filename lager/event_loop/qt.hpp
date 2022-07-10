@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <QObject>
 #include <QThreadPool>
 #include <QtConcurrent>
@@ -45,8 +47,8 @@ struct with_qt_event_loop
 
     void finish() { QCoreApplication::instance()->quit(); }
 
-    void pause() { throw std::runtime_error{"not implemented!"}; }
-    void resume() { throw std::runtime_error{"not implemented!"}; }
+    void pause() { LAGER_THROW(std::runtime_error{"not implemented!"}); }
+    void resume() { LAGER_THROW(std::runtime_error{"not implemented!"}); }
 };
 
 } // namespace lager

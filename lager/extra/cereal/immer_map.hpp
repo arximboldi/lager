@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <cereal/cereal.hpp>
 
 #include <immer/map.hpp>
@@ -53,7 +55,7 @@ CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::map<K, T, H, E, MP, B>& m)
         m       = std::move(m).set(std::move(id), std::move(x));
     }
     if (size != m.size())
-        throw std::runtime_error{"duplicate ids?"};
+        LAGER_THROW(std::runtime_error{"duplicate ids?"});
 }
 
 template <typename Archive,
@@ -91,7 +93,7 @@ CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::map<K, T, H, E, MP, B>& m)
         m = std::move(m).set(std::move(k), std::move(x));
     }
     if (size != m.size())
-        throw std::runtime_error{"duplicate ids?"};
+        LAGER_THROW(std::runtime_error{"duplicate ids?"});
 }
 
 template <typename Archive,

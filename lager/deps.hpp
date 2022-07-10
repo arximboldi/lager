@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <boost/hana/at_key.hpp>
 #include <boost/hana/filter.hpp>
 #include <boost/hana/find.hpp>
@@ -164,7 +166,7 @@ struct opt : to_spec<T>
         if (x)
             return to_spec<T>::get(*std::forward<Storage>(x));
         else
-            throw missing_dependency_error{"missing dependency in lager::deps"};
+            LAGER_THROW(missing_dependency_error{"missing dependency in lager::deps"});
     }
 
     template <typename Storage>

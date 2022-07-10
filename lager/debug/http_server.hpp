@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/context.hpp>
 #include <lager/reader.hpp>
 
@@ -80,9 +81,9 @@ public:
                                });
 
         if (it != resources_.end()) {
-            try {
+            LAGER_TRY {
                 return it->handler(std::move(req));
-            } catch (const std::exception& err) {
+            } LAGER_CATCH(const std::exception& err) {
                 return create_response_(500, "text/html", err.what());
             }
         }

@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/util.hpp>
 
 #include <cassert>
@@ -161,7 +162,7 @@ struct promise
     void operator()()
     {
         if (!state_)
-            throw std::runtime_error{"promise already satisfied!"};
+            LAGER_THROW(std::runtime_error{"promise already satisfied!"});
         {
             auto lock = std::unique_lock{state_->mutex};
             if (state_->callback) {

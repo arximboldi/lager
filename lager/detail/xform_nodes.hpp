@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/detail/no_value.hpp>
 #include <lager/detail/nodes.hpp>
 #include <lager/util.hpp>
@@ -46,17 +47,17 @@ ZUG_INLINE_CONSTEXPR struct send_down_rf_t
 template <typename ValueT, typename Xform, typename... ParentPtrs>
 ValueT initial_value(Xform&& xform, const std::tuple<ParentPtrs...>& parents)
 {
-    try {
+    LAGER_TRY {
         return std::apply(
             [&](auto&&... ps) {
                 return xform(zug::last)(detail::no_value{}, ps->current()...);
             },
             parents);
-    } catch (const no_value_error&) {
+    } LAGER_CATCH(const no_value_error&) {
         if constexpr (std::is_default_constructible<ValueT>::value) {
             return ValueT{};
         } else {
-            throw;
+            LAGER_THROW();
         }
     }
 };

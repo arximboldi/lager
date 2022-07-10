@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/util.hpp>
 
 #include <zug/compose.hpp>
@@ -27,9 +28,9 @@ template <
 std::decay_t<Whole> at_or_setter_impl(Whole&& whole, Part&& part, Key&& key)
 {
     auto r = std::forward<Whole>(whole);
-    try {
+    LAGER_TRY {
         r.at(std::forward<Key>(key)) = std::forward<Part>(part);
-    } catch (std::out_of_range const&) {}
+    } LAGER_CATCH(std::out_of_range const&) {}
     return r;
 }
 
@@ -41,11 +42,11 @@ template <
                      int> = 0>
 std::decay_t<Whole> at_or_setter_impl(Whole&& whole, Part&& part, Key&& key)
 {
-    try {
+    LAGER_TRY {
         (void) whole.at(std::forward<Key>(key));
         return std::forward<Whole>(whole).set(std::forward<Key>(key),
                                               std::forward<Part>(part));
-    } catch (std::out_of_range const&) {}
+    } LAGER_CATCH(std::out_of_range const&) {}
     return std::forward<Whole>(whole);
 }
 
@@ -61,9 +62,9 @@ auto at_or(Key key)
         return [f = LAGER_FWD(f), &key](auto&& whole) {
             using Part = std::decay_t<decltype(whole.at(key))>;
             return f([&]() -> Part {
-                try {
+                LAGER_TRY {
                     return LAGER_FWD(whole).at(key);
-                } catch (std::out_of_range const&) {
+                } LAGER_CATCH(std::out_of_range const&) {
                     return Part{};
                 }
             }())([&](auto&& part) {
@@ -84,9 +85,9 @@ auto at_or(Key key, Default&& def)
         return [f = LAGER_FWD(f), &key, &def](auto&& whole) {
             using Part = std::decay_t<decltype(whole.at(key))>;
             return f([&]() -> Part {
-                try {
+                LAGER_TRY {
                     return LAGER_FWD(whole).at(key);
-                } catch (std::out_of_range const&) {
+                } LAGER_CATCH(std::out_of_range const&) {
                     return def;
                 }
             }())([&](auto&& part) {
