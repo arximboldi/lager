@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <functional>
 #include <stdexcept>
 #include <utility>
@@ -24,13 +26,13 @@ struct queue_event_loop
     using event_fn = std::function<void()>;
 
     void post(event_fn ev) { queue_.push_back(std::move(ev)); }
-    void finish() { throw std::logic_error{"not implemented!"}; }
-    void pause() { throw std::logic_error{"not implemented!"}; }
-    void resume() { throw std::logic_error{"not implemented!"}; }
+    void finish() { LAGER_THROW(std::logic_error{"not implemented!"}); }
+    void pause() { LAGER_THROW(std::logic_error{"not implemented!"}); }
+    void resume() { LAGER_THROW(std::logic_error{"not implemented!"}); }
     template <typename Fn>
     void async(Fn&& fn)
     {
-        throw std::logic_error{"not implemented!"};
+        LAGER_THROW(std::logic_error{"not implemented!"});
     }
 
     void step()

@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <zug/meta/util.hpp>
 
 #include <exception>
@@ -34,7 +36,7 @@ struct no_value
     template <typename T>
     operator T() const
     {
-        throw no_value_error{};
+        LAGER_THROW(no_value_error{});
     }
 };
 

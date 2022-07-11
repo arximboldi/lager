@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <functional>
 #include <stdexcept>
 #include <utility>
@@ -24,7 +26,7 @@ struct with_manual_event_loop
     template <typename Fn>
     void async(Fn&& fn)
     {
-        throw std::logic_error{"manual_event_loop does not support async()"};
+        LAGER_THROW(std::logic_error{"manual_event_loop does not support async()"});
     }
 
     template <typename Fn>

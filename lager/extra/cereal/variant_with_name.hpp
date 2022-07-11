@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <boost/core/demangle.hpp>
 #include <cereal/cereal.hpp>
 #include <variant>
@@ -43,7 +45,7 @@ template <int N, class Variant, class... Args, class Archive>
 typename std::enable_if<N == std::variant_size_v<Variant>, void>::type
 load_variant(Archive& /*ar*/, const std::string&, Variant&)
 {
-    throw ::cereal::Exception("Invalid variant type name");
+    LAGER_THROW(::cereal::Exception("Invalid variant type name"));
 }
 
 template <int N, class Variant, class H, class... T, class Archive>

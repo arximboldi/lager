@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <lager/config.hpp>
+
 #include <boost/hana/for_each.hpp>
 #include <boost/hana/integral_constant.hpp>
 #include <boost/hana/pair.hpp>
@@ -46,31 +48,31 @@ struct return_from_for_each
 template <typename T, std::enable_if_t<enum_meta<T>::value, int> = 0>
 const char* to_string(T v)
 {
-    try {
+    LAGER_TRY {
         boost::hana::for_each(enum_meta<T>::apply(), [&](auto&& x) {
             if (boost::hana::first(x).value == v)
-                throw detail::return_from_for_each<const char*>{
-                    boost::hana::second(x).c_str()};
+                LAGER_THROW(detail::return_from_for_each<const char*>{
+                    boost::hana::second(x).c_str()});
         });
-    } catch (detail::return_from_for_each<const char*> x) {
+    } LAGER_CATCH(detail::return_from_for_each<const char*> x) {
         return x.value;
     }
-    throw std::runtime_error{"unknown enum value"};
+    LAGER_THROW(std::runtime_error{"unknown enum value"});
 }
 
 template <typename T, std::enable_if_t<enum_meta<T>::value, int> = 0>
 T to_enum(const std::string& v)
 {
-    try {
+    LAGER_TRY {
         boost::hana::for_each(enum_meta<T>::apply(), [&](auto&& x) {
             if (boost::hana::second(x).c_str() == v)
-                throw detail::return_from_for_each<T>{
-                    boost::hana::first(x).value};
+                LAGER_THROW(detail::return_from_for_each<T>{
+                    boost::hana::first(x).value});
         });
-    } catch (detail::return_from_for_each<T> x) {
+    } LAGER_CATCH(detail::return_from_for_each<T> x) {
         return x.value;
     }
-    throw std::runtime_error{"unknown enum name"};
+    LAGER_THROW(std::runtime_error{"unknown enum name"});
 }
 
 } // namespace lager

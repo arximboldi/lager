@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/event_loop/queue.hpp>
 
 #include <QQuickItem>
@@ -79,13 +80,13 @@ public:
         }
     }
 
-    void finish() { throw std::logic_error{"not implemented!"}; }
-    void pause() { throw std::logic_error{"not implemented!"}; }
-    void resume() { throw std::logic_error{"not implemented!"}; }
+    void finish() { LAGER_THROW(std::logic_error{"not implemented!"}); }
+    void pause() { LAGER_THROW(std::logic_error{"not implemented!"}); }
+    void resume() { LAGER_THROW(std::logic_error{"not implemented!"}); }
     template <typename Fn>
     void async(Fn&& fn)
     {
-        throw std::logic_error{"not implemented!"};
+        LAGER_THROW(std::logic_error{"not implemented!"});
     }
 };
 

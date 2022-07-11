@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/detail/access.hpp>
 #include <lager/effect.hpp>
 #include <lager/util.hpp>
@@ -95,7 +96,7 @@ struct debugger
         lookup_result lookup(cursor_t cursor) const
         {
             if (cursor > history.size())
-                throw std::runtime_error{"bad cursor"};
+                LAGER_THROW(std::runtime_error{"bad cursor"});
             return cursor == 0 ? lookup_result{{}, init} : [&] {
                 auto& step = history[cursor - 1];
                 return lookup_result{step.action, step.model};

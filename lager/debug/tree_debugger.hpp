@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <lager/config.hpp>
 #include <lager/context.hpp>
 #include <lager/util.hpp>
 
@@ -121,10 +122,10 @@ struct tree_debugger
         {
             auto pos = cursor[cursor_index];
             if (pos.branch >= branches.size())
-                throw std::runtime_error{"bad cursor"};
+                LAGER_THROW(std::runtime_error{"bad cursor"});
             auto& history = branches[pos.branch];
             if (pos.step >= history.size())
-                throw std::runtime_error{"bad cursor"};
+                LAGER_THROW(std::runtime_error{"bad cursor"});
             auto& node      = history[pos.step];
             auto next_index = cursor_index + 1;
             return next_index == cursor.size()
@@ -190,10 +191,10 @@ struct tree_debugger
 
         bool check(const cursor_t& cursor) const
         {
-            try {
+            LAGER_TRY {
                 lookup(cursor);
                 return true;
-            } catch (const std::runtime_error&) {
+            } LAGER_CATCH(const std::runtime_error&) {
                 return false;
             }
         }
@@ -268,7 +269,7 @@ struct tree_debugger
                     return m;
                 },
                 [&](redo_action) -> result_t {
-                    throw std::runtime_error{"todo"};
+                    LAGER_THROW(std::runtime_error{"todo"});
                     return m;
                 },
                 [&](pause_action) -> result_t {
