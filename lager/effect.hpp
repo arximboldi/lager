@@ -58,13 +58,25 @@ lager::effect<lager::actions<...>, ...> " //
 
     template <
         typename Fn,
-        std::enable_if_t<std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
-                         int> = 0>
+        std::enable_if_t<
+            std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
+            int> = 0>
     effect(Fn&& fn)
         : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) -> future {
             fn(ctx);
             return {};
         }}
+    {}
+
+    template <
+        typename Fn,
+        std::enable_if_t<
+            !std::is_convertible_v<std::decay_t<Fn>, effect> &&
+                std::is_same_v<future,
+                               std::invoke_result_t<Fn&, const context_t&>>,
+            int> = 0>
+    effect(Fn&& fn)
+        : base_t{std::forward<Fn>(fn)}
     {}
 };
 
