@@ -71,7 +71,7 @@ lager::effect<lager::actions<...>, ...> " //
     template <
         typename Fn,
         std::enable_if_t<
-            !std::is_same_v<std::decay_t<Fn>, effect> &&
+            !std::is_convertible_v<std::decay_t<Fn>, effect> &&
                 std::is_same_v<future,
                                std::invoke_result_t<Fn&, const context_t&>>,
             int> = 0>
