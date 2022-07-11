@@ -47,6 +47,13 @@ lager::effect<lager::actions<...>, ...> " //
     effect& operator=(const effect&) = default;
     effect& operator=(effect&&) = default;
 
+    effect(base_t&& base)
+        : base_t{std::move(base)}
+    {}
+    effect(base_t const& base)
+        : base_t{base}
+    {}
+
     template <typename A2,
               typename D2,
               std::enable_if_t<detail::are_compatible_actions_v<A2, Action> &&
@@ -58,8 +65,9 @@ lager::effect<lager::actions<...>, ...> " //
 
     template <
         typename Fn,
-        std::enable_if_t<std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
-                         int> = 0>
+        std::enable_if_t<
+            std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
+            int> = 0>
     effect(Fn&& fn)
         : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) -> future {
             fn(ctx);
