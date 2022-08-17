@@ -35,14 +35,20 @@ struct queue_event_loop
         LAGER_THROW(std::logic_error{"not implemented!"});
     }
 
+    // If there is an exception, the step() function needs to be re-run for the
+    // queue to be fully processed.
     void step()
     {
-        auto is_root = !queue_.empty();
-        if (is_root) {
-            for (auto i = std::size_t{}; i < queue_.size(); ++i)
-                queue_[i]();
-            queue_.clear();
+        for (auto i = std::size_t{}; i < queue_.size();) {
+            try {
+                auto f = std::move(queue_[i++]);
+                std::move(f)();
+            } catch (...) {
+                queue_.erase(queue_.begin(), queue_.begin() + i);
+                throw;
+            }
         }
+        queue_.clear();
     }
 
 private:

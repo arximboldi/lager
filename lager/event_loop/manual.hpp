@@ -26,20 +26,28 @@ struct with_manual_event_loop
     template <typename Fn>
     void async(Fn&& fn)
     {
-        LAGER_THROW(std::logic_error{"manual_event_loop does not support async()"});
+        LAGER_THROW(
+            std::logic_error{"manual_event_loop does not support async()"});
     }
 
     template <typename Fn>
     void post(Fn&& fn)
     {
-        auto is_root = queue_.empty();
         queue_.push_back(std::forward<Fn>(fn));
+        auto is_root = i_ == 0;
         if (is_root) {
-            for (auto i = std::size_t{}; i < queue_.size(); ++i) {
-                auto f = std::move(queue_[i]);
-                f();
+            try {
+                while (i_ < queue_.size()) {
+                    auto f = std::move(queue_[i_++]);
+                    std::move(f)();
+                }
+            } catch (...) {
+                queue_.erase(queue_.begin(), queue_.begin() + i_);
+                i_ = 0;
+                throw;
             }
             queue_.clear();
+            i_ = 0;
         }
     }
 
@@ -51,6 +59,7 @@ private:
     using post_fn_t = std::function<void()>;
 
     std::vector<post_fn_t> queue_;
+    std::size_t i_ = {};
 };
 
 } // namespace lager

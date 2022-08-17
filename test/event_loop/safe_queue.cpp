@@ -50,3 +50,18 @@ TEST_CASE("threads")
 
     CHECK(store->value == 200);
 }
+
+TEST_CASE("exception")
+{
+    auto called = 0;
+    auto loop   = lager::safe_queue_event_loop{};
+
+    loop.post([&] { throw std::runtime_error{"noo!"}; });
+    loop.post([&] { ++called; });
+
+    CHECK_THROWS(loop.step());
+    CHECK(called == 0);
+
+    loop.step();
+    CHECK(called == 1);
+}
