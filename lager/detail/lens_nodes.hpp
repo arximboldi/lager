@@ -36,18 +36,20 @@ class lens_reader_node;
 template <typename Lens, typename... Parents, template <class> class Base>
 class lens_reader_node<Lens, zug::meta::pack<Parents...>, Base>
     : public inner_node<
-          std::decay_t<decltype(view(
-              std::declval<Lens>(),
-              zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>,
+          std::decay_t<
+              remove_deferred_t<
+                  decltype(view(std::declval<Lens>(),
+                                zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>>,
           zug::meta::pack<Parents...>,
           Base>
 {
     using base_t = inner_node<
-        std::decay_t<decltype(view(
-            std::declval<Lens>(),
-            zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>,
-        zug::meta::pack<Parents...>,
-        Base>;
+    std::decay_t<
+        remove_deferred_t<
+            decltype(view(std::declval<Lens>(),
+                          zug::tuplify(std::declval<zug::meta::value_t<Parents>>()...)))>>,
+    zug::meta::pack<Parents...>,
+    Base>;
 
 protected:
     Lens lens_;
@@ -55,14 +57,14 @@ protected:
 public:
     template <typename Lens2, typename ParentsTuple>
     lens_reader_node(Lens2&& l, ParentsTuple&& parents)
-        : base_t{view(l, current_from(parents)),
+        : base_t{static_cast<typename base_t::value_type>(view(l, current_from(parents))),
                  std::forward<ParentsTuple>(parents)}
         , lens_{std::forward<Lens2>(l)}
     {}
 
     void recompute() final
     {
-        this->push_down(view(lens_, current_from(this->parents())));
+        this->push_down(static_cast<typename base_t::value_type>(view(lens_, current_from(this->parents()))));
     }
 };
 

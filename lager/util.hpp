@@ -115,4 +115,40 @@ const T& unwrap(const T& x)
     return x;
 }
 
+/*!
+ * Defers calculation of the value of the function till type
+ * conversion is actually requested
+ */
+
+template <typename Func, typename P, typename X>
+struct deferred
+{
+    Func &&func;
+    P &&p;
+
+    operator X() {
+        return LAGER_FWD(std::forward<Func>(func)(std::forward<P>(p)));
+    }
+};
+
+template <typename Func, typename P, typename X = decltype(std::declval<Func>()(std::declval<P>()))>
+auto make_deferred(Func&& f, P&& p) -> deferred<Func, P, X>
+{
+    return {std::forward<Func>(f), std::forward<P>(p)};
+}
+
+template <typename T>
+struct remove_deferred {
+    using type = T;
+};
+
+template <typename Func, typename P, typename X>
+struct remove_deferred<deferred<Func, P, X>> {
+    using type = X;
+};
+
+template <typename T>
+using remove_deferred_t = typename remove_deferred<T>::type;
+
+
 } // namespace lager

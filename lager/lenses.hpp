@@ -107,9 +107,10 @@ auto getset(Getter&& getter, Setter&& setter)
 {
     return zug::comp([=](auto&& f) {
         return [&, f = LAGER_FWD(f)](auto&& p) {
-            return f(getter(std::forward<decltype(p)>(p)))([&](auto&& x) {
-                return setter(std::forward<decltype(p)>(p),
-                              std::forward<decltype(x)>(x));
+            return f(lager::make_deferred(getter, std::forward<decltype(p)>(p)))
+                    ([&](auto&& x) {
+                         return setter(std::forward<decltype(p)>(p),
+                             std::forward<decltype(x)>(x));
             });
         };
     });
