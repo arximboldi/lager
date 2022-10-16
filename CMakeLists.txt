@@ -20,6 +20,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 option(lager_BUILD_TESTS "Build tests" ON)
+option(lager_BUILD_FAILURE_TESTS "Build failure tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
 option(lager_BUILD_DEBUGGER_EXAMPLES "Build examples that showcase the web based debugger" ON)
 option(lager_BUILD_DOCS "Build docs" ON)
