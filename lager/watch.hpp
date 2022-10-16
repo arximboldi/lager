@@ -44,7 +44,9 @@ protected:
         : node_{std::move(p)}
     {}
 
-    template <typename T>
+    template <typename T,
+              std::enable_if_t<std::is_same_v<value_t, zug::meta::value_t<T>>,
+                               int> = 0>
     watchable_base(watchable_base<T> x)
         : node_(std::move(x.node_))
     {}
