@@ -172,7 +172,14 @@ public:
         return deriv_().zoom(lens);
     }
 
-    template <typename T>
+    template <typename T, 
+             typename U = Deriv,
+             std::enable_if_t<
+                  std::is_same_v<
+                    typename decltype(std::declval<U>().make())::value_type,
+                    T
+                  >,
+               int> = 0>
     operator reader<T>() &&
     {
         return std::move(*this).make();
@@ -182,7 +189,14 @@ public:
     {
         return std::move(*this).make();
     }
-    template <typename T>
+    template <typename T, 
+             typename U = Deriv,
+             std::enable_if_t<
+                  std::is_same_v<
+                    typename decltype(std::declval<U>().make())::value_type,
+                    T
+                  >,
+               int> = 0>
     operator cursor<T>() &&
     {
         return std::move(*this).make();
