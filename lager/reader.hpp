@@ -92,12 +92,18 @@ public:
 
     reader_base() = default;
 
-    template <typename T>
+    template <typename T,
+              std::enable_if_t<std::is_same_v<zug::meta::value_t<NodeT>,
+                                              zug::meta::value_t<T>>,
+                               int> = 0>
     reader_base(reader_base<T> x)
         : base_t{std::move(x)}
     {}
 
-    template <typename T>
+    template <typename T,
+              std::enable_if_t<std::is_same_v<zug::meta::value_t<NodeT>,
+                                              zug::meta::value_t<T>>,
+                               int> = 0>
     reader_base(cursor_base<T> x)
         : base_t{std::move(x)}
     {}
