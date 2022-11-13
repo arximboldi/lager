@@ -39,7 +39,7 @@ public:
     }
 
     /*!
-     * Returns a pointer to th underlying node of an object, if
+     * Returns a pointer to the underlying node of an object, if
      * exists.
      */
     template <typename T>
@@ -49,7 +49,7 @@ public:
     }
 
     /*!
-     * Returns a a optional boost.signal to the specific watchers of
+     * Returns an optional boost.signal to the specific watchers of
      * the underlying signal of an object.
      */
     template <typename T>

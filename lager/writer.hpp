@@ -70,7 +70,10 @@ private:
 
     auto node_() const
     {
-        return detail::access::node(*static_cast<const DerivT*>(this));
+        if(auto node = detail::access::node(*static_cast<const DerivT*>(this))) {
+            return node;
+        }
+        throw std::runtime_error("Accessing uninitialized writer");
     }
 };
 
