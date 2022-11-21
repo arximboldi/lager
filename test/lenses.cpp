@@ -43,6 +43,7 @@ using namespace lager;
 using namespace lager::lenses;
 using namespace zug;
 
+
 TEST_CASE("lenses, minimal example")
 {
     auto month = zug::comp([](auto&& f) {
@@ -198,6 +199,35 @@ TEST_CASE("lenses, attr2, references")
         [[maybe_unused]] int&& y      = view(birthday_month, std::move(p1));
         [[maybe_unused]] const int& z = view(birthday_month, p2);
     }
+}
+
+template <typename Member>
+auto attr3(Member member, int *numGetCalls)
+{
+    return getset(
+        [=](auto&& x) -> decltype(auto) {
+            (*numGetCalls)++;
+            return std::forward<decltype(x)>(x).*member;
+        },
+        [=](auto x, auto&& v) {
+            x.*member = std::forward<decltype(v)>(v);
+            return x;
+        });
+};
+
+TEST_CASE("lenses, no getter on set")
+{
+    int numGetCalls = 0;
+    auto name = attr3(&person::name, &numGetCalls);
+    auto p1 = person{{5, 4}, "juanpe"};
+    CHECK(view(name, p1) == "juanpe");
+    CHECK(numGetCalls == 1);
+
+    p1 = set(name, p1, "ncopernicus");
+    CHECK(numGetCalls == 1);
+
+    CHECK(view(name, p1) == "ncopernicus");
+    CHECK(numGetCalls == 2);
 }
 
 TEST_CASE("lenses, at immutable index")
