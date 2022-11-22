@@ -67,7 +67,8 @@ struct identity_functor
 template <typename Part>
 struct identity_functor_skip_first
 {
-    auto operator() (auto&&) const {
+    template <typename T>
+    auto operator() (T&&) const {
         return make_identity_functor(part);
     }
 
