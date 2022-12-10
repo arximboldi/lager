@@ -30,6 +30,7 @@ class setter_node : public cursor_node<typename ParentT::value_type>
     std::shared_ptr<ParentT> parent_;
     FnT setter_fn_;
     bool recomputed_ = false;
+    long rank_       = 0;
 
 public:
     using value_type = typename ParentT::value_type;
@@ -38,7 +39,11 @@ public:
         : base_t{p->current()}
         , parent_{std::move(p)}
         , setter_fn_{std::move(fn)}
-    {}
+        , rank_{parent_->rank() + 1}
+    {
+    }
+
+    long rank() const override final { return rank_; }
 
     void recompute() final
     {

@@ -81,6 +81,7 @@ struct reader_node_base
     virtual ~reader_node_base() = default;
     virtual void send_down()    = 0;
     virtual void notify()       = 0;
+    virtual long rank() const   = 0;
 };
 
 /*!
@@ -253,12 +254,17 @@ class inner_node<ValueT, zug::meta::pack<Parents...>, Base>
     using base_t = Base<ValueT>;
 
     std::tuple<std::shared_ptr<Parents>...> parents_;
+    long rank_ = 0;
 
 public:
     inner_node(ValueT init, std::tuple<std::shared_ptr<Parents>...>&& parents)
         : base_t{std::move(init)}
         , parents_{std::move(parents)}
-    {}
+    {
+        if constexpr (sizeof...(Parents) == 0)
+            return;
+        rank_ = max_rank(parents_) + 1;
+    }
 
     void refresh() final
     {
@@ -278,6 +284,8 @@ public:
         push_up(std::forward<T>(value),
                 std::make_index_sequence<sizeof...(Parents)>{});
     }
+
+    long rank() const override { return rank_; }
 
 private:
     template <typename T, std::size_t... Indices>
@@ -303,6 +311,7 @@ struct root_node : Base<T>
     using base_t::base_t;
 
     void refresh() final {}
+    long rank() const override final { return 0; }
 };
 
 template <typename... Nodes>

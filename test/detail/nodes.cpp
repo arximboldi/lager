@@ -280,3 +280,20 @@ TEST_CASE("node, one node two parents")
     CHECK(71 == z->last());
     CHECK(3 == s.count());
 }
+
+TEST_CASE("node, rank is accurate")
+{
+    auto x = make_sensor_node([&count] { return count++; });
+    auto y = make_state_node(12);
+    auto z = make_xform_reader_node(map([](int a, int b) { return a + b; }),
+                                    std::make_tuple(x, y));
+    auto t = make_merge_reader_node(std::make_tuple(x, z));
+    auto u = make_xform_reader_node(
+        map([](auto tuple) { return std::get<0>(tuple); }), std::make_tuple(t));
+
+    CHECK(0 == x->rank());
+    CHECK(0 == y->rank());
+    CHECK(1 == z->rank());
+    CHECK(2 == t->rank());
+    CHECK(3 == u->rank());
+}
