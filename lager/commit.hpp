@@ -13,6 +13,8 @@
 #pragma once
 
 #include <lager/detail/access.hpp>
+#include <lager/detail/nodes.hpp>
+#include <lager/detail/traversal_topo.hpp>
 #include <lager/util.hpp>
 
 namespace lager {
@@ -25,6 +27,12 @@ void send_down_root(RootCursorT&& root)
     (void) detail::access::roots(std::forward<RootCursorT>(root))->send_down();
 }
 
+template <typename RootCursorT>
+void send_down_root_bft(RootCursorT&& root)
+{
+    topo_traversal<> t{detail::access::roots(std::forward<RootCursorT>(root))};
+    t.visit();
+}
 template <typename RootCursorT>
 void notify_root(RootCursorT&& root)
 {
@@ -44,4 +52,10 @@ void commit(RootCursorTs&&... roots)
     (detail::notify_root(std::forward<RootCursorTs>(roots)), ...);
 }
 
+template <typename... RootCursorTs>
+void commit_bft(RootCursorTs&&... roots)
+{
+    (detail::send_down_root_bft(std::forward<RootCursorTs>(roots)), ...);
+    (detail::notify_root(std::forward<RootCursorTs>(roots)), ...);
+}
 } // namespace lager

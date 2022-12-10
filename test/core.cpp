@@ -13,6 +13,7 @@
 #include <catch.hpp>
 
 #include <lager/event_loop/manual.hpp>
+#include <lager/state.hpp>
 #include <lager/store.hpp>
 
 #include "../example/counter/counter.hpp"
@@ -54,6 +55,33 @@ TEST_CASE("basic")
     CHECK(viewed);
     CHECK(viewed->value == 1);
     CHECK(store.get().value == 1);
+}
+
+TEST_CASE("merged transform")
+{
+    using model_t = std::pair<int, int>;
+    auto tr_count = 0;
+    auto state    = lager::make_state(model_t{}, lager::transactional_tag{});
+    auto ca       = state[&model_t::first].make();
+    auto cb       = state[&model_t::second].make();
+    auto m        = lager::with(ca, cb).make();
+    auto tr       = m.map([&tr_count](const auto& tuple) {
+                   auto [a, b] = tuple;
+                   CHECK(a <= b);
+                   tr_count++;
+                   return std::sqrt(b - a);
+               }).make();
+
+    auto trv1 = tr;
+    auto trv2 = tr;
+    auto trv3 = tr;
+    auto trv4 = tr;
+
+    ca.set(11);
+    cb.set(21);
+    lager::commit_bft(state);
+
+    CHECK(tr_count == 2);
 }
 
 TEST_CASE("with reducer enhancer")

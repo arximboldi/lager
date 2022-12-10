@@ -39,6 +39,7 @@
 #pragma once
 
 #include <lager/detail/signal.hpp>
+#include <lager/detail/traversal.hpp>
 #include <lager/util.hpp>
 
 #include <zug/meta/pack.hpp>
@@ -72,16 +73,17 @@ constexpr struct
  */
 struct reader_node_base
 {
-    reader_node_base()                        = default;
-    reader_node_base(reader_node_base&&)      = default;
-    reader_node_base(const reader_node_base&) = delete;
-    reader_node_base& operator=(reader_node_base&&) = default;
+    reader_node_base()                                   = default;
+    reader_node_base(reader_node_base&&)                 = default;
+    reader_node_base(const reader_node_base&)            = delete;
+    reader_node_base& operator=(reader_node_base&&)      = default;
     reader_node_base& operator=(const reader_node_base&) = delete;
 
-    virtual ~reader_node_base() = default;
-    virtual void send_down()    = 0;
-    virtual void notify()       = 0;
-    virtual long rank() const   = 0;
+    virtual ~reader_node_base()        = default;
+    virtual void send_down()           = 0;
+    virtual void send_down(traversal&) = 0;
+    virtual void notify()              = 0;
+    virtual long rank() const          = 0;
 };
 
 /*!
@@ -90,16 +92,28 @@ struct reader_node_base
 template <typename T>
 struct writer_node_base
 {
-    writer_node_base()                        = default;
-    writer_node_base(writer_node_base&&)      = default;
-    writer_node_base(const writer_node_base&) = delete;
-    writer_node_base& operator=(writer_node_base&&) = default;
+    writer_node_base()                                   = default;
+    writer_node_base(writer_node_base&&)                 = default;
+    writer_node_base(const writer_node_base&)            = delete;
+    writer_node_base& operator=(writer_node_base&&)      = default;
     writer_node_base& operator=(const writer_node_base&) = delete;
 
     virtual ~writer_node_base()    = default;
     virtual void send_up(const T&) = 0;
     virtual void send_up(T&&)      = 0;
 };
+
+template <typename... Parents>
+long max_rank(const std::tuple<std::shared_ptr<Parents>...>& ps)
+{
+    constexpr auto comp = [](const auto& x, const auto& y) {
+        return x->rank() < y->rank();
+    };
+    constexpr auto max_fn = [comp](const auto&... ps) {
+        return std::max<std::shared_ptr<reader_node_base>>({ps...}, comp);
+    };
+    return std::apply(max_fn, ps)->rank();
+}
 
 template <typename T, typename U>
 auto has_changed(T&& a, U&& b) -> decltype(!(a == b))
@@ -142,7 +156,8 @@ public:
     reader_node(T value)
         : current_(std::move(value))
         , last_(current_)
-    {}
+    {
+    }
 
     virtual void recompute() = 0;
     virtual void refresh()   = 0;
@@ -180,6 +195,21 @@ public:
             for (auto& wchild : children_) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
+                }
+            }
+        }
+    }
+
+    void send_down(traversal& t) final
+    {
+        recompute();
+        if (needs_send_down_) {
+            last_            = current_;
+            needs_send_down_ = false;
+            needs_notify_    = true;
+            for (auto& wchild : children_) {
+                if (auto child = wchild.lock()) {
+                    t.schedule(child.get());
                 }
             }
         }
