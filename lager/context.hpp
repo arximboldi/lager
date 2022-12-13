@@ -195,6 +195,7 @@ struct dispatcher<actions<Actions...>> : std::function<future(Actions)>...
 struct event_loop_iface
 {
     virtual ~event_loop_iface()               = default;
+    virtual void post(std::function<void()>)  = 0;
     virtual void async(std::function<void()>) = 0;
     virtual void finish()                     = 0;
     virtual void pause()                      = 0;
@@ -209,6 +210,7 @@ struct event_loop_impl final : event_loop_iface
     event_loop_impl(EventLoop& loop_)
         : loop{loop_}
     {}
+    void post(std::function<void()> fn) override { loop.post(std::move(fn)); }
     void async(std::function<void()> fn) override { loop.async(std::move(fn)); }
     void finish() override { loop.finish(); }
     void pause() override { loop.pause(); }
