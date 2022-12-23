@@ -340,6 +340,9 @@ struct copy_tracker
         assert(!rhs.moved_from_here);
         info = rhs.info;
         info.num_copy_assignments++;
+
+        // the object becomes valid after it has been moved into
+        moved_from_here = false;
         return *this;
     }
 
@@ -349,6 +352,9 @@ struct copy_tracker
         info = rhs.info;
         rhs.moved_from_here = true;
         info.num_move_assignments++;
+
+        // the object becomes valid after it has been moved into
+        moved_from_here = false;
         return *this;
     }
 
