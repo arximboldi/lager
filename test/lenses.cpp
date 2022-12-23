@@ -697,6 +697,60 @@ TEST_CASE("nested getset copy: set rvalue with rvalue")
     CHECK(birthday.valid());
 }
 
+TEST_CASE("nested (attr | getset)")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 8, 2));
+
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested (getset | attr)")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 8, 2));
+
+    CHECK(birthday.valid());
+}
+
 TEST_CASE("lenses, at immutable index")
 {
     auto first      = at(0);

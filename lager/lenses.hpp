@@ -119,7 +119,25 @@ struct getset_t
 {
     template <typename Whole>
     auto operator() (Whole &&w) {
-        if constexpr (is_const_functor_v<decltype(f(getter(LAGER_FWD(w))))>) {
+        return functorImpl(*this, LAGER_FWD(w));
+    }
+
+    template <typename Whole>
+    auto operator() (Whole &&w) const {
+        return functorImpl(*this, LAGER_FWD(w));
+    }
+
+    F f;
+    Getter getter;
+    Setter setter;
+
+private:
+    /**
+     * Deduce proper constness of 'this' via the functorImpl() call
+     */
+    template <typename Self, typename Whole>
+    static auto functorImpl(Self &&self, Whole &&w) {
+        if constexpr (is_const_functor_v<decltype(self.f(self.getter(LAGER_FWD(w))))>) {
             /**
              * We don't have a setter here, so it is safe to
              * jus pass `w` as an rvalue.
@@ -130,7 +148,7 @@ struct getset_t
              *
              * This branch is taken when viewing through the lens.
              */
-            return f(getter(LAGER_FWD(w))) // pass `w` into the getter as an rvalue!
+            return self.f(self.getter(LAGER_FWD(w))) // pass `w` into the getter as an rvalue!
                 (zug::noop);
         } else {
             /**
@@ -142,16 +160,12 @@ struct getset_t
              * This branch is taken on all the levels of setting the
              * value through except of the tompost level.
              */
-            return f(getter(w)) // pass `w` into the getter as an lvalue!
+            return self.f(self.getter(w)) // pass `w` into the getter as an lvalue!
                 ([&](auto&& x) {
-                    return setter(LAGER_FWD(w), LAGER_FWD(x));
+                    return self.setter(LAGER_FWD(w), LAGER_FWD(x));
                 });
         }
     }
-
-    F f;
-    Getter getter;
-    Setter setter;
 };
 
 /**
@@ -168,6 +182,14 @@ struct getset_t<identity_functor_skip_first<T>, Getter, Setter>
     template <typename Part>
     auto operator() (Part &&p) {
         return std::move(f)(zug::noop)
+            ([&](auto&& x) {
+                return setter(LAGER_FWD(p), LAGER_FWD(x));
+            });
+    }
+
+    template <typename Part>
+    auto operator() (Part &&p) const {
+        return f(zug::noop)
             ([&](auto&& x) {
                 return setter(LAGER_FWD(p), LAGER_FWD(x));
             });
