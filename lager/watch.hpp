@@ -100,6 +100,12 @@ public:
     }
 
     void nudge() { base_t::operator()(node()->last()); }
+
+    void unbind()
+    {
+        conns_.clear();
+        base_t::unlink();
+    }
 };
 
 /*!

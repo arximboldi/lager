@@ -66,3 +66,56 @@ TEST_CASE("bind")
     CHECK(called == 1);
     CHECK(value == 42);
 }
+
+TEST_CASE("assignment doesn't change signal bindings")
+{
+    lager::state<int, lager::automatic_tag> data1;
+    lager::state<int, lager::automatic_tag> data2;
+
+    lager::reader<int> reader = data1;
+
+    int bind1_times_called = 0;
+    reader.bind([&bind1_times_called] (int i) { bind1_times_called++;});
+    CHECK(bind1_times_called == 1);
+
+    data1.set(42);
+    CHECK(bind1_times_called == 2);
+
+    reader = data2;
+
+    // data1 is not connected anymore!
+    data1.set(43);
+    CHECK(bind1_times_called == 2);
+
+    // but data2 is!
+    data2.set(44);
+    CHECK(bind1_times_called == 3);
+
+    int bind2_times_called = 0;
+    reader.bind([&bind2_times_called] (int i) { bind2_times_called++;});
+    CHECK(bind2_times_called == 1);
+
+    data2.set(46);
+    CHECK(bind1_times_called == 4);
+    CHECK(bind2_times_called == 2);
+
+}
+
+TEST_CASE("reader::unbind")
+{
+    lager::state<int, lager::automatic_tag> data1;
+
+    lager::reader<int> reader = data1;
+
+    int bind1_times_called = 0;
+    reader.bind([&bind1_times_called] (int i) { bind1_times_called++;});
+    CHECK(bind1_times_called == 1);
+
+    data1.set(42);
+    CHECK(bind1_times_called == 2);
+
+    reader.unbind();
+
+    data1.set(43);
+    CHECK(bind1_times_called == 2);
+}
