@@ -30,17 +30,11 @@ struct promise_state
     std::mutex mutex;
     std::function<void(std::function<void()>)> post;
     std::function<void()> callback;
+    bool done = false;
 
     promise_state(std::function<void(std::function<void()>)> poster)
         : post{std::move(poster)}
     {}
-
-    ~promise_state()
-    {
-        if (callback) {
-            post(callback);
-        }
-    }
 };
 
 } // namespace detail
@@ -164,14 +158,23 @@ struct promise
         if (!state_)
             LAGER_THROW(std::runtime_error{"promise already satisfied!"});
         {
+            // This lock could be remvoed if the whole promise was not copyable
+            // at all... See comment in the promise header.  Maybe we could have
+            // a separate shared_promise faciliy like in the C++ standard....
             auto lock = std::unique_lock{state_->mutex};
-            if (state_->callback) {
-                // operator() must be called in the event loop of the poster. We
-                // could weaken this requirement by calling post() here, but
-                // that can add unnecessary overhead?
-                state_->callback();
-                state_->callback = nullptr;
+            if (!state_->done && state_->callback) {
+                // The follow ups must me in the event loop of the poster. Often
+                // we could assume we are already there but this can lead to
+                // rather unsafe usage scenarios... Let's do it like this for
+                // now and optimize later.  We could alternatively have a
+                // satisfy_unsafe() or alike for when we know we are already in
+                // the right thread.
+                state_->post([cb = std::move(state_->callback)]() mutable {
+                    std::move(cb)();
+                });
             }
+            state_->done     = true;
+            state_->callback = nullptr;
         }
         state_.reset();
     }
@@ -196,19 +199,27 @@ future future::then(Fn&& fn) &&
         }
     } else {
         assert(state_);
+        assert(state_->post);
         assert(!state_->callback);
-        auto [p, f] = promise::with_post(state_->post);
+        auto [p, f]   = promise::with_post(state_->post);
+        auto callback = [p  = std::move(p),
+                         fn = std::forward<Fn>(fn)]() mutable {
+            if constexpr (std::is_same_v<void, decltype(fn())>) {
+                fn();
+                p();
+            } else {
+                fn().then(std::move(p));
+            }
+        };
         {
-            auto lock        = std::unique_lock{state_->mutex};
-            state_->callback = [p  = std::move(p),
-                                fn = std::forward<Fn>(fn)]() mutable {
-                if constexpr (std::is_same_v<void, decltype(fn())>) {
-                    fn();
-                    p();
-                } else {
-                    fn().then(std::move(p));
-                }
-            };
+            auto lock = std::unique_lock{state_->mutex};
+            if (state_->done) {
+                // The promise was already fullfilled, so let's follow up
+                // immediatelly...
+                state_->post(std::move(callback));
+            } else {
+                state_->callback = std::move(callback);
+            }
         }
         state_.reset();
         return std::move(f);
