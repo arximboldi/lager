@@ -106,6 +106,7 @@ if(lager_BUILD_TESTS)
     COMMENT "Build and run all the tests and examples.")
 
   add_subdirectory(test)
+  add_subdirectory(benchmark)
 endif()
 
 # the library, with http debugger

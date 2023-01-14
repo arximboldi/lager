@@ -9,6 +9,7 @@ cc_library(
         "@boost//:hana",
         "@boost//:intrusive",
         "@boost//:intrusive_ptr",
+        "@boost//:lexical_cast",
         "@zug//:zug",
         "@cereal//:cereal",
     ],
