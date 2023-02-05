@@ -14,6 +14,7 @@
 
 #include <lager/context.hpp>
 #include <lager/deps.hpp>
+#include <lager/detail/traversal_topo.hpp>
 #include <lager/effect.hpp>
 #include <lager/state.hpp>
 #include <lager/util.hpp>
@@ -85,7 +86,8 @@ public:
               std::move(reducer),
               std::move(loop),
               std::move(dependencies))}
-    {}
+    {
+    }
 
     template <typename Action_,
               typename Model_,
@@ -95,18 +97,19 @@ public:
     store(store<Action_, Model_, Deps_> other)
         : context_t{std::move(other)}
         , reader_t{std::move(other)}
-    {}
+    {
+    }
 
     /*
      * The type can be moved.
      */
-    store(store&&) = default;
+    store(store&&)            = default;
     store& operator=(store&&) = default;
 
     /*!
      * Deleted copies, this is a move-only type.
      */
-    store(const store&) = delete;
+    store(const store&)            = delete;
     store& operator=(const store&) = delete;
 
 private:
@@ -144,7 +147,8 @@ private:
             , ctx{[this](auto&& act) { return dispatch(LAGER_FWD(act)); },
                   loop,
                   std::move(deps_)}
-        {}
+        {
+        }
 
         future dispatch(action_t action) override
         {
@@ -166,7 +170,8 @@ private:
                                    p   = std::move(p),
                                    eff = LAGER_FWD(effect)]() mutable {
                             if constexpr (!is_transactional) {
-                                base_t::send_down();
+                                detail::topo_traversal<> t(this);
+                                t.visit();
                                 base_t::notify();
                             }
                             if constexpr (std::is_same_v<void,
@@ -184,7 +189,8 @@ private:
                     [&] {
                         if constexpr (!is_transactional) {
                             loop.post([this, p = std::move(p)]() mutable {
-                                base_t::send_down();
+                                detail::topo_traversal<> t(this);
+                                t.visit();
                                 base_t::notify();
                                 if constexpr (has_futures)
                                     p();
@@ -204,7 +210,8 @@ private:
     store(std::shared_ptr<store_node<ReducerFn, EventLoop, Deps, Tag>> node)
         : context_t{node->ctx}
         , reader_t{std::move(node)}
-    {}
+    {
+    }
 };
 
 /*!

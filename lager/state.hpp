@@ -16,6 +16,7 @@
 #include <lager/cursor.hpp>
 #include <lager/detail/access.hpp>
 #include <lager/detail/nodes.hpp>
+#include <lager/detail/traversal_topo.hpp>
 
 #include <lager/tags.hpp>
 #include <lager/util.hpp>
@@ -43,7 +44,8 @@ public:
     {
         this->push_down(value);
         if constexpr (std::is_same_v<TagT, automatic_tag>) {
-            this->send_down();
+            topo_traversal<> t(this);
+            t.visit();
             this->notify();
         }
     }
@@ -52,7 +54,8 @@ public:
     {
         this->push_down(std::move(value));
         if constexpr (std::is_same_v<TagT, automatic_tag>) {
-            this->send_down();
+            topo_traversal<> t(this);
+            t.visit();
             this->notify();
         }
     }
@@ -84,15 +87,17 @@ public:
 
     state()
         : base_t{detail::make_state_node<TagT>(T())}
-    {}
+    {
+    }
     state(T value)
         : base_t{detail::make_state_node<TagT>(std::move(value))}
-    {}
+    {
+    }
 
     state& operator=(const state&) = delete;
     state(const state&)            = delete;
 
-    state(state&&) = default;
+    state(state&&)            = default;
     state& operator=(state&&) = default;
 
     /*!
@@ -100,7 +105,7 @@ public:
      * when it is assigned with the base type
      */
     state& operator=(const T&) = delete;
-    state& operator=(T&&) = delete;
+    state& operator=(T&&)      = delete;
 };
 
 template <typename T>
