@@ -46,6 +46,7 @@
 #include <zug/tuplify.hpp>
 
 #include <algorithm>
+#include <boost/intrusive/set.hpp>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -71,7 +72,7 @@ constexpr struct
  * `propagate()` and `notify()`, not ensure that the outside world sees a
  * consistent state when it receives notifications.
  */
-struct reader_node_base
+struct reader_node_base : boost::intrusive::set_base_hook<>
 {
     reader_node_base()                                   = default;
     reader_node_base(reader_node_base&&)                 = default;
@@ -84,6 +85,12 @@ struct reader_node_base
     virtual void send_down(traversal&) = 0;
     virtual void notify()              = 0;
     virtual long rank() const          = 0;
+};
+
+struct rank_is_key
+{
+    using type = long;
+    const type& operator()(const reader_node_base& x) { return x.rank(); }
 };
 
 /*!

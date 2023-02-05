@@ -7,6 +7,7 @@
 #include "lager/detail/traversal.hpp"
 #include "lager/detail/traversal_dfs.hpp"
 #include "lager/detail/traversal_topo.hpp"
+#include "lager/detail/traversal_topo_intrusive.hpp"
 #include "lager/detail/traversal_topo_naive_mmap.hpp"
 
 #include <cassert>
@@ -159,4 +160,10 @@ NONIUS_BENCHMARK("T-BUMM-SC",
                  traversal_fn<bmultimap_traversal>(make_simple_chain))
 
 NONIUS_BENCHMARK("T-BUMM-DC",
+                 traversal_fn<bmultimap_traversal>(make_diamond_chain))
+
+NONIUS_BENCHMARK("T-BIMS-SC",
+                 traversal_fn<bmultimap_traversal>(make_simple_chain))
+
+NONIUS_BENCHMARK("T-BIMS-DC",
                  traversal_fn<bmultimap_traversal>(make_diamond_chain))
