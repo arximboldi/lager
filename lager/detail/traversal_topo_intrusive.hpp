@@ -24,8 +24,11 @@ public:
     topo_intrusive_traversal(const topo_intrusive_traversal&) = delete;
     topo_intrusive_traversal&
     operator=(const topo_intrusive_traversal&) = delete;
-    topo_intrusive_traversal(const std::shared_ptr<reader_node_base>& root)
+
+    topo_intrusive_traversal(const std::shared_ptr<reader_node_base>& root,
+                             std::size_t N)
         : current_rank_(root->rank())
+        , buckets_(N * 4)
     {
         assert(root);
         schedule_.insert(*root);
@@ -65,9 +68,9 @@ private:
     bool node_scheduled_ = true;
     long current_rank_   = 0;
 
-    static constexpr auto B = 2048;
-    typename unordered_map::bucket_type buckets_[B];
-    unordered_map schedule_{typename unordered_map::bucket_traits(buckets_, B)};
+    typename std::vector<unordered_map::bucket_type> buckets_;
+    unordered_map schedule_{typename unordered_map::bucket_traits(
+        buckets_.data(), buckets_.size())};
 };
 
 } // namespace detail

@@ -134,7 +134,7 @@ auto traversal_fn(ChainFn&& chain_fn)
         meter.measure([&](int i) {
             auto&& c = v[i];
             c.root->send_up(unique_value{1});
-            Traversal t{c.root};
+            Traversal t{c.root, n};
             t.visit();
             if (c.value() != n + 1)
                 throw std::runtime_error{"bad stuff!"};

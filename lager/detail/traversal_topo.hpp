@@ -9,18 +9,18 @@ template <template <typename...> typename Multimap = std::unordered_multimap>
 class topo_traversal : public traversal
 {
 public:
-    topo_traversal()                                 = delete;
-    topo_traversal(const topo_traversal&)            = delete;
+    topo_traversal()                      = delete;
+    topo_traversal(const topo_traversal&) = delete;
     topo_traversal& operator=(const topo_traversal&) = delete;
-    topo_traversal(const std::shared_ptr<reader_node_base>& root)
+
+    topo_traversal(const std::shared_ptr<reader_node_base>& root, std::size_t)
         : topo_traversal(root.get())
-    {
-    }
+    {}
+
     topo_traversal(reader_node_base* root)
         : current_rank_(root->rank())
         , schedule_{{current_rank_, {root}}}
-    {
-    }
+    {}
 
     void visit() override
     {

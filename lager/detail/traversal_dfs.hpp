@@ -8,13 +8,13 @@ namespace detail {
 class dfs_traversal : public traversal
 {
 public:
-    dfs_traversal()                                = delete;
-    dfs_traversal(const dfs_traversal&)            = delete;
+    dfs_traversal()                     = delete;
+    dfs_traversal(const dfs_traversal&) = delete;
     dfs_traversal& operator=(const dfs_traversal&) = delete;
-    dfs_traversal(const std::shared_ptr<reader_node_base>& root)
+
+    dfs_traversal(const std::shared_ptr<reader_node_base>& root, std::size_t)
         : root_{root.get()}
-    {
-    }
+    {}
 
     void visit() override { root_->send_down(); }
     void schedule(reader_node_base*) override {}

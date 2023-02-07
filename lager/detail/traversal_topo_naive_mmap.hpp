@@ -14,15 +14,16 @@ public:
     naive_mmap_topo_traversal(const naive_mmap_topo_traversal&) = delete;
     naive_mmap_topo_traversal&
     operator=(const naive_mmap_topo_traversal&) = delete;
-    naive_mmap_topo_traversal(const std::shared_ptr<reader_node_base>& root)
+
+    naive_mmap_topo_traversal(const std::shared_ptr<reader_node_base>& root,
+                              std::size_t)
         : naive_mmap_topo_traversal(root.get())
-    {
-    }
+    {}
+
     naive_mmap_topo_traversal(reader_node_base* root)
         : current_rank_(root->rank())
         , schedule_({{current_rank_, std::vector{root}}})
-    {
-    }
+    {}
 
     void visit() override
     {
