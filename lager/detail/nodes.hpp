@@ -82,6 +82,13 @@ struct reader_node_base
 
     hook_type member_hook_{};
 
+    using hook_type_rb = boost::intrusive::set_member_hook<
+        // boost::intrusive::link_mode<boost::intrusive::normal_link>
+        // boost::intrusive::link_mode<boost::intrusive::auto_unlink>
+        >;
+
+    hook_type_rb member_hook_rb_{};
+
     reader_node_base()                        = default;
     reader_node_base(reader_node_base&&)      = default;
     reader_node_base(const reader_node_base&) = delete;

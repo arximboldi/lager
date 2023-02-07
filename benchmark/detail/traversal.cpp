@@ -170,3 +170,8 @@ NONIUS_BENCHMARK("T-BIMS-SC",
 
 NONIUS_BENCHMARK("T-BIMS-DC",
                  traversal_fn<topo_intrusive_traversal>(make_diamond_chain))
+
+NONIUS_BENCHMARK("T-BIMSRB-SC",
+                 traversal_fn<topo_intrusive_traversal_rb>(make_simple_chain))
+NONIUS_BENCHMARK("T-BIMSRB-DC",
+                 traversal_fn<topo_intrusive_traversal_rb>(make_diamond_chain))
