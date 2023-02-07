@@ -31,12 +31,12 @@ using namespace lager::detail;
 struct unique_value
 {
     long unsigned val = 0;
-    std::chrono::time_point<std::chrono::high_resolution_clock> tag =
-        std::chrono::high_resolution_clock::now();
+    //    std::chrono::time_point<std::chrono::high_resolution_clock> tag =
+    //        std::chrono::high_resolution_clock::now();
 };
 bool operator==(const unique_value& x, const unique_value& y)
 {
-    return x.tag == y.tag;
+    return x.val == y.val;
 }
 
 using node_t      = reader_node<unique_value>;
@@ -47,7 +47,7 @@ using merge_ptr_t = std::shared_ptr<merge_t>;
 const unique_value next(const unique_value& x) { return {.val = x.val + 1}; }
 const unique_value combine(const std::tuple<unique_value, unique_value>& tuple)
 {
-    return {.val = std::get<0>(tuple).val + 1};
+    return {.val = (std::get<0>(tuple).val + std::get<1>(tuple).val) / 2 + 1};
 }
 
 /**
@@ -129,14 +129,17 @@ auto traversal_fn(ChainFn&& chain_fn)
 {
     return [chain_fn](nonius::chronometer meter) {
         auto n = meter.param<N>();
-        auto c = chain_fn(n);
-        assert(c.value() == n);
-        c.root->send_up(unique_value{1});
-        Traversal t{c.root};
-        meter.measure([&t, &c] { t.visit(); });
-        // sanity to check that values
-        // propagate correctly
-        assert(c.value() == n + 1);
+        std::vector<chain> v(meter.runs());
+        std::generate(v.begin(), v.end(), [&] { return chain_fn(n); });
+        meter.measure([&](int i) {
+            auto&& c = v[i];
+            c.root->send_up(unique_value{1});
+            Traversal t{c.root};
+            t.visit();
+            if (c.value() != n + 1)
+                throw std::runtime_error{"bad stuff!"};
+            return c.value();
+        });
     };
 }
 
