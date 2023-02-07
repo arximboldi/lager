@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <boost/intrusive/set.hpp>
+#include <boost/intrusive/unordered_set.hpp>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -72,12 +73,19 @@ constexpr struct
  * `propagate()` and `notify()`, not ensure that the outside world sees a
  * consistent state when it receives notifications.
  */
-struct reader_node_base : boost::intrusive::set_base_hook<>
+struct reader_node_base
 {
-    reader_node_base()                                   = default;
-    reader_node_base(reader_node_base&&)                 = default;
-    reader_node_base(const reader_node_base&)            = delete;
-    reader_node_base& operator=(reader_node_base&&)      = default;
+    using hook_type = boost::intrusive::unordered_set_member_hook<
+        // boost::intrusive::link_mode<boost::intrusive::normal_link>
+        // boost::intrusive::link_mode<boost::intrusive::auto_unlink>
+        >;
+
+    hook_type member_hook_{};
+
+    reader_node_base()                        = default;
+    reader_node_base(reader_node_base&&)      = default;
+    reader_node_base(const reader_node_base&) = delete;
+    reader_node_base& operator=(reader_node_base&&) = default;
     reader_node_base& operator=(const reader_node_base&) = delete;
 
     virtual ~reader_node_base()        = default;
@@ -90,7 +98,7 @@ struct reader_node_base : boost::intrusive::set_base_hook<>
 struct rank_is_key
 {
     using type = long;
-    const type& operator()(const reader_node_base& x) { return x.rank(); }
+    type operator()(const reader_node_base& x) { return x.rank(); }
 };
 
 /*!
@@ -99,10 +107,10 @@ struct rank_is_key
 template <typename T>
 struct writer_node_base
 {
-    writer_node_base()                                   = default;
-    writer_node_base(writer_node_base&&)                 = default;
-    writer_node_base(const writer_node_base&)            = delete;
-    writer_node_base& operator=(writer_node_base&&)      = default;
+    writer_node_base()                        = default;
+    writer_node_base(writer_node_base&&)      = default;
+    writer_node_base(const writer_node_base&) = delete;
+    writer_node_base& operator=(writer_node_base&&) = default;
     writer_node_base& operator=(const writer_node_base&) = delete;
 
     virtual ~writer_node_base()    = default;
@@ -163,8 +171,7 @@ public:
     reader_node(T value)
         : current_(std::move(value))
         , last_(current_)
-    {
-    }
+    {}
 
     virtual void recompute() = 0;
     virtual void refresh()   = 0;

@@ -166,7 +166,7 @@ NONIUS_BENCHMARK("T-BUMM-DC",
                  traversal_fn<bmultimap_traversal>(make_diamond_chain))
 
 NONIUS_BENCHMARK("T-BIMS-SC",
-                 traversal_fn<bmultimap_traversal>(make_simple_chain))
+                 traversal_fn<topo_intrusive_traversal>(make_simple_chain))
 
 NONIUS_BENCHMARK("T-BIMS-DC",
-                 traversal_fn<bmultimap_traversal>(make_diamond_chain))
+                 traversal_fn<topo_intrusive_traversal>(make_diamond_chain))

@@ -8,9 +8,16 @@ namespace lager {
 namespace detail {
 class topo_intrusive_traversal : public traversal
 {
-    using unordered_map =
-        boost::intrusive::set<reader_node_base,
-                              boost::intrusive::key_of_value<rank_is_key>>;
+    using unordered_map = boost::intrusive::unordered_multiset<
+        reader_node_base,
+        boost::intrusive::key_of_value<rank_is_key>,
+        boost::intrusive::member_hook<reader_node_base,
+                                      reader_node_base::hook_type,
+                                      &reader_node_base::member_hook_>
+        // boost::intrusive::constant_time_size<false>,
+        // boost::intrusive::power_2_buckets<true>,
+        // boost::intrusive::incremental<true>
+        >;
 
 public:
     topo_intrusive_traversal()                                = delete;
@@ -20,6 +27,7 @@ public:
     topo_intrusive_traversal(const std::shared_ptr<reader_node_base>& root)
         : current_rank_(root->rank())
     {
+        assert(root);
         schedule_.insert(*root);
     }
 
@@ -29,12 +37,16 @@ public:
             node_scheduled_ = false;
             visit_rank_();
         }
+        schedule_.clear();
     }
 
     void schedule(reader_node_base* n) override
     {
-        schedule_.insert(*n);
-        node_scheduled_ = true;
+        // if node is already linked, it has already beek scheduled!
+        if (!n->member_hook_.is_linked()) {
+            schedule_.insert(*n);
+            node_scheduled_ = true;
+        }
     }
 
 private:
@@ -50,9 +62,12 @@ private:
         current_rank_++;
     }
 
-    bool node_scheduled_    = true;
-    long current_rank_      = 0;
-    unordered_map schedule_ = {};
+    bool node_scheduled_ = true;
+    long current_rank_   = 0;
+
+    static constexpr auto B = 2048;
+    typename unordered_map::bucket_type buckets_[B];
+    unordered_map schedule_{typename unordered_map::bucket_traits(buckets_, B)};
 };
 
 } // namespace detail
