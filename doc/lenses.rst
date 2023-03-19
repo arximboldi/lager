@@ -84,7 +84,7 @@ We will go over the rest of these generators later on.
    :class: note
 
    The main takeaway from this is that lenses are just
-   *pure funtions*.
+   *pure functions*.
 
 .. _van Laarhoven lens: https://www.twanvl.nl/blog/haskell/cps-functional-references
 
