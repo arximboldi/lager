@@ -31,13 +31,30 @@ namespace lager {
 
 namespace detail {
 
+/*
+ * This works around an MSVC bug which produces compiler error C3200.
+ */
+template <typename T>
+using reader_node_msvc_hack_t = reader_node<T>;
+/*
+ * Using 'reader_node' in the base clause of store_node_base appears
+ * to change its interpretation within the class itself (the name
+ * 'reader_node' would instead be interpreted as 'reader_node<Model>'
+ * because that is how it is instantiated inside root_node.
+ * Therefore base_t will be incorrectly defined as:
+ *  root_node<Model, reader_node<Model>
+ *
+ * My understanding of this bug is based on the information gleaned from:
+ * https://stackoverflow.com/questions/68000265/template-code-that-compiles-in-gcc-8-2-but-not-msvc-19
+ */
+
 template <typename Action, typename Model>
-struct store_node_base : public root_node<Model, reader_node>
+struct store_node_base : public root_node<Model, reader_node_msvc_hack_t>
 {
     using action_t   = Action;
     using model_t    = Model;
     using value_type = Model;
-    using base_t     = root_node<Model, reader_node>;
+    using base_t     = root_node<Model, reader_node_msvc_hack_t>;
     using base_t::base_t;
 
     virtual void recompute() final {}
