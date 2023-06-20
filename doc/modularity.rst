@@ -368,7 +368,7 @@ It would be nice, however, if we could write instead:
        lager::with_reducer(update_doc),
        with_history);
 
-We can indeed write such a ``with_history`` construction, my using the
+We can indeed write such a ``with_history`` construction, by using the
 *enhancer* interface.  After passing the model, reducer and view to
 the :cpp:func:`make_store` function, we can pass as many enhancers as
 we want.  These allow it to extend the store with generic middleware,
@@ -384,11 +384,11 @@ follows:
 
    auto with_history = [] (auto next)
    {
-       return [] (auto action,
-                  auto model,
-                  auto reducer,
-                  auto loop,
-                  auto deps)
+       return [=] (auto action,
+                   auto model,
+                   auto reducer,
+                   auto loop,
+                   auto deps)
        {
            using action_t = typename decltype(action)::type;
            using model_t  = decltype(model);
