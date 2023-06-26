@@ -82,7 +82,7 @@ other tools.
 The :ref:`previous example <intent-example>` can thus be rewritten
 using a reducer that, when it receives a UI logic action, communicates
 intent by returning an effect that delivers an application logic
-cation.
+action.
 
 .. code-block:: c++
 
@@ -139,7 +139,7 @@ Dependency passing
 Oftentimes, the effect will need to access some *service* in order to
 do its deed.  For example, when performing asynchronous IO it may need
 to access some `boost::asio::io_context`_. Or maybe the effect should
-forward to some other service of your own that encapsulate the I/O
+forward to some other service of your own that encapsulates the I/O
 logic.  By definition, these types are referential, so you can not put
 them in the model or the action that is passed to the reducer that
 generates the effect.
