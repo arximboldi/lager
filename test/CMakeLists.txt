@@ -49,7 +49,7 @@ find_package(Qt5 COMPONENTS Core Concurrent)
 add_custom_target(tests COMMENT "Build all the unit tests.")
 add_dependencies(check tests)
 
-file(GLOB lager_unit_tests "*.cpp" "cereal/*.cpp" "event_loop/*.cpp" "extra/*.cpp")
+file(GLOB lager_unit_tests "*.cpp" "cereal/*.cpp" "event_loop/*.cpp" "extra/*.cpp" "detail/*.cpp")
 
 foreach(_file IN LISTS lager_unit_tests)
   message("found unit test: " ${_file})
