@@ -24,6 +24,10 @@ stdenv.mkDerivation rec {
     sass
     pkgconfig
   ];
+  cmakeFlags = [
+    "-Dlager_BUILD_TESTS=OFF"
+    "-Dlager_BUILD_EXAMPLES=OFF"
+  ];
   propagatedBuildInputs = [
     boost
     deps.cereal
