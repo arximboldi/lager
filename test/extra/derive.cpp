@@ -12,7 +12,7 @@
 
 #include "test/cereal/cerealize.hpp"
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <lager/extra/derive.hpp>
 #include <lager/extra/derive/cereal.hpp>

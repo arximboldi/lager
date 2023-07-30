@@ -10,7 +10,7 @@
 // or here: <https://github.com/arximboldi/lager/blob/master/LICENSE>
 //
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include "../spies.hpp"
 

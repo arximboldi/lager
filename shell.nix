@@ -36,6 +36,7 @@ in
 theStdenv.mkDerivation rec {
   name = "lager-env";
   buildInputs = [
+    catch2
     cmake
     ccache
     ncurses
