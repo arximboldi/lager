@@ -14,7 +14,9 @@ rec {
       sha256 = "17gwhwhih4737wzm24c45y3ch69jzw2mi8prj1pdlxff8f1pki8v";
     };
     nativeBuildInputs = [ cmake ];
-    cmakeFlags="-DJUST_INSTALL_CEREAL=true";
+    cmakeFlags = [
+      "-DJUST_INSTALL_CEREAL=true"
+    ];
     meta = with lib; {
       homepage = "http://uscilab.github.io/cereal";
       description = "A C++11 library for serialization";
@@ -34,6 +36,10 @@ rec {
     };
     dontUseCmakeBuildDir = true;
     nativeBuildInputs = [ cmake ];
+    cmakeFlags = [
+      "-Dimmer_BUILD_TESTS=OFF"
+      "-Dimmer_BUILD_EXAMPLES=OFF"
+    ];
     meta = with lib; {
       homepage = "http://sinusoid.es/immer";
       description = "Immutable data structures for C++";
@@ -53,6 +59,10 @@ rec {
     };
     nativeBuildInputs = [ cmake ];
     dontUseCmakeBuildDir = true;
+    cmakeFlags = [
+      "-Dzug_BUILD_TESTS=OFF"
+      "-Dzug_BUILD_EXAMPLES=OFF"
+    ];
     meta = with lib; {
       homepage = "http://sinusoid.es/zug";
       description = "Transducers for C++";
