@@ -11,7 +11,7 @@
 //
 
 #include "cerealize.hpp"
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <lager/extra/cereal/immer_box.hpp>
 
 TEST_CASE("basic")

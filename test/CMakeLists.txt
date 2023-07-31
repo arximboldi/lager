@@ -63,7 +63,7 @@ foreach(_file IN LISTS lager_unit_tests)
   set_target_properties(${_target} PROPERTIES OUTPUT_NAME ${_output})
   add_dependencies(tests ${_target})
   target_compile_definitions(${_target} PUBLIC CATCH_CONFIG_MAIN)
-  target_link_libraries(${_target} PUBLIC lager-dev ${_qt_libs})
+  target_link_libraries(${_target} PUBLIC lager-dev Catch2::Catch2 ${_qt_libs})
   add_test("test/${_output}" ${_output})
 endforeach()
 

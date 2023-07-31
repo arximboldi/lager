@@ -11,7 +11,7 @@
 //
 
 #include "test/cereal/cerealize.hpp"
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <lager/extra/cereal/enum.hpp>
 #include <lager/extra/enum.hpp>

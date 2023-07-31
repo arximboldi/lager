@@ -11,7 +11,7 @@
 //
 
 #include "test/cereal/cerealize.hpp"
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <lager/extra/cereal/struct.hpp>
 #include <lager/extra/struct.hpp>

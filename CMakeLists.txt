@@ -77,9 +77,10 @@ endif()
 
 # the library, local development target
 if(lager_BUILD_TESTS)
+  find_package(Catch2 REQUIRED)
+
   add_library(lager-dev INTERFACE)
   target_include_directories(lager-dev SYSTEM INTERFACE
-    "$<BUILD_INTERFACE:${lager_SOURCE_DIR}/>/tools/include"
     ${lager_SOURCE_DIR}
     ${Boost_INCLUDE_DIR}
   )
