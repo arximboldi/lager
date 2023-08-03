@@ -15,7 +15,7 @@ add_dependencies(examples counter-std)
 # ncurses examples
 # ================
 
-set(CMAKE_CURSES_NEED_WIDE true)
+set(CURSES_NEED_WIDE true)
 
 find_package(Curses)
 
