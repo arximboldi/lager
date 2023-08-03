@@ -19,6 +19,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif()
 
+include(GNUInstallDirs)
+
 option(lager_BUILD_TESTS "Build tests" ON)
 option(lager_BUILD_FAILURE_TESTS "Build failure tests" ON)
 option(lager_BUILD_EXAMPLES "Build examples" ON)
@@ -58,7 +60,7 @@ add_library(lager INTERFACE)
 target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
-  $<INSTALL_INTERFACE:include>)
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 if(lager_DISABLE_STORE_DEPENDENCY_CHECKS)
   message(STATUS "Disabling compile-time checks for store dependencies")
@@ -148,7 +150,7 @@ if (lager_BUILD_EXAMPLES)
       resources/gui/gui.js
       resources/gui/gui.css
       resources/gui/index.html
-      DESTINATION share/lager/gui)
+      DESTINATION "${CMAKE_INSTALL_DATADIR}/lager/gui")
     endif()
 
   add_subdirectory(example)
@@ -165,8 +167,8 @@ if (lager_EMBED_RESOURCES_PATH)
     ${CMAKE_BINARY_DIR}/include/lager/resources_path.hpp)
   target_include_directories(lager
     INTERFACE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>)
-  install(FILES ${CMAKE_BINARY_DIR}/include/lager/resources_path.hpp DESTINATION include/lager)
+  install(FILES ${CMAKE_BINARY_DIR}/include/lager/resources_path.hpp DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/lager")
 endif()
 
-install(EXPORT LagerConfig DESTINATION lib/cmake/Lager)
-install(DIRECTORY lager DESTINATION include PATTERN "*.hpp")
+install(EXPORT LagerConfig DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Lager")
+install(DIRECTORY lager DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" PATTERN "*.hpp")
