@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 
 #if __EMSCRIPTEN__
 #include <emscripten.h>
