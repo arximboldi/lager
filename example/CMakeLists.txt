@@ -63,11 +63,11 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
     add_executable(counter-sdl2 EXCLUDE_FROM_ALL
       counter/sdl2/main.cpp)
     target_include_directories(counter-sdl2 SYSTEM PUBLIC
-      ${SDL2_INCLUDE_DIR}
+      ${SDL2_INCLUDE_DIRS}
       ${SDL2_TTF_INCLUDE_DIR})
     target_link_libraries(counter-sdl2
       lager-debugger-example
-      ${SDL2_LIBRARY}
+      ${SDL2_LIBRARIES}
       ${SDL2_TTF_LIBRARIES})
     add_dependencies(examples counter-sdl2)
 
@@ -75,11 +75,11 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
       autopong/autopong.cpp
       autopong/sdl2/main.cpp)
     target_include_directories(autopong SYSTEM PUBLIC
-      ${SDL2_INCLUDE_DIR}
+      ${SDL2_INCLUDE_DIRS}
       ${SDL2_TTF_INCLUDE_DIR})
     target_link_libraries(autopong
       lager-debugger-example
-      ${SDL2_LIBRARY}
+      ${SDL2_LIBRARIES}
       ${SDL2_TTF_LIBRARIES})
     add_dependencies(examples autopong)
 
@@ -88,11 +88,11 @@ if (SDL2_FOUND AND SDL2_ttf_FOUND)
       autopong/sdl2/main.cpp)
     target_compile_definitions(autopong-debug PUBLIC DEBUGGER)
     target_include_directories(autopong-debug SYSTEM PUBLIC
-      ${SDL2_INCLUDE_DIR}
+      ${SDL2_INCLUDE_DIRS}
       ${SDL2_TTF_INCLUDE_DIR})
     target_link_libraries(autopong-debug
       lager-debugger-example
-      ${SDL2_LIBRARY}
+      ${SDL2_LIBRARIES}
       ${SDL2_TTF_LIBRARIES})
     add_dependencies(examples autopong-debug)
   endif()
