@@ -120,7 +120,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
   set_target_properties(todo-qml PROPERTIES AUTOMOC YES)
   target_link_libraries(todo-qml lager-example Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_compile_definitions(todo-qml PRIVATE
-    LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml")
+    LAGER_TODO_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/todo/qml")
   add_dependencies(examples todo-qml)
 
   add_executable(todo-qml-redux EXCLUDE_FROM_ALL
@@ -131,7 +131,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
   set_target_properties(todo-qml-redux PROPERTIES AUTOMOC YES)
   target_link_libraries(todo-qml-redux lager-example Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_compile_definitions(todo-qml-redux PRIVATE
-    LAGER_TODO_QML_DIR="${CMAKE_SOURCE_DIR}/example/todo/qml-redux")
+    LAGER_TODO_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/todo/qml-redux")
   add_dependencies(examples todo-qml-redux)
 
   add_executable(snake-qml EXCLUDE_FROM_ALL
@@ -140,7 +140,7 @@ if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND 
   target_link_libraries(snake-qml lager-example Qt5::Core Qt5::Concurrent Qt5::Gui Qt5::Widgets Qt5::Qml Qt5::QuickControls2)
   target_include_directories(snake-qml PRIVATE ${Boost_INCLUDE_DIRS})
   target_compile_definitions(snake-qml PRIVATE
-    LAGER_SNAKE_QML_DIR="${CMAKE_SOURCE_DIR}/example/snake/qml")
+    LAGER_SNAKE_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/snake/qml")
   add_dependencies(examples snake-qml)
 else()
   message(STATUS "Disabling Qt based examples")
