@@ -284,7 +284,7 @@ struct http_debug_server_impl
                        auto m = model_.load();
                        auto s = std::ostringstream{};
                        {
-                           auto target = req.target().to_string();
+                           auto target = static_cast<std::string>(req.target());
                            auto cursor =
                                std::stoul(target.substr(target.rfind('/') + 1));
                            auto result = m->lookup(cursor);
@@ -300,7 +300,7 @@ struct http_debug_server_impl
             .route(beast::http::verb::post,
                    "/api/goto/[0-9]+",
                    [this](auto&& req) {
-                       auto target = req.target().to_string();
+                       auto target = static_cast<std::string>(req.target());
                        auto cursor =
                            std::stoul(target.substr(target.rfind('/') + 1));
                        context_.dispatch(
@@ -337,7 +337,7 @@ struct http_debug_server_impl
                    })
 
             .route(beast::http::verb::get, "/?.*", [this](auto&& req) {
-                auto req_path = req.target().to_string();
+                auto req_path = static_cast<std::string>(req.target());
                 auto rel_path =
                     req_path == "/" ? "/gui/index.html" : "/gui/" + req_path;
                 auto full_path = resources_path() + rel_path;
