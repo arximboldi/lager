@@ -37,6 +37,6 @@ stdenv.mkDerivation rec {
   meta = {
     homepage    = "https://github.com/arximboldi/lager";
     description = "library for functional interactive c++ programs";
-    license     = lib.licenses.lgpl3Plus;
+    license     = lib.licenses.mit;
   };
 }
