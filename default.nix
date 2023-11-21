@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
     cmake
     gcc7
     sass
-    pkgconfig
+    pkgs.pkg-config or pkgs.pkgconfig
   ];
   cmakeFlags = [
     "-Dlager_BUILD_TESTS=OFF"
