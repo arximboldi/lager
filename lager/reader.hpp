@@ -71,10 +71,11 @@ private:
 
     auto node_() const
     {
-        if(auto node = detail::access::node(*static_cast<const DerivT*>(this))) {
+        if (auto node =
+                detail::access::node(*static_cast<const DerivT*>(this))) {
             return node;
         }
-        throw std::runtime_error("Accessing uninitialized reader");
+        LAGER_THROW(std::runtime_error("Accessing uninitialized reader"));
     }
 };
 
@@ -101,7 +102,8 @@ public:
                                int> = 0>
     reader_base(reader_base<T> x)
         : base_t{std::move(x)}
-    {}
+    {
+    }
 
     template <typename T,
               std::enable_if_t<std::is_same_v<zug::meta::value_t<NodeT>,
@@ -109,12 +111,14 @@ public:
                                int> = 0>
     reader_base(cursor_base<T> x)
         : base_t{std::move(x)}
-    {}
+    {
+    }
 
     template <typename NodeT2>
     reader_base(std::shared_ptr<NodeT2> n)
         : base_t{std::move(n)}
-    {}
+    {
+    }
 };
 
 /*!
