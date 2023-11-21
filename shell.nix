@@ -1,7 +1,7 @@
 {
   compiler ? "",
-  rev      ? "4ed9856be002a730234a1a1ed9dcd9dd10cbdb40",
-  sha256   ? "1jbw1qayzmx1720nm6qkvs6q0rmndf9qjk1qq5p67qzlyfdmjb8f",
+  rev      ? "f904e3562aabca382d12f8471ca2330b3f82899a",
+  sha256   ? "1lsa3sjwp1v3nv2jjpkl5lf9dncplwihmavasalg9fq1217pmzmb",
   nixpkgs  ? builtins.fetchTarball {
     name   = "nixpkgs-${rev}";
     url    = "https://github.com/nixos/nixpkgs/archive/${rev}.tar.gz";
