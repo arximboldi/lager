@@ -70,10 +70,11 @@ private:
 
     auto node_() const
     {
-        if(auto node = detail::access::node(*static_cast<const DerivT*>(this))) {
+        if (auto node =
+                detail::access::node(*static_cast<const DerivT*>(this))) {
             return node;
         }
-        throw std::runtime_error("Accessing uninitialized writer");
+        LAGER_THROW(std::runtime_error("Accessing uninitialized writer"));
     }
 };
 
@@ -100,16 +101,19 @@ public:
     template <typename T>
     writer_base(writer_base<T> x)
         : node_(std::move(x.node_))
-    {}
+    {
+    }
 
     template <typename T>
     writer_base(cursor_base<T> x)
         : node_(detail::access::node(std::move(x)))
-    {}
+    {
+    }
 
     writer_base(node_ptr_t sig)
         : node_(std::move(sig))
-    {}
+    {
+    }
 };
 
 /*!
