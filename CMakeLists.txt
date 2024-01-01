@@ -81,10 +81,16 @@ endif()
 if(lager_BUILD_TESTS)
   find_package(Catch2 REQUIRED)
 
+  set(concurrentqueue_INCLUDE_DIR "$ENV{CONCURRENTQUEUE_INCLUDE_DIR}")
+  if ("${concurrentqueue_INCLUDE_DIR}" STREQUAL "")
+    message(WARNING "Could not find concurrentqueue")
+  endif()
+
   add_library(lager-dev INTERFACE)
   target_include_directories(lager-dev SYSTEM INTERFACE
     ${lager_SOURCE_DIR}
     ${Boost_INCLUDE_DIR}
+    ${concurrentqueue_INCLUDE_DIR}
   )
   target_link_libraries(lager-dev INTERFACE lager
     ${Boost_LIBRARIES}

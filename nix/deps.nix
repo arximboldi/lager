@@ -91,4 +91,23 @@ rec {
       license = licenses.lgpl3;
     };
   };
+
+  concurrentqueue = stdenv.mkDerivation rec {
+    name = "concurrentqueue-${version}";
+    version = "git-${commit}";
+    commit = "6ffee0e75e8f677c5fd8280dfe544c3fcb325f45";
+    src = fetchFromGitHub {
+      owner = "cameron314";
+      repo = "concurrentqueue";
+      rev = "v1.0.4";
+      sha256 = "MkhlDme6ZwKPuRINhfpv7cxliI2GU3RmTfC6O0ke/IQ=";
+    };
+    nativeBuildInputs = [ cmake ];
+    meta = with lib; {
+      description = "Lock-free queue library";
+      license = licenses.bsd1;
+    };
+  };
+
+
 }

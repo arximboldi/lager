@@ -48,6 +48,7 @@ theStdenv.mkDerivation rec {
     deps.immer
     deps.zug
     deps.imgui
+    deps.concurrentqueue
     SDL2
     SDL2_ttf
     qt.qtbase
@@ -85,5 +86,6 @@ theStdenv.mkDerivation rec {
     export QT_QPA_PLATFORM_PLUGIN_PATH=${qt.qtbase}/lib/qt-${qtver}/plugins
     export IMGUI_SOURCE_DIR=${deps.imgui}
     export EM_CACHE=`mktemp -d`
+    export CONCURRENTQUEUE_INCLUDE_DIR="${deps.concurrentqueue}/include/concurrentqueue"
   '';
 }

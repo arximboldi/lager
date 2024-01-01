@@ -31,6 +31,7 @@ stdenv.mkDerivation rec {
   propagatedBuildInputs = [
     boost
     deps.cereal
+    deps.concurrentqueue
     deps.immer
     deps.zug
   ];
