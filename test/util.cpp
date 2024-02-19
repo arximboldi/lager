@@ -36,3 +36,11 @@ TEST_CASE("match deriv")
     auto y = lager::match(v)([](int x) { return x; }, [](auto) { return 0; });
     CHECK(y == 42);
 }
+
+TEST_CASE("match deriv constexpr ")
+{
+    constexpr auto v = deriv_t{42};
+    constexpr auto y =
+        lager::match(v)([](int x) { return x; }, [](auto) { return 0; });
+    CHECK(y == 42);
+}

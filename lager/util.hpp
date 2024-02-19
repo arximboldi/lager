@@ -55,7 +55,7 @@ template <typename TupleT>
 struct matcher : TupleT
 {
     template <typename... Visitors>
-    decltype(auto) operator()(Visitors&&... vs) &&
+    constexpr decltype(auto) operator()(Visitors&&... vs) &&
     {
         return std::apply(
             [&](auto&&... xs) {
@@ -70,7 +70,7 @@ template <typename T>
 matcher(T) -> matcher<T>;
 
 template <typename... Ts>
-decltype(auto) as_variant(std::variant<Ts...> const& x)
+constexpr decltype(auto) as_variant(std::variant<Ts...> const& x)
 {
     return x;
 }
@@ -109,7 +109,8 @@ constexpr bool is_variant_v = is_variant<T>::value;
  * value is forwarded as a variant.
  */
 template <typename T>
-auto forward_variant(typename std::remove_reference<T>::type& v) noexcept
+constexpr auto
+forward_variant(typename std::remove_reference<T>::type& v) noexcept
     -> std::enable_if_t<is_variant_v<T>,
                         zug::detail::copy_decay_t<T, get_variant_t<T>>&&>
 {
@@ -117,7 +118,8 @@ auto forward_variant(typename std::remove_reference<T>::type& v) noexcept
 }
 
 template <typename T>
-auto forward_variant(typename std::remove_reference<T>::type& v) noexcept
+constexpr auto
+forward_variant(typename std::remove_reference<T>::type& v) noexcept
     -> std::enable_if_t<!is_variant_v<T>, T&&>
 {
     static_assert(is_variant<T>::value,
@@ -147,7 +149,7 @@ auto forward_variant(typename std::remove_reference<T>::type& v) noexcept
  * @endcode
  */
 template <typename... Variants>
-auto match(Variants&&... vs)
+constexpr auto match(Variants&&... vs)
 {
     return detail::matcher{
         std::forward_as_tuple(forward_variant<Variants>(vs)...)};
@@ -158,7 +160,8 @@ ZUG_INLINE_CONSTEXPR struct noop_t
 {
     template <typename... T>
     void operator()(T&&...) const
-    {}
+    {
+    }
 } noop{};
 
 //! Function that returns its first arguemnt
