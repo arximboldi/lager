@@ -37,9 +37,25 @@ TEST_CASE("match deriv")
     CHECK(y == 42);
 }
 
+// only literal types can be used in a constexpr
+
+using literal_variant_t = std::variant<int, float, double>;
+struct literal_deriv_t : literal_variant_t
+{
+    using literal_variant_t::literal_variant_t;
+};
+
+TEST_CASE("match constexpr")
+{
+    constexpr auto v = literal_variant_t{42};
+    constexpr auto y =
+        lager::match(v)([](int x) { return x; }, [](auto) { return 0; });
+    CHECK(y == 42);
+}
+
 TEST_CASE("match deriv constexpr ")
 {
-    constexpr auto v = deriv_t{42};
+    constexpr auto v = literal_deriv_t{42};
     constexpr auto y =
         lager::match(v)([](int x) { return x; }, [](auto) { return 0; });
     CHECK(y == 42);
