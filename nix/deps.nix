@@ -32,7 +32,7 @@ rec {
       owner = "arximboldi";
       repo = "immer";
       rev = commit;
-      #sha256 = "1bqkinkbp1b1aprg7ydfrbfs7gi779nypwvh9fj129frq1c2rxw5";
+      sha256 = "D6QiTeOoBUJScQQl/e1jq4n+ORTzYnKg7LKTP6xacM4";
     };
     dontUseCmakeBuildDir = true;
     nativeBuildInputs = [ cmake ];
