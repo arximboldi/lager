@@ -11,12 +11,7 @@ add_custom_target(docs
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 add_dependencies(docs doxygen)
 
-set(lager_ssh_method
-  ssh -p 5488
-      -o StrictHostKeyChecking=no)
-
 add_custom_target(upload-docs
   COMMAND
-  rsync -av -e \"${lager_ssh_method}\"
-        ${CMAKE_CURRENT_SOURCE_DIR}/_build/html/*
-        raskolnikov@sinusoid.es:public/lager/)
+  rsync -av ${CMAKE_CURRENT_SOURCE_DIR}/_build/html/*
+        root@sinusoid.es:/var/lib/syncthing/public/lager/)
