@@ -15,57 +15,44 @@
 #include <lager/config.hpp>
 
 #include <cereal/cereal.hpp>
-
 #include <immer/table.hpp>
-#include <immer/table_transient.hpp>
-#include <type_traits>
 
 namespace cereal {
-// This code has mostly been adapted from <cereal/types/vector.hpp>
-// We don't deal for now with data that could be potentially serialized
-// directly in binary format.
 
 template <typename Archive,
           typename T,
-          typename K,
+          typename KF,
+          typename H,
+          typename E,
+          typename MP,
+          std::uint32_t B>
+void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, immer::table<T, KF, H, E, MP, B>& m)
+{
+    size_type size;
+    ar(make_size_tag(size));
+
+    for (auto i = size_type{}; i < size; ++i) {
+        T x;
+        ar(x);
+        m = std::move(m).insert(std::move(x));
+    }
+    if (size != m.size())
+        throw std::runtime_error{"duplicate ids?"};
+}
+
+template <typename Archive,
+          typename T,
+          typename KF,
           typename H,
           typename E,
           typename MP,
           std::uint32_t B>
 void CEREAL_SAVE_FUNCTION_NAME(Archive& ar,
-                               const immer::table<T, K, H, E, MP, B>& table)
+                               const immer::table<T, KF, H, E, MP, B>& m)
 {
-    ar(make_size_tag(static_cast<size_type>(table.size())));
-    for (auto&& v : table)
+    ar(make_size_tag(static_cast<size_type>(m.size())));
+    for (auto&& v : m)
         ar(v);
-}
-
-template <typename Archive,
-          typename T,
-          typename K,
-          typename H,
-          typename E,
-          typename MP,
-          std::uint32_t B>
-void CEREAL_LOAD_FUNCTION_NAME(Archive& ar,
-                               immer::table<T, K, H, E, MP, B>& table)
-{
-    size_type size{};
-    ar(make_size_tag(size));
-
-    if (!size)
-        return;
-
-    auto t = immer::table<T, K, H, E, MP, B>{}.transient();
-
-    for (auto i = size_type{}; i < size; ++i) {
-        T x;
-        ar(x);
-        t.insert(std::move(x));
-    }
-    table = std::move(t).persistent();
-
-    assert(size == table.size());
 }
 
 } // namespace cereal
