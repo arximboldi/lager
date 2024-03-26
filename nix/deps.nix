@@ -27,12 +27,12 @@ rec {
   immer = stdenv.mkDerivation rec {
     name = "immer-${version}";
     version = "git-${commit}";
-    commit = "a1271fa712342f5c6dfad876820da17e10c28214";
+    commit = "00cdcbf90a73a367f1ef76a088c80506e01a2c22";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "immer";
       rev = commit;
-      sha256 = "1bqkinkbp1b1aprg7ydfrbfs7gi779nypwvh9fj129frq1c2rxw5";
+      sha256 = "sha256-3ByB/tCAXT3IkCqMYEQ2tdIphHOWk4w6rQMitvuxyrw=";
     };
     dontUseCmakeBuildDir = true;
     nativeBuildInputs = [ cmake ];
