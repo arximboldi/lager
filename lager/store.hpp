@@ -169,8 +169,9 @@ private:
                                 base_t::send_down();
                                 base_t::notify();
                             }
+                            auto& ctxMsvcWorkaround = ctx;
                             if constexpr (std::is_same_v<void,
-                                                         decltype(eff(ctx))>) {
+                                    decltype(eff(ctxMsvcWorkaround))>) {
                                 eff(ctx);
                                 if constexpr (has_futures)
                                     p();

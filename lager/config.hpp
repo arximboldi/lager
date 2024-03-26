@@ -16,6 +16,10 @@
 #define LAGER_HAS_CPP17 1
 #endif
 
+#if defined(_MSC_VER) && !defined(LAGER_DISABLE_STORE_DEPENDENCY_CHECKS)
+#define LAGER_DISABLE_STORE_DEPENDENCY_CHECKS
+#endif
+
 #ifdef __has_feature
 #if !__has_feature(cxx_exceptions)
 #define LAGER_NO_EXCEPTIONS
