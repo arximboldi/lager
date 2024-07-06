@@ -20,9 +20,11 @@
 #define LAGER_DISABLE_STORE_DEPENDENCY_CHECKS
 #endif
 
+#if !defined(LAGER_USE_EXCEPTIONS) && !defined(LAGER_NO_EXCEPTIONS)
 #ifdef __has_feature
 #if !__has_feature(cxx_exceptions)
 #define LAGER_NO_EXCEPTIONS
+#endif
 #endif
 #endif
 
