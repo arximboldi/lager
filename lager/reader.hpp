@@ -125,9 +125,9 @@ public:
  * Provides access to reading values of type `T`.
  */
 template <typename T>
-class reader : public reader_base<detail::reader_node<T>>
+class reader : public reader_base<detail::observable_reader_node<T>>
 {
-    using base_t = reader_base<detail::reader_node<T>>;
+    using base_t = reader_base<detail::observable_reader_node<T>>;
 
 public:
     using base_t::base_t;

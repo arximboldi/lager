@@ -128,26 +128,19 @@ struct notifying_guard_t
 };
 
 /*!
- * Base class for the various node types.  Provides basic
- * functionality for setting values and propagating them to children.
+ * Interface for nodes capable of notifying observers.
  */
 template <typename T>
-class reader_node : public reader_node_base
+class observable_reader_node
 {
 public:
     using value_type  = T;
     using signal_type = signal<const value_type&>;
 
-    reader_node(T value)
-        : current_(std::move(value))
-        , last_(current_)
-    {}
+    virtual void refresh() = 0;
 
-    virtual void recompute() = 0;
-    virtual void refresh()   = 0;
-
-    const value_type& current() const { return current_; }
-    const value_type& last() const { return last_; }
+    const value_type& current() const { return *current_view_; }
+    const value_type& last() const { return *last_view_; }
 
     void link(std::weak_ptr<reader_node_base> child)
     {
@@ -159,6 +152,56 @@ public:
                "Child node must not be linked twice");
         children_.push_back(child);
     }
+    auto observers() -> signal_type& { return observers_; }
+
+protected:
+    observable_reader_node(const T* current, const T* last)
+        : current_view_(current)
+        , last_view_(last)
+    {
+    }
+
+    void collect()
+    {
+        using namespace std;
+        children_.erase(remove_if(begin(children_),
+                                  end(children_),
+                                  mem_fn(&weak_ptr<reader_node_base>::expired)),
+                        end(children_));
+    }
+
+    const std::vector<std::weak_ptr<reader_node_base>>& children() const
+    {
+        return children_;
+    }
+
+private:
+    const T* current_view_;
+    const T* last_view_;
+    signal_type observers_;
+    std::vector<std::weak_ptr<reader_node_base>> children_;
+};
+/*!
+ * Base class for the various node types.  Provides basic
+ * functionality for setting values and propagating them to children.
+ */
+template <typename T>
+class reader_node
+    : public reader_node_base
+    , public observable_reader_node<T>
+{
+public:
+    using value_type  = typename observable_reader_node<T>::value_type;
+    using signal_type = typename observable_reader_node<T>::signal_type;
+
+    reader_node(T value)
+        : observable_reader_node<T>(&current_, &last_)
+        , current_(std::move(value))
+        , last_(current_)
+    {
+    }
+
+    virtual void recompute() = 0;
 
     template <typename U>
     void push_down(U&& value)
@@ -171,12 +214,12 @@ public:
 
     void send_down() final
     {
-        recompute();
+        this->recompute();
         if (needs_send_down_) {
             last_            = current_;
             needs_send_down_ = false;
             needs_notify_    = true;
-            for (auto& wchild : children_) {
+            for (auto& wchild : this->children()) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
                 }
@@ -193,9 +236,9 @@ public:
             notifying_guard_t notifying_guard(notifying_);
             bool garbage = false;
 
-            observers_(last_);
-            for (size_t i = 0, size = children_.size(); i < size; ++i) {
-                if (auto child = children_[i].lock()) {
+            this->observers()(last_);
+            for (auto& wchild : this->children()) {
+                if (auto child = wchild.lock()) {
                     child->notify();
                 } else {
                     garbage = true;
@@ -203,27 +246,14 @@ public:
             }
 
             if (garbage && !notifying_guard.value_) {
-                collect();
+                this->collect();
             }
         }
     }
 
-    auto observers() -> signal_type& { return observers_; }
-
 private:
-    void collect()
-    {
-        using namespace std;
-        children_.erase(remove_if(begin(children_),
-                                  end(children_),
-                                  mem_fn(&weak_ptr<reader_node_base>::expired)),
-                        end(children_));
-    }
-
     value_type current_;
     value_type last_;
-    std::vector<std::weak_ptr<reader_node_base>> children_;
-    signal_type observers_;
 
     bool needs_send_down_ = false;
     bool needs_notify_    = false;
