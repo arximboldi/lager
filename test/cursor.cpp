@@ -226,3 +226,26 @@ TEST_CASE("lenses over with expression")
     CHECK(person_data->name == "new name");
     CHECK(name.get() == "new name");
 }
+
+struct Foo;
+struct Bar
+{
+    lager::reader<Foo> foo;
+    reader<Foo> get_reader() const;
+};
+struct Baz
+{
+    Baz(const lager::reader<Foo>& r);
+};
+TEST_CASE("forward declare a reader value")
+{
+    auto bar = Bar();
+    auto baz = Baz(bar.get_reader());
+}
+struct Foo
+{};
+lager::reader<Foo> Bar::get_reader() const
+{
+    return lager::make_constant(Foo());
+}
+Baz::Baz(const lager::reader<Foo>&) {}
