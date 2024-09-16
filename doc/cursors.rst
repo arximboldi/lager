@@ -298,6 +298,34 @@ all the value types in the original cursors:
    lager::reader<std::tuple<int, std::string>> dual_ro =
        lager::with(num, str_ro);
 
+.. _derive-a-read-write-cursor-from-a-read-only-one:
+
+Derive a read-write cursor from a read-only one
+---------------
+
+You can use ``lager::with_setter`` to derive a read-write cursor from a
+read-only cursor.
+
+.. code-block:: c++
+
+   #include <lager/setter.hpp>
+
+   auto store = lager::make_store<int>(
+       0,
+       lager::with_manual_event_loop{},
+       lager::with_reducer([](int s, int a) { return a; }));
+   auto cursor = lager::with_setter(
+       store,
+       [&](int x) { store.dispatch(x); });
+
+   store.dispatch(42);
+   std::cout << store.get() << std::endl; // 42
+   std::cout << cursor.get() << std::endl; // 42
+
+   cursor.set(5);
+   std::cout << cursor.get() << std::endl; // 5
+   std::cout << store.get() << std::endl; // 5
+
 .. _using-cursors:
 
 Using cursors
@@ -451,7 +479,7 @@ room model and watch it for changes:
            });
        }
    };
-   
+
 .. note:: A ``lager::watch(reader, ...)`` is bound to the
    ``reader`` object. It is simply an alias of
    ``reader.watch(...)``. This means that when the reader
@@ -459,7 +487,7 @@ room model and watch it for changes:
    example:
 
    .. code-block:: c++
-   
+
       void setup_watch() {
           auto reader = my_store[&my_model::foo];
 
