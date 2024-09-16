@@ -9,17 +9,34 @@
   },
 }:
 
-with import nixpkgs {};
+with import nixpkgs {
+  overlays = [(
+    final: prev: {
+      # workaround for this:
+      # https://github.com/emscripten-core/emscripten/issues/22249
+      binaryen = prev.binaryen.overrideAttrs (attrs: {
+        version = "git";
+        doCheck = false;
+        src = prev.fetchFromGitHub {
+          owner = "WebAssembly";
+          repo = "binaryen";
+          rev = "835c5ddf5e3dd5542ef1d0c8f025129c240b4b2c";
+          hash = "sha256-X6A1T8koNGxSQAFOi0SE7UdUfo9UfNeh5cGb22e01L4=";
+        };
+      });
+    }
+  )];
+};
 
 let
   # For the documentation tools we use an older Nixpkgs since the
   # newer versions seem to be not working great...
   old-nixpkgs-src = fetchFromGitHub {
-                      owner  = "NixOS";
-                      repo   = "nixpkgs";
-                      rev    = "d0d905668c010b65795b57afdf7f0360aac6245b";
-                      sha256 = "1kqxfmsik1s1jsmim20n5l4kq6wq8743h5h17igfxxbbwwqry88l";
-                    };
+    owner  = "NixOS";
+    repo   = "nixpkgs";
+    rev    = "d0d905668c010b65795b57afdf7f0360aac6245b";
+    sha256 = "1kqxfmsik1s1jsmim20n5l4kq6wq8743h5h17igfxxbbwwqry88l";
+  };
   old-nixpkgs     = import old-nixpkgs-src {};
   docs            = import ./nix/docs.nix { nixpkgs = old-nixpkgs-src; };
   deps            = import ./nix/deps.nix { inherit nixpkgs; };
@@ -66,7 +83,7 @@ theStdenv.mkDerivation rec {
       ps.sphinx
       docs.breathe
       docs.recommonmark
-      ]))
+    ]))
     old-nixpkgs.sass
     old-nixpkgs.elmPackages.elm-reactor
     old-nixpkgs.elmPackages.elm-make
