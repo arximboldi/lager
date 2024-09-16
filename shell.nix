@@ -41,7 +41,7 @@ theStdenv.mkDerivation rec {
     ccache
     ncurses
     boost
-    pkgconfig
+    pkg-config
     libiconvReal
     glibcLocales
     deps.cereal
