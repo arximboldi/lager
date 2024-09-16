@@ -69,7 +69,7 @@ jobs:
             compiler: gcc9
             opts: ['coverage']
           - type: Debug
-            compiler: clang_10
+            compiler: clang_12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
