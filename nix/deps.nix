@@ -50,12 +50,12 @@ rec {
   zug = stdenv.mkDerivation rec {
     name = "zug-${version}";
     version = "git-${commit}";
-    commit = "be20cae36e7e5876bf5bfb08b2a0562e1db3b546";
+    commit = "7c22cc138e2a9a61620986d1a7e1e9730123f22b";
     src = fetchFromGitHub {
       owner = "arximboldi";
       repo = "zug";
       rev = commit;
-      sha256 = "0vmcnspg9ys4qkj228kgvmpb5whly1cwx30sbg21x2iqs7y11ggx";
+      sha256 = "sha256-/0HnSUmmyX49L6pJk9QlviFF2FYi5o+x++94wwYwWjk=";
     };
     nativeBuildInputs = [ cmake ];
     dontUseCmakeBuildDir = true;
