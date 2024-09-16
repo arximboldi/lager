@@ -62,14 +62,14 @@ jobs:
     strategy:
       matrix:
         type: [Debug, Release]
-        compiler: [gcc9]
+        compiler: [gcc]
         opts: [[]]
         include:
           - type: Debug
-            compiler: gcc9
+            compiler: gcc
             opts: ['coverage']
           - type: Debug
-            compiler: clang_12
+            compiler: clang
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
