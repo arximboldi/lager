@@ -56,6 +56,7 @@ theStdenv.mkDerivation rec {
     catch2
     cmake
     ccache
+    ninja
     ncurses
     boost
     pkg-config
