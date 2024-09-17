@@ -21,8 +21,12 @@
 #endif
 
 #if !defined(LAGER_USE_EXCEPTIONS) && !defined(LAGER_NO_EXCEPTIONS)
-#ifdef __has_feature
-#if !__has_feature(cxx_exceptions)
+#if defined(_MSC_VER)
+#if !_HAS_EXCEPTIONS
+#define LAGER_NO_EXCEPTIONS
+#endif
+#else
+#if !__cpp_exceptions
 #define LAGER_NO_EXCEPTIONS
 #endif
 #endif
@@ -43,4 +47,3 @@
 #define LAGER_THROW(expr) throw expr
 #define LAGER_RETHROW throw
 #endif
-
