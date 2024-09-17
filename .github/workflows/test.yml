@@ -84,10 +84,10 @@ jobs:
       - name: configure cmake
         run: |
           nix-shell --argstr compiler ${{ matrix.compiler }} --run "
-            cd build && cmake .. \
+            cd build && cmake -GNinja .. \
               -DCMAKE_BUILD_TYPE=${{ matrix.type }} \
               -DENABLE_COVERAGE=${{ contains(matrix.opts, 'coverage') }}
           "
-      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && make check -j`nproc`"
+      - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "cd build && ninja check"
       - run: nix-shell --argstr compiler ${{ matrix.compiler }} --run "bash <(curl -s https://codecov.io/bash)"
         if: ${{ contains(matrix.opts, 'coverage') }}
