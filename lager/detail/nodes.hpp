@@ -235,8 +235,9 @@ public:
             bool garbage = false;
 
             this->observers()(last_);
-            for (auto& wchild : this->children()) {
-                if (auto child = wchild.lock()) {
+            const auto& children = this->children();
+            for (size_t i = 0, size = children.size(); i < size; ++i) {
+                if (auto child = children[i].lock()) {
                     child->notify();
                 } else {
                     garbage = true;
