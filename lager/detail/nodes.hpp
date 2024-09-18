@@ -131,7 +131,7 @@ struct notifying_guard_t
  * Interface for nodes capable of notifying observers.
  */
 template <typename T>
-class observable_reader_node
+class observable_reader_node : public reader_node_base
 {
 public:
     using value_type  = T;
@@ -186,9 +186,7 @@ private:
  * functionality for setting values and propagating them to children.
  */
 template <typename T>
-class reader_node
-    : public reader_node_base
-    , public observable_reader_node<T>
+class reader_node : public observable_reader_node<T>
 {
 public:
     using value_type  = typename observable_reader_node<T>::value_type;
