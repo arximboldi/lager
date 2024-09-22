@@ -235,6 +235,10 @@ public:
             bool garbage = false;
 
             this->observers()(last_);
+            // We cannot use ranged-for here because children might
+            // change as a result of notify(). This can invalidate
+            // the iterators on children, causing undefined behaviors.
+            // See also https://github.com/arximboldi/lager/pull/212
             const auto& children = this->children();
             for (size_t i = 0, size = children.size(); i < size; ++i) {
                 if (auto child = children[i].lock()) {
