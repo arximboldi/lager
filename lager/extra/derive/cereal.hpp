@@ -25,8 +25,18 @@
     cereal::make_nvp(BOOST_PP_STRINGIZE(elem__), x.elem__)
 
 #define LAGER_DERIVE_IMPL_CEREAL_MEMBERS_NON_EMPTY__(r__, members__)           \
-    ar(BOOST_PP_SEQ_FOR_EACH_I_R(                                              \
-        r__, LAGER_DERIVE_IMPL_CEREAL_ITER__, _, members__));
+    try {                                                                      \
+        ar(BOOST_PP_SEQ_FOR_EACH_I_R(                                          \
+            r__, LAGER_DERIVE_IMPL_CEREAL_ITER__, *, members__));              \
+    } catch (const cereal::Exception&) {                                       \
+        /* Default construct all members */                                    \
+        BOOST_PP_SEQ_FOR_EACH_R(                                               \
+            r__, LAGER_DERIVE_IMPL_DEFAULT__, *, members__);                   \
+    }
+
+// Helper macro to default construct each member
+#define LAGER_DERIVE_IMPL_DEFAULT__(r__, data__, elem__)                       \
+    x.elem__ = decltype(x.elem__){};
 
 #define LAGER_DERIVE_IMPL_CEREAL_MEMBERS_EMPTY__(r__, members__)
 
