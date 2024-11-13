@@ -21,8 +21,8 @@
 #include <lager/lenses/at_or.hpp>
 #include <lager/lenses/attr.hpp>
 #include <lager/lenses/optional.hpp>
-#include <lager/lenses/variant.hpp>
 #include <lager/lenses/tuple.hpp>
+#include <lager/lenses/variant.hpp>
 
 #include <array>
 
@@ -423,6 +423,21 @@ TEST_CASE("lenses, bind_opt")
     }
 }
 
+
+TEST_CASE("lenses::force_opt with bind_opt", "[lenses][force_opt][bind_opt]")
+{
+    auto opt_member_lens  = attr(&yearday::day) | force_opt;
+    auto bound_opt_member = bind_opt(opt_member_lens);
+    
+    CHECK(view(bound_opt_member, std::optional{yearday{1, 1}}) ==
+          std::optional{1});
+    CHECK(view(bound_opt_member, std::optional<yearday>{}) == std::nullopt);
+    CHECK(set(bound_opt_member, std::optional{yearday{1, 1}}, 1)->day == 1);
+    CHECK(set(bound_opt_member, std::optional{yearday{1, 1}}, std::optional{1})
+              ->day == 1);
+    CHECK(!set(bound_opt_member, std::optional<yearday>{}, std::nullopt));
+}
+
 TEST_CASE("lenses::zip pair", "[lenses][zip][pair]")
 {
     struct foo
@@ -433,9 +448,8 @@ TEST_CASE("lenses::zip pair", "[lenses][zip][pair]")
     std::pair<foo, int> baz{{42}, 256};
     auto zipped = zip(attr(&foo::value), lager::identity);
 
-    baz = over(zipped, baz, [](auto x) {
-        return std::pair{x.second, x.first};
-    });
+    baz =
+        over(zipped, baz, [](auto x) { return std::pair{x.second, x.first}; });
 
     CHECK(baz.first.value == 256);
     CHECK(baz.second == 42);

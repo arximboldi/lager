@@ -70,6 +70,14 @@ struct add_opt
     using type = std::optional<std::decay_t<T>>;
 };
 
+template <typename T>
+struct is_optional : std::false_type
+{};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type
+{};
+
 } // namespace detail
 
 //! @defgroup lenses
@@ -110,7 +118,7 @@ auto value_or(T&& t)
 {
     return zug::comp([t = std::forward<T>(t)](auto&& f) {
         return [&, f = LAGER_FWD(f)](auto&& whole) {
-            return f(LAGER_FWD(whole).value_or(std::move(t)))(
+            return f(LAGER_FWD(whole).value_or(t))(
                 [&](auto&& x) { return LAGER_FWD(x); });
         };
     });
@@ -141,8 +149,13 @@ ZUG_INLINE_CONSTEXPR auto or_default = value_or();
 ZUG_INLINE_CONSTEXPR auto force_opt = zug::comp([](auto&& f) {
     return [f = LAGER_FWD(f)](auto&& p) {
         using opt_t = std::optional<std::decay_t<decltype(p)>>;
-        return f(opt_t{LAGER_FWD(p)})(
-            [&](auto&& x) { return LAGER_FWD(x).value_or(LAGER_FWD(p)); });
+        auto opt    = opt_t{LAGER_FWD(p)};
+        return f(std::move(opt))([&](auto&& x) -> decltype(auto) {
+            if constexpr (detail::is_optional<std::decay_t<decltype(x)>>::value)
+                return LAGER_FWD(x).value_or(*std::move(opt));
+            else
+                return LAGER_FWD(x);
+        });
     };
 });
 
