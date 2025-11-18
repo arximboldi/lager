@@ -217,11 +217,19 @@ public:
             last_            = current_;
             needs_send_down_ = false;
             needs_notify_    = true;
-            for (auto& wchild : this->children()) {
+            
+            const auto& children = this->children();
+            const size_t n_children = children.size();
+            for (auto& wchild : children) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
                 }
             }
+            assert(n_children == children.size() &&
+                   "Children must not change during send_down, \
+                    because iterators would be invalidated leading to UB. \
+                    Maybe you created a new cursor inside a cursor.map(...) \
+                    call?");
         }
     }
 
