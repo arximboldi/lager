@@ -217,6 +217,7 @@ public:
             last_            = current_;
             needs_send_down_ = false;
             needs_notify_    = true;
+            has_sent_down_   = true;
             for (auto& wchild : this->children()) {
                 if (auto child = wchild.lock()) {
                     child->send_down();
@@ -254,13 +255,14 @@ public:
         }
     }
 
-private:
+protected:
     value_type current_;
     value_type last_;
 
     bool needs_send_down_ = false;
     bool needs_notify_    = false;
     bool notifying_       = false;
+    bool has_sent_down_   = false;
 };
 
 /*!
@@ -292,6 +294,20 @@ public:
         : base_t{std::move(init)}
         , parents_{std::move(parents)}
     {}
+
+    template <typename U>
+    void push_down(U&& value)
+    {
+        // For inner nodes, we need to handle the case where the node is
+        // initialized with a default value (e.g., from a failed filter in
+        // xform) and then receives that same default value as the first
+        // actual value from the parent (e.g., optional<int>(0) -> int(0)).
+        // In this case, we should notify even though the values are equal.
+        if (has_changed(value, this->current_) || !this->has_sent_down_) {
+            this->current_         = std::forward<U>(value);
+            this->needs_send_down_ = true;
+        }
+    }
 
     void refresh() final
     {

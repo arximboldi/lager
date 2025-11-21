@@ -268,7 +268,6 @@ TEST_CASE("watch filtered xform of optional ints | update default value")
     state.set(0);
     commit(state);
     REQUIRE(state.get() == 0);
-    // bug! not notified of value change
     CHECK(called == 1);
 }
 
@@ -287,6 +286,5 @@ TEST_CASE("watch filtered xform of optional strings | update default value")
     state.set("");
     commit(state);
     REQUIRE(state.get() == "");
-    // bug! not notified of value change
     CHECK(called == 1);
 }
