@@ -21,6 +21,9 @@
 #include <lager/lenses.hpp>
 #include <lager/lenses/tuple.hpp>
 
+#include <zug/transducer/filter.hpp>
+#include <zug/transducer/map.hpp>
+
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/comparison.hpp>
 
@@ -249,3 +252,39 @@ lager::reader<Foo> Bar::get_reader() const
     return lager::make_constant(Foo());
 }
 Baz::Baz(const lager::reader<Foo>&) {}
+
+TEST_CASE("watch filtered xform of optional ints | update default value")
+{
+    state<std::optional<int>> state;
+    REQUIRE(state.get() == std::nullopt);
+
+    lager::reader<int> reader =
+        state.xform(zug::filter([](auto opt) { return opt.has_value(); }) |
+                    zug::map([](auto opt) { return *opt; }));
+
+    int called{};
+    watch(reader, [&](auto) { ++called; });
+
+    state.set(0);
+    commit(state);
+    REQUIRE(state.get() == 0);
+    CHECK(called == 1);
+}
+
+TEST_CASE("watch filtered xform of optional strings | update default value")
+{
+    state<std::optional<std::string>> state;
+    REQUIRE(state.get() == std::nullopt);
+
+    lager::reader<std::string> reader =
+        state.xform(zug::filter([](auto opt) { return opt.has_value(); }) |
+                    zug::map([](auto opt) { return *opt; }));
+
+    int called{};
+    watch(reader, [&](auto) { ++called; });
+
+    state.set("");
+    commit(state);
+    REQUIRE(state.get() == "");
+    CHECK(called == 1);
+}
