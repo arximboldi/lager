@@ -21,7 +21,7 @@ using namespace std::string_literals;
 
 namespace ncurses {
 
-terminal::terminal(boost::asio::io_service& serv)
+terminal::terminal(boost::asio::io_context& serv)
     : win_{[] {
         std::locale::global(std::locale(""));
         ::setlocale(LC_ALL, "");

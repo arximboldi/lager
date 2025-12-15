@@ -58,7 +58,7 @@ void draw(const counter::model& c)
 
 int main(int argc, const char** argv)
 {
-    auto serv = boost::asio::io_service{};
+    auto serv = boost::asio::io_context{};
     auto term = ncurses::terminal{serv};
     ::init_pair(1, COLOR_WHITE, COLOR_GREEN);
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
