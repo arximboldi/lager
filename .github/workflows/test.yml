@@ -4,8 +4,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - uses: cachix/cachix-action@v12
@@ -17,8 +17,8 @@ jobs:
   macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - uses: cachix/cachix-action@v12
@@ -37,10 +37,10 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - uses: cachix/cachix-action@v12
@@ -72,8 +72,8 @@ jobs:
             compiler: clang
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - uses: cachix/cachix-action@v12
