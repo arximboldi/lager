@@ -63,7 +63,7 @@ lager::effect<lager::actions<...>, ...> " //
             int> = 0>
     effect(Fn&& fn)
         : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) mutable -> future {
-            fn(ctx);
+            std::move(fn)(LAGER_FWD(ctx))
             return {};
         }}
     {}
