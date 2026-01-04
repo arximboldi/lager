@@ -62,8 +62,8 @@ lager::effect<lager::actions<...>, ...> " //
             std::is_same_v<void, std::invoke_result_t<Fn&, const context_t&>>,
             int> = 0>
     effect(Fn&& fn)
-        : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) -> future {
-            fn(ctx);
+        : base_t{[fn = std::forward<Fn>(fn)](auto&& ctx) mutable -> future {
+            std::move(fn)(LAGER_FWD(ctx));
             return {};
         }}
     {}
