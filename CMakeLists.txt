@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0048 NEW) # enable project VERSION
 cmake_policy(SET CMP0056 NEW) # honor link flags in try_compile()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -87,7 +87,7 @@ install(TARGETS lager EXPORT LagerConfig)
 
 # requirements for tests and examples
 if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
-  find_package(Boost 1.56 COMPONENTS system REQUIRED)
+  find_package(Boost 1.56 CONFIG COMPONENTS system REQUIRED)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
   find_package(Zug REQUIRED)
@@ -153,12 +153,10 @@ if (lager_BUILD_EXAMPLES)
       lager-example
       Boost::system)
 
-    if (NOT APPLE)
-      add_custom_target(gui ALL
-        COMMAND make
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
-        COMMENT "Build debugger web UI")
-    endif()
+    add_custom_target(gui ALL
+      COMMAND make
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/gui"
+      COMMENT "Build debugger web UI")
 
     install(TARGETS lager-debugger-example  EXPORT LagerConfig)
 
