@@ -110,7 +110,7 @@ find_package(Qt5Gui)
 find_package(Qt5Widgets)
 find_package(Qt5QuickControls2)
 
-find_package(Boost 1.56)
+find_package(Boost 1.56 CONFIG)
 
 if (Qt5Core_FOUND AND Qt5Concurrent_FOUND AND Qt5Gui_FOUND AND Qt5Widgets_FOUND AND Qt5Qml_FOUND AND Qt5QuickControls2_FOUND AND Boost_FOUND)
   add_executable(todo-qml EXCLUDE_FROM_ALL

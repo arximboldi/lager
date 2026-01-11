@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/signal_set.hpp>
 
@@ -59,7 +59,7 @@ struct terminal
 {
     using event_handler = std::function<void(event)>;
 
-    terminal(boost::asio::io_service& serv);
+    terminal(boost::asio::io_context& serv);
 
     coord size();
 

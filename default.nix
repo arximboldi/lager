@@ -1,42 +1,27 @@
-with import <nixpkgs> {};
+{
+  flake ? import ./nix/flake-compat.nix { },
+  pkgs ? import flake.inputs.nixpkgs { },
+}:
 
 let
-  deps = import ./nix/deps.nix {};
+  inherit (pkgs) lib;
+  inherit (import flake.inputs.gitignore { inherit lib; })
+    gitignoreSource
+    ;
+
+  nixFilter = name: type: !(lib.hasSuffix ".nix" name);
+  srcFilter =
+    src:
+    lib.cleanSourceWith {
+      filter = nixFilter;
+      src = gitignoreSource src;
+    };
+
+  immer = (import flake.inputs.immer { inherit pkgs; }).packages.${pkgs.system}.default;
+  zug = (import flake.inputs.zug { inherit pkgs; }).packages.${pkgs.system}.default;
+
 in
-stdenv.mkDerivation rec {
-  name = "lager-git";
-  version = "git";
-  src = builtins.filterSource (path: type:
-            baseNameOf path != ".git" &&
-            baseNameOf path != "build" &&
-            baseNameOf path != "_build" &&
-            baseNameOf path != "reports" &&
-            baseNameOf path != "tools")
-            ./.;
-  buildInputs = [
-    ncurses
-    SDL2
-    SDL2_ttf
-  ];
-  nativeBuildInputs = [
-    cmake
-    gcc7
-    sass
-    pkgs.pkg-config or pkgs.pkgconfig
-  ];
-  cmakeFlags = [
-    "-Dlager_BUILD_TESTS=OFF"
-    "-Dlager_BUILD_EXAMPLES=OFF"
-  ];
-  propagatedBuildInputs = [
-    boost
-    deps.cereal
-    deps.immer
-    deps.zug
-  ];
-  meta = {
-    homepage    = "https://github.com/arximboldi/lager";
-    description = "library for functional interactive c++ programs";
-    license     = lib.licenses.mit;
-  };
+pkgs.callPackage ./nix/lager.nix {
+  sources = srcFilter ./.;
+  inherit immer zug;
 }

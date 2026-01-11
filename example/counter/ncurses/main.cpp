@@ -32,7 +32,7 @@ void draw(const counter::model& c)
     static const auto instructions = "  arrow up   -- decrease counter\n"
                                      "  arrow down -- increase counter\n"
                                      "  space bar  -- reset counter";
-    auto message = prelude + std::to_string(c.value);
+    auto message                   = prelude + std::to_string(c.value);
     auto max_x = 0, max_y = 0;
     getmaxyx(stdscr, max_y, max_x);
     const auto border_y = 2, border_x = 4;
@@ -58,7 +58,7 @@ void draw(const counter::model& c)
 
 int main(int argc, const char** argv)
 {
-    auto serv = boost::asio::io_service{};
+    auto serv = boost::asio::io_context{};
     auto term = ncurses::terminal{serv};
     ::init_pair(1, COLOR_WHITE, COLOR_GREEN);
     ::init_pair(2, COLOR_WHITE, COLOR_RED);
