@@ -14,9 +14,11 @@
 
 #include <lager/config.hpp>
 
-#include <QObject>
-#include <QThreadPool>
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QEvent>
+#include <QtCore/QObject>
+#include <QtCore/QThreadPool>
 
 #include <functional>
 #include <stdexcept>
@@ -30,7 +32,11 @@ struct with_qt_event_loop
     std::reference_wrapper<QThreadPool> thread_pool =
         *QThreadPool::globalInstance();
 
-    ~with_qt_event_loop() { thread_pool.get().waitForDone(); }
+    ~with_qt_event_loop()
+    {
+        QCoreApplication::removePostedEvents(&obj.get(), QEvent::MetaCall);
+        thread_pool.get().waitForDone();
+    }
 
     template <typename Fn>
     void async(Fn&& fn)
