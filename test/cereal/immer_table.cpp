@@ -11,19 +11,34 @@
 //
 
 #include "cerealize.hpp"
-#include <catch2/catch.hpp>
+
 #include <lager/extra/cereal/immer_table.hpp>
+
+#include <catch2/catch.hpp>
 
 struct entry_t
 {
     size_t id;
     size_t value;
+
+    bool operator==(const entry_t& other) const
+    {
+        return id == other.id && value == other.value;
+    }
+
+    template <typename Archive>
+    void serialize(Archive& ar)
+    {
+        ar(CEREAL_NVP(id), CEREAL_NVP(value));
+    }
 };
 
 TEST_CASE("basic")
 {
-    auto x = immer::table<entry_t>{{.id = 1, .value = 2}, //
-                                   {.id = 3, .value = 4}};
+    auto x = immer::table<entry_t>{{.id = 1, .value = 2},
+                                   {.id = 3, .value = 4},
+                                   {.id = 12, .value = 42},
+                                   {.id = 0, .value = 5}};
     auto y = cerealize(x);
     CHECK(x == y);
 }
