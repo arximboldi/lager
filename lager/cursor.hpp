@@ -35,6 +35,7 @@ struct cursor_mixin
     using writer_mixin<DerivT>::zoom;
     using writer_mixin<DerivT>::xform;
     using reader_mixin<DerivT>::xform;
+    using reader_mixin<DerivT>::operator bool;
 
 protected:
     ~cursor_mixin() = default;

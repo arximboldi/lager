@@ -32,6 +32,11 @@ class cursor_base;
 template <typename DerivT>
 struct reader_mixin
 {
+    explicit operator bool() const
+    {
+        return maybe_node_() != nullptr;
+    };
+
     decltype(auto) get() const { return node_()->last(); }
     decltype(auto) operator*() const { return get(); }
     decltype(auto) operator->() const { return &get(); }
@@ -71,11 +76,15 @@ private:
 
     auto node_() const
     {
-        if (auto node =
-                detail::access::node(*static_cast<const DerivT*>(this))) {
+        if (auto node = maybe_node_()) {
             return node;
         }
         LAGER_THROW(std::runtime_error("Accessing uninitialized reader"));
+    }
+
+    auto maybe_node_() const
+    {
+        return detail::access::node(*static_cast<const DerivT*>(this));
     }
 };
 
