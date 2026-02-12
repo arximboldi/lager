@@ -87,7 +87,7 @@ install(TARGETS lager EXPORT LagerConfig)
 
 # requirements for tests and examples
 if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
-  find_package(Boost 1.56 CONFIG COMPONENTS system REQUIRED)
+  find_package(Boost 1.56 CONFIG)
   find_package(Threads REQUIRED)
   find_package(Immer REQUIRED)
   find_package(Zug REQUIRED)
@@ -150,8 +150,7 @@ if (lager_BUILD_EXAMPLES)
   if (lager_BUILD_DEBUGGER_EXAMPLES)
     add_library(lager-debugger-example INTERFACE)
     target_link_libraries(lager-debugger-example INTERFACE
-      lager-example
-      Boost::system)
+      lager-example)
 
     add_custom_target(gui ALL
       COMMAND make
