@@ -28,6 +28,11 @@ class cursor_base;
 template <typename DerivT>
 struct writer_mixin
 {
+    explicit operator bool() const
+    {
+        return maybe_node_() != nullptr;
+    };
+
     template <typename T>
     void set(T&& value)
     {
@@ -70,11 +75,15 @@ private:
 
     auto node_() const
     {
-        if (auto node =
-                detail::access::node(*static_cast<const DerivT*>(this))) {
+        if (auto node = maybe_node_()) {
             return node;
         }
         LAGER_THROW(std::runtime_error("Accessing uninitialized writer"));
+    }
+
+    auto maybe_node_() const
+    {
+        return detail::access::node(*static_cast<const DerivT*>(this));
     }
 };
 
