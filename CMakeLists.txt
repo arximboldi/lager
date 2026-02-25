@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 cmake_policy(SET CMP0048 NEW) # enable project VERSION
 cmake_policy(SET CMP0056 NEW) # honor link flags in try_compile()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -21,11 +21,11 @@ endif()
 
 include(GNUInstallDirs)
 
-option(lager_BUILD_TESTS "Build tests" ON)
-option(lager_BUILD_FAILURE_TESTS "Build failure tests" ON)
-option(lager_BUILD_EXAMPLES "Build examples" ON)
-option(lager_BUILD_DEBUGGER_EXAMPLES "Build examples that showcase the web based debugger" ON)
-option(lager_BUILD_DOCS "Build docs" ON)
+option(lager_BUILD_TESTS "Build tests" "${PROJECT_IS_TOP_LEVEL}")
+option(lager_BUILD_FAILURE_TESTS "Build failure tests" "${PROJECT_IS_TOP_LEVEL}")
+option(lager_BUILD_EXAMPLES "Build examples" "${PROJECT_IS_TOP_LEVEL}")
+option(lager_BUILD_DEBUGGER_EXAMPLES "Build examples that showcase the web based debugger" "${PROJECT_IS_TOP_LEVEL}")
+option(lager_BUILD_DOCS "Build docs" "${PROJECT_IS_TOP_LEVEL}")
 option(lager_EMBED_RESOURCES_PATH "Embed installation paths for easier, non-portable resource location" ON)
 option(lager_DISABLE_STORE_DEPENDENCY_CHECKS "Disable compile-time checks for store dependencies" OFF)
 option(lager_ENABLE_EXCEPTIONS "Always enable exceptions regardless of detected compiler support" OFF)
@@ -52,8 +52,8 @@ endif()
 find_program(CCACHE ccache)
 if (CCACHE)
   message(STATUS "Using ccache: ${CCACHE}")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+  set(CMAKE_CXX_LINK_LAUNCHER ${CCACHE})
 else()
   message(STATUS "Could not find ccache")
 endif()
@@ -63,6 +63,7 @@ endif()
 
 # the library
 add_library(lager INTERFACE)
+add_library(lager::lager ALIAS lager)
 target_include_directories(lager INTERFACE
   $<BUILD_INTERFACE:${lager_BINARY_DIR}/>
   $<BUILD_INTERFACE:${lager_SOURCE_DIR}/>
@@ -83,7 +84,81 @@ if(lager_DISABLE_EXCEPTIONS)
   target_compile_definitions(lager INTERFACE LAGER_NO_EXCEPTIONS)
 endif()
 
-install(TARGETS lager EXPORT LagerConfig)
+target_sources(lager PUBLIC FILE_SET HEADERS
+  FILES
+    lager/commit.hpp
+    lager/config.hpp
+    lager/constant.hpp
+    lager/context.hpp
+    lager/cursor.hpp
+    lager/debug/debugger.hpp
+    lager/debug/http_server.hpp
+    lager/debug/tree_debugger.hpp
+    lager/deps.hpp
+    lager/detail/access.hpp
+    lager/detail/lens_nodes.hpp
+    lager/detail/merge_nodes.hpp
+    lager/detail/no_value.hpp
+    lager/detail/nodes.hpp
+    lager/detail/signal.hpp
+    lager/detail/smart_lens.hpp
+    lager/detail/xform_nodes.hpp
+    lager/effect.hpp
+    lager/event_loop/boost_asio.hpp
+    lager/event_loop/manual.hpp
+    lager/event_loop/qml.hpp
+    lager/event_loop/qt.hpp
+    lager/event_loop/queue.hpp
+    lager/event_loop/safe_queue.hpp
+    lager/event_loop/sdl.hpp
+    lager/extra/cereal/enum.hpp
+    lager/extra/cereal/immer_array.hpp
+    lager/extra/cereal/immer_box.hpp
+    lager/extra/cereal/immer_flex_vector.hpp
+    lager/extra/cereal/immer_map.hpp
+    lager/extra/cereal/immer_set.hpp
+    lager/extra/cereal/immer_table.hpp
+    lager/extra/cereal/immer_vector.hpp
+    lager/extra/cereal/inline.hpp
+    lager/extra/cereal/json.hpp
+    lager/extra/cereal/optional_nvp.hpp
+    lager/extra/cereal/struct.hpp
+    lager/extra/cereal/tuple.hpp
+    lager/extra/cereal/variant_with_name.hpp
+    lager/extra/derive.hpp
+    lager/extra/derive/cereal.hpp
+    lager/extra/derive/eq.hpp
+    lager/extra/derive/hana.hpp
+    lager/extra/derive/hash.hpp
+    lager/extra/derive/size_check.hpp
+    lager/extra/enum.hpp
+    lager/extra/qt.hpp
+    lager/extra/struct.hpp
+    lager/extra/thunk.hpp
+    lager/future.hpp
+    lager/lens.hpp
+    lager/lenses.hpp
+    lager/lenses/at.hpp
+    lager/lenses/at_or.hpp
+    lager/lenses/attr.hpp
+    lager/lenses/optional.hpp
+    lager/lenses/tuple.hpp
+    lager/lenses/unbox.hpp
+    lager/lenses/variant.hpp
+    lager/reader.hpp
+    lager/resources_path.hpp.in
+    lager/sensor.hpp
+    lager/setter.hpp
+    lager/state.hpp
+    lager/store.hpp
+    lager/tags.hpp
+    lager/util.hpp
+    lager/watch.hpp
+    lager/with.hpp
+    lager/writer.hpp
+)
+
+install(TARGETS lager EXPORT LagerConfig FILE_SET HEADERS)
 
 # requirements for tests and examples
 if (lager_BUILD_TESTS OR lager_BUILD_EXAMPLES)
