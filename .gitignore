@@ -16,3 +16,5 @@ tools/travis/ssh-key
 *.qmlc
 /.vs
 .direnv/
+# from todo-qml example
+*.todo
