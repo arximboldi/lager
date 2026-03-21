@@ -457,3 +457,23 @@ TEST_CASE("mix cursor and reader")
     auto i                                 = make_state(std::string{"john"});
     reader<std::tuple<int, std::string>> r = with(c, i);
 }
+
+TEST_CASE("bind to xform reader")
+{
+    auto state = make_state(int{2}, automatic_tag{});
+    lager::reader<bool> even = state.xform(zug::map([](int v) {
+        return v % 2 == 0;
+    }));
+
+    int count = 0;
+    even.bind([&count](auto) { ++count; });
+    REQUIRE(count == 1);
+
+    // no change
+    state.set(4);
+    CHECK(count == 1);
+
+    // change
+    state.set(5);
+    CHECK(count == 2);
+}

@@ -25,6 +25,8 @@
 
 #include <zug/reducing/last.hpp>
 
+#include <utility>
+
 namespace lager {
 namespace detail {
 
@@ -44,18 +46,26 @@ ZUG_INLINE_CONSTEXPR struct send_down_rf_t
     }
 } send_down_rf{};
 
+template<typename ValueT>
+struct initial_value
+{
+    ValueT value;
+    bool defaulted;
+};
+
 template <typename ValueT, typename Xform, typename... ParentPtrs>
-ValueT initial_value(Xform&& xform, const std::tuple<ParentPtrs...>& parents)
+initial_value<ValueT> get_initial_value(Xform&& xform, const std::tuple<ParentPtrs...>& parents)
 {
     LAGER_TRY {
-        return std::apply(
-            [&](auto&&... ps) {
-                return xform(zug::last)(detail::no_value{}, ps->current()...);
-            },
-            parents);
+        return {std::apply(
+                    [&](auto&&... ps) {
+                        return xform(zug::last)(detail::no_value{}, ps->current()...);
+                    },
+                    parents),
+                false};
     } LAGER_CATCH(const no_value_error&) {
         if constexpr (std::is_default_constructible<ValueT>::value) {
-            return ValueT{};
+            return {ValueT{}, true};
         } else {
             LAGER_THROW();
         }
@@ -89,11 +99,23 @@ public:
 
     template <typename Xform2, typename ParentsTuple>
     xform_reader_node(Xform2&& xform, ParentsTuple&& parents)
-        : base_t{initial_value<value_type>(std::forward<Xform2>(xform),
-                                           parents),
-                 std::forward<ParentsTuple>(parents)}
+        : xform_reader_node{get_initial_value<value_type>(xform, parents),
+                            std::forward<Xform2>(xform),
+                            std::forward<ParentsTuple>(parents)}
+    {}
+
+private:
+    template <typename Xform2, typename ParentsTuple>
+    xform_reader_node(initial_value<value_type> init,
+                      Xform2&& xform,
+                      ParentsTuple&& parents)
+        : base_t{std::move(init.value),
+                 std::forward<ParentsTuple>(parents),
+                 init.defaulted}
         , down_step_{std::forward<Xform2>(xform)(send_down_rf)}
     {}
+
+public:
 
     void recompute() final
     {
