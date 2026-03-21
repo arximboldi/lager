@@ -217,7 +217,6 @@ public:
             last_            = current_;
             needs_send_down_ = false;
             needs_notify_    = true;
-            has_sent_down_   = true;
             
             const auto& children = this->children();
             const size_t n_children = children.size();
@@ -270,7 +269,6 @@ protected:
     bool needs_send_down_ = false;
     bool needs_notify_    = false;
     bool notifying_       = false;
-    bool has_sent_down_   = false;
 };
 
 /*!
@@ -296,24 +294,28 @@ class inner_node<ValueT, zug::meta::pack<Parents...>, Base>
     using base_t = Base<ValueT>;
 
     std::tuple<std::shared_ptr<Parents>...> parents_;
+    bool initially_defaulted_ = false;
 
 public:
-    inner_node(ValueT init, std::tuple<std::shared_ptr<Parents>...>&& parents)
+    inner_node(ValueT init,
+               std::tuple<std::shared_ptr<Parents>...>&& parents,
+               bool initially_defaulted = false)
         : base_t{std::move(init)}
         , parents_{std::move(parents)}
+        , initially_defaulted_{initially_defaulted}
     {}
 
     template <typename U>
     void push_down(U&& value)
     {
-        // For inner nodes, we need to handle the case where the node is
-        // initialized with a default value (e.g., from a failed filter in
-        // xform) and then receives that same default value as the first
-        // actual value from the parent (e.g., optional<int>(0) -> int(0)).
-        // In this case, we should notify even though the values are equal.
-        if (has_changed(value, this->current_) || !this->has_sent_down_) {
+        // When the transducer produces no initial result (e.g., a filter that
+        // matches nothing at construction time), the node is seeded with a
+        // default-constructed fallback. On the first real parent value we must
+        // propagate even if it happens to equal that fallback sentinel.
+        if (has_changed(value, this->current_) || initially_defaulted_) {
             this->current_         = std::forward<U>(value);
             this->needs_send_down_ = true;
+            initially_defaulted_  = false;
         }
     }
 
