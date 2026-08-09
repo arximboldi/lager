@@ -13,6 +13,7 @@
 #include <catch2/catch.hpp>
 
 #include <immer/vector.hpp>
+#include <iostream>
 #include <zug/compose.hpp>
 #include <zug/util.hpp>
 
@@ -30,6 +31,14 @@ struct yearday
 {
     int day;
     int month;
+
+    friend bool operator==(const yearday &lhs, const yearday &rhs) {
+        return lhs.day == rhs.day && lhs.month == rhs.month;
+    }
+
+    friend bool operator!=(const yearday &lhs, const yearday &rhs) {
+        return !(lhs == rhs);
+    }
 };
 
 struct person
@@ -42,6 +51,7 @@ struct person
 using namespace lager;
 using namespace lager::lenses;
 using namespace zug;
+
 
 TEST_CASE("lenses, minimal example")
 {
@@ -198,6 +208,547 @@ TEST_CASE("lenses, attr2, references")
         [[maybe_unused]] int&& y      = view(birthday_month, std::move(p1));
         [[maybe_unused]] const int& z = view(birthday_month, p2);
     }
+}
+
+template <typename Member>
+auto attr3(Member member, int *numGetCalls)
+{
+    return getset(
+        [=](auto&& x) -> decltype(auto) {
+            (*numGetCalls)++;
+            return std::forward<decltype(x)>(x).*member;
+        },
+        [=](auto x, auto&& v) {
+            x.*member = std::forward<decltype(v)>(v);
+            return x;
+        });
+};
+
+TEST_CASE("lenses, no getter on set")
+{
+    int numGetCalls = 0;
+    auto name = attr3(&person::name, &numGetCalls);
+    auto p1 = person{{5, 4}, "juanpe"};
+    CHECK(view(name, p1) == "juanpe");
+    CHECK(numGetCalls == 1);
+
+    p1 = set(name, p1, "ncopernicus");
+    CHECK(numGetCalls == 1);
+
+    CHECK(view(name, p1) == "ncopernicus");
+    CHECK(numGetCalls == 2);
+}
+
+TEST_CASE("lenses, no getter on nested set")
+{
+    int numGetCallsOnBirthDay = 0;
+    int numGetCallsOnMonth = 0;
+    auto birthday = attr3(&person::birthday, &numGetCallsOnBirthDay);
+    auto month = attr3(&yearday::month, &numGetCallsOnMonth);
+    auto p1 = person{{5, 4}, "juanpe"};
+
+    CHECK(view(birthday, p1) == yearday{5, 4});
+    CHECK(numGetCallsOnBirthDay == 1);
+    CHECK(numGetCallsOnMonth == 0);
+    numGetCallsOnBirthDay = 0;
+    numGetCallsOnMonth = 0;
+
+    CHECK(view(birthday | month, p1) == 4);
+    CHECK(numGetCallsOnBirthDay == 1);
+    CHECK(numGetCallsOnMonth == 1);
+    numGetCallsOnBirthDay = 0;
+    numGetCallsOnMonth = 0;
+
+    p1 = set(birthday | month, p1, 6);
+    CHECK(numGetCallsOnBirthDay == 1);
+    CHECK(numGetCallsOnMonth == 0);
+    numGetCallsOnBirthDay = 0;
+    numGetCallsOnMonth = 0;
+
+    CHECK(view(birthday | month, p1) == 6);
+    CHECK(numGetCallsOnBirthDay == 1);
+    CHECK(numGetCallsOnMonth == 1);
+    numGetCallsOnBirthDay = 0;
+    numGetCallsOnMonth = 0;
+}
+
+
+struct copy_info
+{
+    copy_info(std::string _debugName) : debug_name(std::move(_debugName)) {};
+
+    bool operator== (const std::tuple<int, int, int, int> &rhs) const {
+        return num_copy_constructions == std::get<0>(rhs) &&
+               num_copy_assignments == std::get<1>(rhs) &&
+               num_move_constructions == std::get<2>(rhs) &&
+               num_move_assignments == std::get<3>(rhs);
+    }
+
+    bool operator!= (const std::tuple<int, int, int, int> &rhs) const {
+        return !(*this == rhs);
+    }
+
+    void reset() {
+        num_copy_constructions = 0;
+        num_copy_assignments = 0;
+        num_move_constructions = 0;
+        num_move_assignments = 0;
+    }
+
+    int num_copy_constructions = 0;
+    int num_copy_assignments = 0;
+    int num_move_constructions = 0;
+    int num_move_assignments = 0;
+    std::string debug_name;
+};
+
+std::ostream& operator << (std::ostream &out, const copy_info &info)
+{
+    out << "copy_info(";
+    out << "cc:" << info.num_copy_constructions << " ";
+    out << "ca:" << info.num_copy_assignments << " ";
+    out << "mc:" << info.num_move_constructions << " ";
+    out << "ma:" << info.num_move_assignments;
+    out << ")";
+    return out;
+}
+
+struct copy_tracker
+{
+    copy_tracker(copy_info &info)
+        : info(info)
+    {
+    }
+
+    copy_tracker(const copy_tracker &rhs)
+        : info(rhs.info)
+    {
+        assert(!rhs.moved_from_here);
+        info.num_copy_constructions++;
+    }
+
+    copy_tracker(copy_tracker &&rhs)
+        : info(rhs.info)
+    {
+        assert(!rhs.moved_from_here);
+        rhs.moved_from_here = true;
+        info.num_move_constructions++;
+    }
+
+    copy_tracker& operator=(const copy_tracker &rhs)
+    {
+        assert(!rhs.moved_from_here);
+        info = rhs.info;
+        info.num_copy_assignments++;
+
+        // the object becomes valid after it has been moved into
+        moved_from_here = false;
+        return *this;
+    }
+
+    copy_tracker& operator=(copy_tracker &&rhs)
+    {
+        assert(!rhs.moved_from_here);
+        info = rhs.info;
+        rhs.moved_from_here = true;
+        info.num_move_assignments++;
+
+        // the object becomes valid after it has been moved into
+        moved_from_here = false;
+        return *this;
+    }
+
+    copy_info &info;
+    bool moved_from_here = false;
+};
+
+struct debug_yearday
+{
+    debug_yearday(copy_info &info)
+        : tracker(info)
+    {
+    }
+
+    bool valid() {
+        return !tracker.moved_from_here;
+    }
+
+    copy_tracker tracker;
+    int day {0};
+    int month {0};
+};
+
+struct debug_person
+{
+    debug_person(copy_info &person_copy_info, copy_info &birthday_copy_info)
+        : tracker(person_copy_info)
+        , birthday(birthday_copy_info)
+
+    {
+    }
+
+    bool valid() {
+        return !tracker.moved_from_here &&
+               !birthday.tracker.moved_from_here;
+    }
+
+    copy_tracker tracker;
+    debug_yearday birthday;
+    std::string name;
+    std::vector<std::string> things{};
+};
+
+struct debug_freelancer
+{
+    debug_freelancer(copy_info &freelancer_copy_info, copy_info &person_copy_info, copy_info &birthday_copy_info)
+        : tracker(freelancer_copy_info)
+        , person(person_copy_info, birthday_copy_info)
+    {
+    }
+
+    bool valid() {
+        return !tracker.moved_from_here &&
+               !person.tracker.moved_from_here &&
+               !person.birthday.tracker.moved_from_here;
+    }
+
+    copy_tracker tracker;
+    debug_person person;
+    int tax_id {};
+};
+
+TEST_CASE("getset copy: view lvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto p1 = debug_person(person_copy_info, birthday_copy_info);
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 0, 0));
+
+    auto birthday = view(birthday_lens, p1);
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 0, 0));
+
+    CHECK(p1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("getset copy: view rvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto birthday = view(birthday_lens, debug_person(person_copy_info, birthday_copy_info));
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 3, 0));
+
+    CHECK(birthday.valid());
+}
+
+
+TEST_CASE("getset copy: set lvalue with rvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto p1 = debug_person(person_copy_info, birthday_copy_info);
+
+    auto birthday =
+        set(birthday_lens, p1, debug_yearday(birthday_copy_info));
+
+    CHECK(person_copy_info == std::make_tuple(1, 0, 3, 0));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 5, 1));
+
+    CHECK(p1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("getset copy: set lvalue with lvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto p1 = debug_person(person_copy_info, birthday_copy_info);
+    auto day1 = debug_yearday(birthday_copy_info);
+
+    auto birthday = set(birthday_lens, p1, day1);
+
+    CHECK(person_copy_info == std::make_tuple(1, 0, 3, 0));
+    CHECK(birthday_copy_info == std::make_tuple(1, 1, 3, 0));
+
+    CHECK(p1.valid());
+    CHECK(day1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("getset copy: set rvalue with lvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto day1 = debug_yearday(birthday_copy_info);
+
+    auto birthday =
+        set(birthday_lens, debug_person(person_copy_info, birthday_copy_info), day1);
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 4, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 1, 4, 0));
+
+    CHECK(day1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("getset copy: set rvalue with rvalue")
+{
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+
+    auto birthday =
+        set(birthday_lens,
+            debug_person(person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 4, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 6, 1));
+
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: view lvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto e1 = debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info);
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 0, 0));
+
+    auto birthday = view(freelancer_birthday_lens, e1);
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 0, 0));
+
+    CHECK(e1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: view rvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 0, 0));
+
+    auto birthday =
+        view(freelancer_birthday_lens,
+             debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(person_copy_info == std::make_tuple(0, 0, 0, 0));
+    CHECK(birthday_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: set lvalue with rvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto e1 = debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info);
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            e1,
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(1, 0, 3, 0));
+
+    /**
+     * One copy is for passing a person into the setter of birthday_lens,
+     * the other one is for passing the source enterpreneur into the
+     * setter function of person_lens.
+     */
+    CHECK(person_copy_info == std::make_tuple(2, 0, 5, 1));
+    CHECK(birthday_copy_info == std::make_tuple(2, 0, 7, 2));
+
+    CHECK(e1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: set lvalue with lvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto e1 = debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info);
+    auto day1 = debug_yearday(birthday_copy_info);
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            e1,
+            day1);
+
+    CHECK(freelancer_copy_info == std::make_tuple(1, 0, 3, 0));
+
+    /**
+     * One copy is for passing a person into the setter of birthday_lens,
+     * the other one is for passing the source enterpreneur into the
+     * setter function of person_lens.
+     */
+    CHECK(person_copy_info == std::make_tuple(2, 0, 5, 1));
+    CHECK(birthday_copy_info == std::make_tuple(2, 1, 5, 1));
+
+    CHECK(e1.valid());
+    CHECK(day1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: set rvalue with lvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto day1 = debug_yearday(birthday_copy_info);
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            day1);
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 1, 6, 1));
+
+    CHECK(day1.valid());
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested getset copy: set rvalue with rvalue")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 8, 2));
+
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested (attr | getset)")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr2(&debug_person::birthday);
+    auto person_lens = attr(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 8, 2));
+
+    CHECK(birthday.valid());
+}
+
+TEST_CASE("nested (getset | attr)")
+{
+    copy_info freelancer_copy_info("freelancer");
+    copy_info person_copy_info("person");
+    copy_info birthday_copy_info("birthday");
+
+    auto birthday_lens = attr(&debug_person::birthday);
+    auto person_lens = attr2(&debug_freelancer::person);
+    auto freelancer_birthday_lens = person_lens | birthday_lens;
+
+    auto birthday =
+        set(freelancer_birthday_lens,
+            debug_freelancer(freelancer_copy_info, person_copy_info, birthday_copy_info),
+            debug_yearday(birthday_copy_info));
+
+    CHECK(freelancer_copy_info == std::make_tuple(0, 0, 4, 0));
+
+    /**
+     * The only copy is to pass the person into birthday_lens. Use const-ref
+     * for `whole` argument to avoid this copy.
+     */
+    CHECK(person_copy_info == std::make_tuple(1, 0, 6, 1));
+    CHECK(birthday_copy_info == std::make_tuple(1, 0, 8, 2));
+
+    CHECK(birthday.valid());
 }
 
 TEST_CASE("lenses, at immutable index")

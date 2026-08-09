@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lager/lenses.hpp>
 #include <lager/util.hpp>
 #include <zug/compose.hpp>
 
@@ -17,15 +18,14 @@ namespace lenses {
 template <typename Member>
 auto attr(Member member)
 {
-    return zug::comp([member](auto&& f) {
-        return [&, f = LAGER_FWD(f)](auto&& p) {
-            return f(LAGER_FWD(p).*member)([&](auto&& x) {
-                auto r    = LAGER_FWD(p);
-                r.*member = LAGER_FWD(x);
-                return r;
-            });
-        };
-    });
+    return getset(
+        [=](auto &&p) -> decltype(auto) {
+            return LAGER_FWD(p).*member;
+        },
+        [=](auto p, auto &&x) {
+            p.*member = LAGER_FWD(x);
+            return p;
+        });
 }
 
 //! @}
